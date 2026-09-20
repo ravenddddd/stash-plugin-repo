@@ -129,17 +129,34 @@
   NS.MANGA_FIELD_NAME = "plugin.mangaTools.manga";
   NS.TRANSLATION_GROUP_FIELD_NAME = "plugin.mangaTools.translationGroup";
   NS.translationGroupOf = (customFields) => NS.pickField(customFields, NS.TRANSLATION_GROUP_FIELD_NAME).trim();
-  NS.sameTranslationGroup = (a, b) => String(a != null ? a : "").trim().toLowerCase() === String(b != null ? b : "").trim().toLowerCase();
+  NS.groupKey = (name) => String(name != null ? name : "").trim().toLowerCase();
+  NS.sameTranslationGroup = (a, b) => NS.groupKey(a) === NS.groupKey(b);
   NS.usualLanguageFor = (galleries, group) => {
-    if (!galleries || !group.trim()) return null;
+    const key = NS.groupKey(group);
+    return key ? NS.usualLanguagesOf(galleries)[key] || null : null;
+  };
+  NS.usualLanguagesOf = (galleries) => {
+    const out = {};
+    if (!galleries) return out;
     const counts = {};
     galleries.forEach((fields) => {
-      if (!NS.sameTranslationGroup(NS.translationGroupOf(fields), group)) return;
-      const raw = NS.pickField(fields, NS.FIELD_NAME);
-      const code = NS.findCanonical(NS.normalize(raw));
+      const key = NS.groupKey(NS.translationGroupOf(fields));
+      if (!key) return;
+      const code = NS.findCanonical(
+        NS.normalize(NS.pickField(fields, NS.FIELD_NAME))
+      );
       if (!code) return;
-      counts[code] = (counts[code] || 0) + 1;
+      if (!counts[key]) counts[key] = {};
+      const byLanguage = counts[key];
+      byLanguage[code] = (byLanguage[code] || 0) + 1;
     });
+    for (const key of Object.keys(counts)) {
+      const usual = majorityOf(counts[key]);
+      if (usual) out[key] = usual;
+    }
+    return out;
+  };
+  function majorityOf(counts) {
     let best = "";
     let count = 0;
     let tied = false;
@@ -153,7 +170,7 @@
       }
     }
     return best && !tied ? { code: best, count } : null;
-  };
+  }
   NS.MANGA_VALUE = "true";
   NS.isManga = (customFields) => NS.pickField(customFields, NS.MANGA_FIELD_NAME) !== "";
   NS.ownField = (key) => {
@@ -2407,7 +2424,18 @@
     return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-option" }, NS.showFlags && option.flag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: option.flag, className: "manga-tools-flag" }) : null, /* @__PURE__ */ React5.createElement("span", null, option.label));
   }
   function formatGroupOption(option, meta) {
-    if (!option.createLabel || (meta == null ? void 0 : meta.context) !== "menu") return option.label;
+    if ((meta == null ? void 0 : meta.context) !== "menu") return option.label;
+    const hint = option.hint ? NS.showFlags && option.hint.flag ? /* @__PURE__ */ React5.createElement(
+      Flag2,
+      {
+        flag: option.hint.flag,
+        className: "manga-tools-flag manga-tools-hint"
+      }
+    ) : /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-hint-text" }, option.hint.name) : null;
+    if (!option.createLabel) {
+      if (!hint) return option.label;
+      return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-group-option" }, /* @__PURE__ */ React5.createElement("span", null, option.label), hint);
+    }
     return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-option" }, option.createLabel);
   }
   function readNativeFieldClasses(anchorSelector) {
@@ -2462,7 +2490,8 @@
       ];
     }
     const selected = current ? { value: current.code, label: current.name, flag: current.flag } : null;
-    const usual = NS.usualLanguageFor(store, NS.translationGroupOf(props.values));
+    const usualLanguages = NS.usualLanguagesOf(store);
+    const usual = usualLanguages[NS.groupKey(NS.translationGroupOf(props.values))];
     const offered = usual && (!NS.enabledLanguages || NS.enabledLanguages.has(usual.code)) && (!current || current.code !== usual.code) ? usual : null;
     const offeredInfo = offered ? NS.describe(offered.code, intl.locale) : null;
     const chipIcon = Solid.faWandMagicSparkles || Solid.faMagic || Solid.faLanguage || null;
@@ -2544,6 +2573,12 @@
     const groupName = NS.translationGroupOf(props.values);
     const known = knownTranslationGroups();
     const namesANewGroup = !!groupName && !known.some((name) => NS.sameTranslationGroup(name, groupName));
+    const usualOf = (name) => usualLanguages[NS.groupKey(name)];
+    const matchesNow = (name) => {
+      const usualHere = usualOf(name);
+      return !!current && !!usualHere && usualHere.code === current.code;
+    };
+    const ordered = known.filter(matchesNow).concat(known.filter((name) => !matchesNow(name)));
     const groupOptions = [
       ...namesANewGroup ? [
         {
@@ -2556,7 +2591,12 @@
           createLabel: t(intl, "mangaTools.translationGroup.create") + ' "' + groupName + '"'
         }
       ] : [],
-      ...known.map((name) => ({ value: name, label: name }))
+      ...ordered.map((name) => {
+        const usualHere = usualOf(name);
+        const described = usualHere ? NS.describe(usualHere.code, intl.locale) : null;
+        const hint = described ? { flag: described.flag, name: described.name } : null;
+        return { value: name, label: name, hint };
+      })
     ];
     const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement("div", { className: cls.control }, /* @__PURE__ */ React5.createElement(
       Select,
