@@ -267,6 +267,7 @@
     "mangaTools.translationGroup.original": "Raw",
     "mangaTools.translationGroup.originalOn": "Mark as raw: the original text, no translation group",
     "mangaTools.translationGroup.originalOff": "No longer raw \u2014 clear the mark",
+    "mangaTools.translationGroup.originalOffRestore": "No longer raw \u2014 clear the mark and put the translation group back",
     "mangaTools.translationGroup.originalDetail": "raw (no translation group)",
     "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
     "mangaTools.bulk.remove": "Remove",
@@ -310,6 +311,7 @@
     "mangaTools.translationGroup.original": "\u751F\u8089",
     "mangaTools.translationGroup.originalOn": "\u6807\u4E3A\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6CA1\u6709\u7FFB\u8BD1\u7EC4",
     "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0",
+    "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0\uFF0C\u5E76\u6062\u590D\u539F\u6765\u7684\u7FFB\u8BD1\u7EC4",
     "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
     "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
@@ -353,6 +355,7 @@
     "mangaTools.translationGroup.original": "\u751F\u8089",
     "mangaTools.translationGroup.originalOn": "\u6A19\u70BA\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6C92\u6709\u7FFB\u8B6F\u7D44",
     "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18",
+    "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18\uFF0C\u4E26\u9084\u539F\u539F\u672C\u7684\u7FFB\u8B6F\u7D44",
     "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u7121\u7FFB\u8B6F\u7D44\uFF09",
     "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
@@ -2292,6 +2295,7 @@
   function editFormFor(galleryId) {
     return editForm && editForm.galleryId === galleryId ? editForm : null;
   }
+  var originalGroupTaken = null;
   function isMarkedNow(galleryId, values) {
     if (store === null || !galleryId) return NS.isManga(values);
     return storedIsManga(galleryId);
@@ -2507,16 +2511,24 @@
     };
     const isOriginal = NS.isOriginal(props.values);
     const toggleOriginal = () => {
-      let next = NS.setField(
-        props.values,
-        ORIGINAL_FIELD_NAME,
-        isOriginal ? "" : NS.ORIGINAL_VALUE
-      );
-      if (!isOriginal) {
+      const galleryId = currentGalleryId();
+      let next = props.values;
+      if (isOriginal) {
+        const taken = originalGroupTaken;
+        originalGroupTaken = null;
+        next = NS.setField(next, ORIGINAL_FIELD_NAME, "");
+        if (taken && taken.galleryId === galleryId && taken.group) {
+          next = NS.setField(next, TRANSLATION_GROUP_FIELD_NAME, taken.group);
+        }
+      } else {
+        const group = NS.translationGroupOf(props.values);
+        originalGroupTaken = group ? { galleryId, group } : null;
+        next = NS.setField(next, ORIGINAL_FIELD_NAME, NS.ORIGINAL_VALUE);
         next = NS.setField(next, TRANSLATION_GROUP_FIELD_NAME, "");
       }
       if (props.onChange) props.onChange(next);
     };
+    const restoresGroup = !!originalGroupTaken && originalGroupTaken.galleryId === currentGalleryId() && !!originalGroupTaken.group;
     const current = NS.describe(pickLanguage(props.values), intl.locale);
     let options = NS.languageOptions(intl.locale).filter(
       (o) => {
@@ -2648,7 +2660,7 @@
         "aria-label": originalLabel,
         title: t(
           intl,
-          isOriginal ? "mangaTools.translationGroup.originalOff" : "mangaTools.translationGroup.originalOn"
+          isOriginal ? restoresGroup ? "mangaTools.translationGroup.originalOffRestore" : "mangaTools.translationGroup.originalOff" : "mangaTools.translationGroup.originalOn"
         ),
         onClick: toggleOriginal
       },
