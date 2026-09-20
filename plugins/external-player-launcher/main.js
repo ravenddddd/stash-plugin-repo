@@ -49,10 +49,10 @@ function parseSettings(value) {
   const record = value;
   if (record.version !== 2) return null;
   const platforms = {};
-  const stored = record.platforms;
-  if (stored && typeof stored === "object" && !Array.isArray(stored)) {
+  const stored2 = record.platforms;
+  if (stored2 && typeof stored2 === "object" && !Array.isArray(stored2)) {
     for (const key of PLATFORM_KEYS) {
-      const entry = stored[key];
+      const entry = stored2[key];
       if (entry === void 0) continue;
       const settings = dropUndefined(readSettingsValue(entry));
       if (Object.keys(settings).length > 0) platforms[key] = settings;
@@ -64,22 +64,27 @@ function parseSettings(value) {
     platforms
   };
 }
-function resolveSettings(stored, platform2) {
+function resolveDefault(stored2) {
+  return { ...BUILT_IN_DEFAULTS, ...dropUndefined(stored2?.default) };
+}
+function resolveSettings(stored2, platform2) {
   return {
-    ...BUILT_IN_DEFAULTS,
-    ...dropUndefined(stored?.default),
-    ...dropUndefined(stored?.platforms?.[platform2])
+    ...resolveDefault(stored2),
+    ...dropUndefined(stored2?.platforms?.[platform2])
   };
 }
-function withPlatformSettings(stored, platform2, settings) {
-  const next = fromStored(stored);
+function hasOverride(stored2, platform2) {
+  return stored2?.platforms?.[platform2] !== void 0;
+}
+function withPlatformSettings(stored2, platform2, settings) {
+  const next = fromStored(stored2);
   const platforms = { ...next.platforms };
   if (settings === null) delete platforms[platform2];
   else platforms[platform2] = settings;
   return { ...next, platforms };
 }
-function fromStored(stored) {
-  return stored ? { version: 2, default: { ...stored.default }, platforms: { ...stored.platforms } } : { version: 2, default: {}, platforms: {} };
+function fromStored(stored2) {
+  return stored2 ? { version: 2, default: { ...stored2.default }, platforms: { ...stored2.platforms } } : { version: 2, default: {}, platforms: {} };
 }
 function dropUndefined(value) {
   if (!value) return {};
@@ -149,6 +154,12 @@ function currentPlatform() {
 function read(target = currentPlatform()) {
   return resolveSettings(cache, target);
 }
+function readDefault() {
+  return resolveDefault(cache);
+}
+function stored() {
+  return cache;
+}
 function load() {
   if (loading) return loading;
   const document2 = queryDocument();
@@ -170,7 +181,7 @@ function load() {
   return loading;
 }
 function save(settings, target = currentPlatform()) {
-  return write((stored) => withPlatformSettings(stored, target, settings));
+  return write((stored2) => withPlatformSettings(stored2, target, settings));
 }
 function write(next) {
   const document2 = mutationDocument();
@@ -214,7 +225,7 @@ function write(next) {
   const { faGear } = FontAwesomeSolid;
   const { useConfiguration } = PluginApi.utils.StashService;
   const { IntlProvider, FormattedMessage } = Intl;
-  const PLUGIN_VERSION = "1.3.0";
+  const PLUGIN_VERSION = "1.4.0";
   const pluginID = PLUGIN_ID;
   const iconsPath = "./plugin/external-player-launcher/assets/icons";
   const localesBase = `./plugin/external-player-launcher/assets/locales`;
@@ -281,9 +292,10 @@ function write(next) {
   function cloneSettings(settings) {
     return { ...settings };
   }
-  function readSettings() {
+  function readSettingsFor(target) {
+    const stored2 = target === "default" ? readDefault() : read(target);
     const validIds = playerButtons.map((button) => button.id);
-    const settings = { ...read() };
+    const settings = { ...stored2 };
     if (!validIds.includes(settings.singlePlayerId)) {
       settings.singlePlayerId = defaultSettings.singlePlayerId;
     }
@@ -295,8 +307,8 @@ function write(next) {
     }
     return settings;
   }
-  function saveSettings(nextSettings) {
-    return save(nextSettings, currentPlatform());
+  function readSettings() {
+    return readSettingsFor(currentPlatform());
   }
   function useSettingsState() {
     const [settings, setSettings] = React.useState(() => readSettings());
@@ -506,6 +518,16 @@ function write(next) {
       /* @__PURE__ */ React.createElement("path", { d: "M0 12V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm6.79-6.907A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z" })
     );
   }
+  function platformName(intl, key) {
+    if (key === "other") return intl.formatMessage({ id: "settings.platform.other" });
+    return {
+      windows: "Windows",
+      macos: "macOS",
+      ios: "iOS",
+      android: "Android",
+      linux: "Linux"
+    }[key];
+  }
   function SettingsModal({ refreshOnSave }) {
     return /* @__PURE__ */ React.createElement(PluginIntlProvider, null, /* @__PURE__ */ React.createElement(SettingsModalInner, { refreshOnSave }));
   }
@@ -513,18 +535,29 @@ function write(next) {
     const intl = Intl.useIntl();
     const [show, setShow] = React.useState(false);
     const { settings } = useSettingsState();
+    const [target, setTarget] = React.useState("default");
+    const [own, setOwn] = React.useState(false);
     const [draftSettings, setDraftSettings] = React.useState(() => cloneSettings(settings));
+    const editable = target === "default" || own;
+    const inheriting = !editable;
+    const selectTarget = (next) => {
+      setTarget(next);
+      setOwn(next !== "default" && hasOverride(stored(), next));
+      setDraftSettings(cloneSettings(readSettingsFor(next)));
+    };
     React.useEffect(() => {
       if (!show) {
-        setDraftSettings(cloneSettings(settings));
+        setTarget("default");
+        setOwn(false);
+        setDraftSettings(cloneSettings(readSettingsFor("default")));
       }
     }, [settings, show]);
     const openModal = () => {
-      setDraftSettings(cloneSettings(settings));
+      selectTarget("default");
       setShow(true);
     };
     const closeModal = () => {
-      setDraftSettings(cloneSettings(settings));
+      selectTarget("default");
       setShow(false);
     };
     const togglePlayer = (playerId) => {
@@ -543,7 +576,8 @@ function write(next) {
       });
     };
     const confirmSettings = () => {
-      saveSettings(draftSettings).then(
+      const writing = target === "default" ? saveDefaultSettings(draftSettings) : own ? save(draftSettings, target) : save(null, target);
+      writing.then(
         () => {
           setShow(false);
           if (refreshOnSave) {
@@ -576,12 +610,36 @@ function write(next) {
         contentClassName: "external-player-settings-modal-content"
       },
       /* @__PURE__ */ React.createElement(Modal.Header, { closeButton: true }, /* @__PURE__ */ React.createElement(Modal.Title, null, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.modal.title" }))),
-      /* @__PURE__ */ React.createElement(Modal.Body, null, /* @__PURE__ */ React.createElement("div", { className: "ep-note-block" }, /* @__PURE__ */ React.createElement("strong", null, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteBold" })), /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteText" })), /* @__PURE__ */ React.createElement("div", { className: "ep-section" }, /* @__PURE__ */ React.createElement("div", { className: "ep-heading" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.entryGroupTitle" })), /* @__PURE__ */ React.createElement("div", { className: "ep-options" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement(Modal.Body, null, /* @__PURE__ */ React.createElement("div", { className: "ep-note-block" }, /* @__PURE__ */ React.createElement("strong", null, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteBold" })), /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteText" })), /* @__PURE__ */ React.createElement("div", { className: "ep-section" }, /* @__PURE__ */ React.createElement("div", { className: "ep-heading" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.platform.title" })), /* @__PURE__ */ React.createElement("div", { className: "ep-options" }, /* @__PURE__ */ React.createElement(
+        Form.Control,
+        {
+          as: "select",
+          className: "ep-platform-select",
+          value: target,
+          onChange: (event) => selectTarget(event.target.value)
+        },
+        /* @__PURE__ */ React.createElement("option", { value: "default" }, intl.formatMessage({ id: "settings.platform.default" })),
+        PLATFORM_KEYS.map((key) => /* @__PURE__ */ React.createElement("option", { key, value: key }, platformName(intl, key), key === currentPlatform() ? ` \u2014 ${intl.formatMessage({ id: "settings.platform.current" })}` : ""))
+      ), /* @__PURE__ */ React.createElement("div", { className: "ep-hint" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.platform.hint" }))), target !== "default" ? /* @__PURE__ */ React.createElement("div", { className: "ep-options" }, /* @__PURE__ */ React.createElement(
+        Form.Check,
+        {
+          type: "switch",
+          id: "external-player-platform-own",
+          label: intl.formatMessage({ id: "settings.platform.own" }),
+          checked: own,
+          onChange: (event) => {
+            const next = event.target.checked;
+            setOwn(next);
+            if (!next) setDraftSettings(cloneSettings(readSettingsFor("default")));
+          }
+        }
+      ), /* @__PURE__ */ React.createElement("div", { className: "ep-hint" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.platform.ownHint" }))) : null, inheriting ? /* @__PURE__ */ React.createElement("div", { className: "ep-hint" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.platform.inherited" })) : null), /* @__PURE__ */ React.createElement("div", { className: "ep-section" }, /* @__PURE__ */ React.createElement("div", { className: "ep-heading" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.entryGroupTitle" })), /* @__PURE__ */ React.createElement("div", { className: "ep-options" }, /* @__PURE__ */ React.createElement(
         Form.Check,
         {
           type: "switch",
           id: "external-player-show-card-buttons",
           label: intl.formatMessage({ id: "settings.showSceneCardButtons" }),
+          disabled: inheriting,
           checked: draftSettings.showSceneCardButtons,
           onChange: (event) => setDraftSettings((current) => ({
             ...current,
@@ -594,6 +652,7 @@ function write(next) {
           type: "switch",
           id: "external-player-show-detail-buttons",
           label: intl.formatMessage({ id: "settings.showSceneDetailButtons" }),
+          disabled: inheriting,
           checked: draftSettings.showSceneDetailButtons,
           onChange: (event) => setDraftSettings((current) => ({
             ...current,
@@ -606,6 +665,7 @@ function write(next) {
           type: "switch",
           id: "external-player-show-toolbar-buttons",
           label: intl.formatMessage({ id: "settings.showSceneToolbarButtons" }),
+          disabled: inheriting,
           checked: draftSettings.showSceneToolbarButtons,
           onChange: (event) => setDraftSettings((current) => ({
             ...current,
@@ -618,6 +678,7 @@ function write(next) {
           type: "switch",
           id: "external-player-single-mode",
           label: intl.formatMessage({ id: "settings.singlePlayerMode" }),
+          disabled: inheriting,
           checked: draftSettings.singlePlayerMode,
           onChange: (event) => setDraftSettings((current) => ({
             ...current,
@@ -636,6 +697,7 @@ function write(next) {
             id: `external-player-${button.id}`,
             name: "external-player-selection",
             className: "ep-item",
+            disabled: inheriting,
             checked,
             onChange: () => togglePlayer(button.id),
             label: /* @__PURE__ */ React.createElement("span", { className: "ep-label" }, /* @__PURE__ */ React.createElement(
@@ -648,7 +710,15 @@ function write(next) {
             ), /* @__PURE__ */ React.createElement("span", null, button.name))
           }
         );
-      })))), /* @__PURE__ */ React.createElement("div", { className: "ep-section" }, /* @__PURE__ */ React.createElement(Button, { variant: "danger", onClick: resetDraftSettings }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.reset" })))),
+      })))), /* @__PURE__ */ React.createElement("div", { className: "ep-section" }, /* @__PURE__ */ React.createElement(
+        Button,
+        {
+          variant: "danger",
+          disabled: inheriting,
+          onClick: resetDraftSettings
+        },
+        /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.reset" })
+      ))),
       /* @__PURE__ */ React.createElement(Modal.Footer, null, /* @__PURE__ */ React.createElement(Button, { variant: "secondary", onClick: closeModal }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.cancel" })), /* @__PURE__ */ React.createElement(Button, { variant: "primary", onClick: confirmSettings }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.confirm" })))
     ));
   }

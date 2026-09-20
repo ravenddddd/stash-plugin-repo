@@ -49,6 +49,10 @@
 .external-player-settings-modal-content .ep-options:last-child {
   margin-bottom: 0;
 }
+.external-player-settings-modal-content .ep-platform-select {
+  width: auto;
+  max-width: 100%;
+}
 .external-player-settings-modal-content .ep-list {
   display: grid;
   gap: 0.25rem;
