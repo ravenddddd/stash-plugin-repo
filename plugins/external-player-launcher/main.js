@@ -1,5 +1,199 @@
 "use strict";
 
+// src/settings.ts
+var BUILT_IN_DEFAULTS = {
+  excludedPlayerIds: [],
+  // The first player in the plugin's own list. Anything else is corrected when the
+  // settings are resolved against the list of buttons that still exist.
+  singlePlayerId: "iina",
+  singlePlayerMode: false,
+  showSceneCardButtons: true,
+  showSceneDetailButtons: true,
+  showSceneToolbarButtons: true
+};
+var PLATFORM_KEYS = [
+  "windows",
+  "macos",
+  "ios",
+  "android",
+  "linux",
+  "other"
+];
+function platformKey(userAgent, maxTouchPoints = 0) {
+  const ua = String(userAgent || "");
+  if (/android/i.test(ua)) return "android";
+  if (/iPad|iPhone|iPod/i.test(ua)) return "ios";
+  if (/Macintosh|MacIntel/i.test(ua)) {
+    return maxTouchPoints > 1 ? "ios" : "macos";
+  }
+  if (/Windows|compatible/i.test(ua)) return "windows";
+  if (/Ubuntu|Linux/i.test(ua)) return "linux";
+  return "other";
+}
+var bool = (value) => typeof value === "boolean" ? value : void 0;
+var text = (value) => typeof value === "string" && value ? value : void 0;
+function readSettingsValue(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const raw = value;
+  return {
+    excludedPlayerIds: Array.isArray(raw.excludedPlayerIds) ? raw.excludedPlayerIds.filter((id) => typeof id === "string") : void 0,
+    singlePlayerId: text(raw.singlePlayerId),
+    singlePlayerMode: bool(raw.singlePlayerMode),
+    showSceneCardButtons: bool(raw.showSceneCardButtons),
+    showSceneDetailButtons: bool(raw.showSceneDetailButtons),
+    showSceneToolbarButtons: bool(raw.showSceneToolbarButtons)
+  };
+}
+function parseSettings(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value;
+  if (record.version !== 2) return null;
+  const platforms = {};
+  const stored = record.platforms;
+  if (stored && typeof stored === "object" && !Array.isArray(stored)) {
+    for (const key of PLATFORM_KEYS) {
+      const entry = stored[key];
+      if (entry === void 0) continue;
+      const settings = dropUndefined(readSettingsValue(entry));
+      if (Object.keys(settings).length > 0) platforms[key] = settings;
+    }
+  }
+  return {
+    version: 2,
+    default: dropUndefined(readSettingsValue(record.default)),
+    platforms
+  };
+}
+function resolveSettings(stored, platform2) {
+  return {
+    ...BUILT_IN_DEFAULTS,
+    ...dropUndefined(stored?.default),
+    ...dropUndefined(stored?.platforms?.[platform2])
+  };
+}
+function withPlatformSettings(stored, platform2, settings) {
+  const next = fromStored(stored);
+  const platforms = { ...next.platforms };
+  if (settings === null) delete platforms[platform2];
+  else platforms[platform2] = settings;
+  return { ...next, platforms };
+}
+function fromStored(stored) {
+  return stored ? { version: 2, default: { ...stored.default }, platforms: { ...stored.platforms } } : { version: 2, default: {}, platforms: {} };
+}
+function dropUndefined(value) {
+  if (!value) return {};
+  const next = {};
+  for (const [key, field] of Object.entries(value)) {
+    if (field !== void 0) next[key] = field;
+  }
+  return next;
+}
+
+// src/store.ts
+var PLUGIN_ID = "external-player-launcher";
+var SETTINGS_QUERY = [
+  "query ExternalPlayerSettings {",
+  "  configuration {",
+  "    plugins",
+  "  }",
+  "}"
+].join("\n");
+var SAVE_MUTATION = [
+  "mutation ExternalPlayerSettingsSave($id: ID!, $input: Map!) {",
+  "  configurePlugin(plugin_id: $id, input: $input)",
+  "}"
+].join("\n");
+function pluginApi() {
+  return window.PluginApi;
+}
+var cache = null;
+var loading = null;
+var listeners = /* @__PURE__ */ new Set();
+var documents = {};
+function buildDocument(text2) {
+  const api = pluginApi();
+  const gql = api.libraries?.Apollo?.gql || api.GQL?.gql;
+  if (!gql) {
+    console.error(
+      "[external-player-launcher] gql is not available, so the settings cannot be read from or written to Stash"
+    );
+    return null;
+  }
+  return gql(text2);
+}
+function queryDocument() {
+  if (!documents.query) documents.query = buildDocument(SETTINGS_QUERY);
+  return documents.query;
+}
+function mutationDocument() {
+  if (!documents.mutation) documents.mutation = buildDocument(SAVE_MUTATION);
+  return documents.mutation;
+}
+function notify() {
+  for (const listener of listeners) listener();
+}
+function subscribe(listener) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+var platform = null;
+function currentPlatform() {
+  if (platform === null) {
+    platform = platformKey(navigator.userAgent, navigator.maxTouchPoints);
+  }
+  return platform;
+}
+function read(target = currentPlatform()) {
+  return resolveSettings(cache, target);
+}
+function load() {
+  if (loading) return loading;
+  const document2 = queryDocument();
+  const client = document2 ? pluginApi().utils.StashService.getClient() : null;
+  if (!document2 || !client) return Promise.resolve();
+  loading = client.query({ query: document2, fetchPolicy: "no-cache" }).then((result) => {
+    const plugins = result?.data?.configuration?.plugins;
+    const next = parseSettings(plugins?.[PLUGIN_ID]);
+    if (next) cache = next;
+    notify();
+  }).catch((e) => {
+    console.error(
+      "[external-player-launcher] could not read the settings from Stash, so this session is using the defaults:",
+      e
+    );
+  }).then(() => {
+    loading = null;
+  });
+  return loading;
+}
+function save(settings, target = currentPlatform()) {
+  return write((stored) => withPlatformSettings(stored, target, settings));
+}
+function write(next) {
+  const document2 = mutationDocument();
+  const client = document2 ? pluginApi().utils.StashService.getClient() : null;
+  if (!document2 || !client) {
+    return Promise.reject(new Error("the settings cannot be saved without gql"));
+  }
+  const settings = next(cache);
+  return client.mutate({
+    mutation: document2,
+    variables: { id: PLUGIN_ID, input: settings }
+  }).then((result) => {
+    cache = parseSettings(result?.data?.configurePlugin) ?? settings;
+    notify();
+  }).catch((e) => {
+    console.error(
+      "[external-player-launcher] Stash would not take the settings, so they have not changed:",
+      e
+    );
+    throw e;
+  });
+}
+
 // src/main.tsx
 (function() {
   const { PluginApi } = window;
@@ -20,11 +214,11 @@
   const { faGear } = FontAwesomeSolid;
   const { useConfiguration } = PluginApi.utils.StashService;
   const { IntlProvider, FormattedMessage } = Intl;
-  const PLUGIN_VERSION = "1.2.0";
-  const pluginID = "external-player-launcher";
+  const PLUGIN_VERSION = "1.3.0";
+  const pluginID = PLUGIN_ID;
   const iconsPath = "./plugin/external-player-launcher/assets/icons";
   const localesBase = `./plugin/external-player-launcher/assets/locales`;
-  const storageKey = `${pluginID}.settings`;
+  void load();
   const playerButtons = [
     { id: "iina", name: "IINA", onClick: openIINA },
     { id: "infuse", name: "Infuse", onClick: openInfuse },
@@ -89,37 +283,24 @@
   }
   function readSettings() {
     const validIds = playerButtons.map((button) => button.id);
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return { ...defaultSettings };
-      const stored = JSON.parse(raw);
-      const merged = { ...defaultSettings, ...stored };
-      if (Array.isArray(merged.excludedPlayerIds)) {
-        merged.excludedPlayerIds = merged.excludedPlayerIds.filter((id) => validIds.includes(id));
-      }
-      if (!validIds.includes(merged.singlePlayerId)) {
-        merged.singlePlayerId = defaultSettings.singlePlayerId;
-      }
-      return merged;
-    } catch {
-      return { ...defaultSettings };
+    const settings = { ...read() };
+    if (!validIds.includes(settings.singlePlayerId)) {
+      settings.singlePlayerId = defaultSettings.singlePlayerId;
     }
+    settings.excludedPlayerIds = settings.excludedPlayerIds.filter(
+      (id) => validIds.includes(id)
+    );
+    if (settings.excludedPlayerIds.length >= validIds.length) {
+      settings.excludedPlayerIds = [];
+    }
+    return settings;
   }
   function saveSettings(nextSettings) {
-    localStorage.setItem(storageKey, JSON.stringify(nextSettings));
-    window.dispatchEvent(new CustomEvent("external-player-launcher-settings-change", { detail: nextSettings }));
+    return save(nextSettings, currentPlatform());
   }
   function useSettingsState() {
     const [settings, setSettings] = React.useState(() => readSettings());
-    React.useEffect(() => {
-      const syncSettings = () => setSettings(readSettings());
-      window.addEventListener("storage", syncSettings);
-      window.addEventListener("external-player-launcher-settings-change", syncSettings);
-      return () => {
-        window.removeEventListener("storage", syncSettings);
-        window.removeEventListener("external-player-launcher-settings-change", syncSettings);
-      };
-    }, []);
+    React.useEffect(() => subscribe(() => setSettings(readSettings())), []);
     return { settings };
   }
   function filterPlayerButtons(settings) {
@@ -143,28 +324,28 @@
     isLinux: () => /Linux/i.test(navigator.userAgent),
     isOthers: () => Object.entries(OS).filter(([key, val]) => key !== "isOthers").every(([key, val]) => !val())
   };
-  async function writeClipboard(text) {
+  async function writeClipboard(text2) {
     let flag = false;
     if (navigator.clipboard) {
       try {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(text2);
         flag = true;
         console.log("Successfully used navigator.clipboard modern clipboard implementation");
       } catch (error) {
         console.error("Error occurred when copying to clipboard using navigator.clipboard:", error);
       }
     } else {
-      flag = writeClipboardLegacy(text);
+      flag = writeClipboardLegacy(text2);
       console.log("navigator.clipboard modern clipboard implementation not available, using legacy implementation");
     }
     return flag;
   }
-  function writeClipboardLegacy(text) {
+  function writeClipboardLegacy(text2) {
     let textarea = document.createElement("textarea");
     document.body.appendChild(textarea);
     textarea.style.position = "absolute";
     textarea.style.clip = "rect(0 0 0 0)";
-    textarea.value = text;
+    textarea.value = text2;
     textarea.select();
     if (document.execCommand("copy", true)) {
       return true;
@@ -362,11 +543,16 @@
       });
     };
     const confirmSettings = () => {
-      saveSettings(draftSettings);
-      setShow(false);
-      if (refreshOnSave) {
-        window.location.reload();
-      }
+      saveSettings(draftSettings).then(
+        () => {
+          setShow(false);
+          if (refreshOnSave) {
+            window.location.reload();
+          }
+        },
+        () => {
+        }
+      );
     };
     const resetDraftSettings = () => {
       setDraftSettings(cloneSettings(defaultSettings));
@@ -390,7 +576,7 @@
         contentClassName: "external-player-settings-modal-content"
       },
       /* @__PURE__ */ React.createElement(Modal.Header, { closeButton: true }, /* @__PURE__ */ React.createElement(Modal.Title, null, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.modal.title" }))),
-      /* @__PURE__ */ React.createElement(Modal.Body, null, /* @__PURE__ */ React.createElement("div", { className: "ep-note-block" }, "\u26A0\uFE0F", /* @__PURE__ */ React.createElement("strong", null, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteBold" })), /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteText" })), /* @__PURE__ */ React.createElement("div", { className: "ep-section" }, /* @__PURE__ */ React.createElement("div", { className: "ep-heading" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.entryGroupTitle" })), /* @__PURE__ */ React.createElement("div", { className: "ep-options" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement(Modal.Body, null, /* @__PURE__ */ React.createElement("div", { className: "ep-note-block" }, /* @__PURE__ */ React.createElement("strong", null, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteBold" })), /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteText" })), /* @__PURE__ */ React.createElement("div", { className: "ep-section" }, /* @__PURE__ */ React.createElement("div", { className: "ep-heading" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.entryGroupTitle" })), /* @__PURE__ */ React.createElement("div", { className: "ep-options" }, /* @__PURE__ */ React.createElement(
         Form.Check,
         {
           type: "switch",
