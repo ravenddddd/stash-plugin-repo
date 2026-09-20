@@ -242,6 +242,7 @@
     "mangaTools.translationGroup.heading": "Translation group",
     "mangaTools.translationGroup.create": "Create",
     "mangaTools.translationGroup.placeholder": "Set a translation group\u2026",
+    "mangaTools.translationGroup.fill": "Fill in",
     "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
     "mangaTools.bulk.remove": "Remove",
     "mangaTools.bulk.unmarkWarning": "Unmarking removes this plugin's manga, language, censorship and translation group fields from the selected galleries."
@@ -280,6 +281,7 @@
     "mangaTools.translationGroup.heading": "\u7FFB\u8BD1\u7EC4",
     "mangaTools.translationGroup.create": "\u521B\u5EFA",
     "mangaTools.translationGroup.placeholder": "\u586B\u5199\u7FFB\u8BD1\u7EC4\u2026",
+    "mangaTools.translationGroup.fill": "\u586B\u5165",
     "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E2D\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u6F2B\u753B\u3001\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5B57\u6BB5\u3002"
@@ -318,6 +320,7 @@
     "mangaTools.translationGroup.heading": "\u7FFB\u8B6F\u7D44",
     "mangaTools.translationGroup.create": "\u5EFA\u7ACB",
     "mangaTools.translationGroup.placeholder": "\u586B\u5BEB\u7FFB\u8B6F\u7D44\u2026",
+    "mangaTools.translationGroup.fill": "\u586B\u5165",
     "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E2D\u79FB\u9664\u672C\u5916\u639B\u7684\u6F2B\u756B\u3001\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u6B04\u4F4D\u3002"
@@ -2462,8 +2465,9 @@
     const usual = NS.usualLanguageFor(store, NS.translationGroupOf(props.values));
     const offered = usual && (!NS.enabledLanguages || NS.enabledLanguages.has(usual.code)) && (!current || current.code !== usual.code) ? usual : null;
     const offeredInfo = offered ? NS.describe(offered.code, intl.locale) : null;
-    const chipTitle = offered && offeredInfo ? offeredInfo.name + " \u2014 " + t(intl, "mangaTools.translationGroup.suggestedLanguage") + " (" + offered.count + ")" : "";
-    const languageChip = offered && (offeredInfo == null ? void 0 : offeredInfo.flag) ? /* @__PURE__ */ React5.createElement(
+    const chipIcon = Solid.faWandMagicSparkles || Solid.faMagic || Solid.faLanguage || null;
+    const chipTitle = offered && offeredInfo ? t(intl, "mangaTools.translationGroup.fill") + " " + offeredInfo.name + " \u2014 " + t(intl, "mangaTools.translationGroup.suggestedLanguage") + " (" + offered.count + ")" : "";
+    const languageChip = offered && offeredInfo ? /* @__PURE__ */ React5.createElement(
       "button",
       {
         type: "button",
@@ -2472,7 +2476,7 @@
         title: chipTitle,
         onClick: () => write(FIELD_NAME, offered.code)
       },
-      /* @__PURE__ */ React5.createElement(Flag2, { flag: offeredInfo.flag, className: "manga-tools-flag" })
+      NS.showFlags && offeredInfo.flag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: offeredInfo.flag, className: "manga-tools-flag" }) : chipIcon ? /* @__PURE__ */ React5.createElement(Icon, { icon: chipIcon }) : /* @__PURE__ */ React5.createElement("span", null, offeredInfo.name)
     ) : null;
     const cls = readNativeFieldClasses(EDIT_ANCHOR) || {
       group: "form-group row",
