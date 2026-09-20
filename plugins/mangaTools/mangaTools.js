@@ -267,7 +267,7 @@
     "mangaTools.translationGroup.original": "Raw",
     "mangaTools.translationGroup.originalOn": "Mark as raw: the original text, no translation group",
     "mangaTools.translationGroup.originalOff": "No longer raw \u2014 clear the mark",
-    "mangaTools.translationGroup.originalDetail": "raw (the original text, no translation group)",
+    "mangaTools.translationGroup.originalDetail": "raw (no translation group)",
     "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
     "mangaTools.bulk.remove": "Remove",
     "mangaTools.bulk.unmarkWarning": "Unmarking removes this plugin's manga, language, censorship and translation group fields from the selected galleries."
@@ -310,7 +310,7 @@
     "mangaTools.translationGroup.original": "\u751F\u8089",
     "mangaTools.translationGroup.originalOn": "\u6807\u4E3A\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6CA1\u6709\u7FFB\u8BD1\u7EC4",
     "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0",
-    "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u539F\u6587\uFF0C\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
+    "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
     "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E2D\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u6F2B\u753B\u3001\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5B57\u6BB5\u3002"
@@ -353,7 +353,7 @@
     "mangaTools.translationGroup.original": "\u751F\u8089",
     "mangaTools.translationGroup.originalOn": "\u6A19\u70BA\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6C92\u6709\u7FFB\u8B6F\u7D44",
     "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18",
-    "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u539F\u6587\uFF0C\u7121\u7FFB\u8B6F\u7D44\uFF09",
+    "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u7121\u7FFB\u8B6F\u7D44\uFF09",
     "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E2D\u79FB\u9664\u672C\u5916\u639B\u7684\u6F2B\u756B\u3001\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u6B04\u4F4D\u3002"
@@ -2657,10 +2657,11 @@
     const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement("div", { className: cls.control + " manga-tools-chip-row" }, /* @__PURE__ */ React5.createElement(
       Select,
       {
-        className: "manga-tools-select",
+        className: "manga-tools-select manga-tools-group-select",
         classNamePrefix: "react-select",
         inputId: "manga_tools_translation_group",
         isClearable: true,
+        isDisabled: isOriginal,
         placeholder: t(
           intl,
           isOriginal ? "mangaTools.translationGroup.originalDetail" : "mangaTools.translationGroup.placeholder"
