@@ -2459,6 +2459,21 @@
       ];
     }
     const selected = current ? { value: current.code, label: current.name, flag: current.flag } : null;
+    const usual = NS.usualLanguageFor(store, NS.translationGroupOf(props.values));
+    const offered = usual && (!NS.enabledLanguages || NS.enabledLanguages.has(usual.code)) && (!current || current.code !== usual.code) ? usual : null;
+    const offeredInfo = offered ? NS.describe(offered.code, intl.locale) : null;
+    const chipTitle = offered && offeredInfo ? offeredInfo.name + " \u2014 " + t(intl, "mangaTools.translationGroup.suggestedLanguage") + " (" + offered.count + ")" : "";
+    const languageChip = offered && (offeredInfo == null ? void 0 : offeredInfo.flag) ? /* @__PURE__ */ React5.createElement(
+      "button",
+      {
+        type: "button",
+        className: "btn btn-secondary manga-tools-chip",
+        "aria-label": chipTitle,
+        title: chipTitle,
+        onClick: () => write(FIELD_NAME, offered.code)
+      },
+      /* @__PURE__ */ React5.createElement(Flag2, { flag: offeredInfo.flag, className: "manga-tools-flag" })
+    ) : null;
     const cls = readNativeFieldClasses(EDIT_ANCHOR) || {
       group: "form-group row",
       label: "form-label col-form-label col-sm-3",
@@ -2468,24 +2483,31 @@
       // Plain div/label carrying the copied class names, rather than
       // Form.Group/Form.Label/Col: those components regenerate the width classes
       // from their own defaults, which is what broke the alignment before.
-      /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_language" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_language" }, fieldLabel2(intl)), /* @__PURE__ */ React5.createElement("div", { className: cls.control }, /* @__PURE__ */ React5.createElement(
-        Select,
+      /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_language" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_language" }, fieldLabel2(intl)), /* @__PURE__ */ React5.createElement(
+        "div",
         {
-          className: "manga-tools-select",
-          classNamePrefix: "react-select",
-          inputId: "manga_tools_language",
-          isClearable: true,
-          isSearchable: false,
-          placeholder: t(intl, "mangaTools.select.placeholder"),
-          value: selected,
-          options,
-          components: { IndicatorSeparator: () => null },
-          formatOptionLabel: formatLanguageOption,
-          onChange: (opt) => {
-            write(FIELD_NAME, opt ? opt.value : "");
+          className: cls.control + (languageChip ? " manga-tools-chip-row" : "")
+        },
+        /* @__PURE__ */ React5.createElement(
+          Select,
+          {
+            className: "manga-tools-select",
+            classNamePrefix: "react-select",
+            inputId: "manga_tools_language",
+            isClearable: true,
+            isSearchable: false,
+            placeholder: t(intl, "mangaTools.select.placeholder"),
+            value: selected,
+            options,
+            components: { IndicatorSeparator: () => null },
+            formatOptionLabel: formatLanguageOption,
+            onChange: (opt) => {
+              write(FIELD_NAME, opt ? opt.value : "");
+            }
           }
-        }
-      )))
+        ),
+        languageChip
+      ))
     );
     const mark = censorshipOf(props.values);
     const markOptions = [
@@ -2532,49 +2554,28 @@
       ] : [],
       ...known.map((name) => ({ value: name, label: name }))
     ];
-    const usual = NS.usualLanguageFor(store, groupName);
-    const offered = usual && (!NS.enabledLanguages || NS.enabledLanguages.has(usual.code)) && NS.normalize(pickLanguage(props.values)) !== usual.code ? usual : null;
-    const offeredInfo = offered ? NS.describe(offered.code, intl.locale) : null;
-    const languageChip = offered && offeredInfo ? /* @__PURE__ */ React5.createElement(
-      "button",
+    const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement("div", { className: cls.control }, /* @__PURE__ */ React5.createElement(
+      Select,
       {
-        type: "button",
-        className: "manga-tools-chip",
-        title: t(intl, "mangaTools.translationGroup.suggestedLanguage") + " (" + offered.count + ")",
-        onClick: () => write(FIELD_NAME, offered.code)
-      },
-      NS.showFlags && offeredInfo.flag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: offeredInfo.flag, className: "manga-tools-flag" }) : null,
-      /* @__PURE__ */ React5.createElement("span", null, offeredInfo.name)
-    ) : null;
-    const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement(
-      "div",
-      {
-        className: cls.control + (languageChip ? " manga-tools-chip-row" : "")
-      },
-      /* @__PURE__ */ React5.createElement(
-        Select,
-        {
-          className: "manga-tools-select",
-          classNamePrefix: "react-select",
-          inputId: "manga_tools_translation_group",
-          isClearable: true,
-          placeholder: t(intl, "mangaTools.translationGroup.placeholder"),
-          value: groupRaw ? { value: groupRaw, label: groupName } : null,
-          options: groupOptions,
-          formatOptionLabel: formatGroupOption,
-          components: { IndicatorSeparator: () => null },
-          onMenuOpen: () => refreshForSuggestions(),
-          onInputChange: (text, meta) => {
-            if ((meta == null ? void 0 : meta.action) !== "input-change") return;
-            write(TRANSLATION_GROUP_FIELD_NAME, text.trim() ? text : "");
-          },
-          onChange: (opt) => {
-            write(TRANSLATION_GROUP_FIELD_NAME, opt ? opt.value : "");
-          }
+        className: "manga-tools-select",
+        classNamePrefix: "react-select",
+        inputId: "manga_tools_translation_group",
+        isClearable: true,
+        placeholder: t(intl, "mangaTools.translationGroup.placeholder"),
+        value: groupRaw ? { value: groupRaw, label: groupName } : null,
+        options: groupOptions,
+        formatOptionLabel: formatGroupOption,
+        components: { IndicatorSeparator: () => null },
+        onMenuOpen: () => refreshForSuggestions(),
+        onInputChange: (text, meta) => {
+          if ((meta == null ? void 0 : meta.action) !== "input-change") return;
+          write(TRANSLATION_GROUP_FIELD_NAME, text.trim() ? text : "");
+        },
+        onChange: (opt) => {
+          write(TRANSLATION_GROUP_FIELD_NAME, opt ? opt.value : "");
         }
-      ),
-      languageChip
-    ));
+      }
+    )));
     return PluginApi5.ReactDOM.createPortal(
       /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React5.createElement("div", { className: cls.group }, /* @__PURE__ */ React5.createElement("div", { className: "col-12" }, /* @__PURE__ */ React5.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React5.createElement(
         Button,
