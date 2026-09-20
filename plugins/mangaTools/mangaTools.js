@@ -173,6 +173,9 @@
   }
   NS.MANGA_VALUE = "true";
   NS.isManga = (customFields) => NS.pickField(customFields, NS.MANGA_FIELD_NAME) !== "";
+  NS.ORIGINAL_FIELD_NAME = "plugin.mangaTools.original";
+  NS.ORIGINAL_VALUE = NS.MANGA_VALUE;
+  NS.isOriginal = (customFields) => NS.pickField(customFields, NS.ORIGINAL_FIELD_NAME) !== "";
   NS.ownField = (key) => {
     const k = String(key != null ? key : "").trim().toLowerCase();
     if (k === "") return "";
@@ -180,7 +183,8 @@
       NS.FIELD_NAME,
       NS.CENSORSHIP_FIELD_NAME,
       NS.MANGA_FIELD_NAME,
-      NS.TRANSLATION_GROUP_FIELD_NAME
+      NS.TRANSLATION_GROUP_FIELD_NAME,
+      NS.ORIGINAL_FIELD_NAME
     ];
     for (let i = 0; i < names.length; i++) {
       if (names[i].toLowerCase() === k) return names[i];
@@ -260,6 +264,10 @@
     "mangaTools.translationGroup.create": "Create",
     "mangaTools.translationGroup.placeholder": "Set a translation group\u2026",
     "mangaTools.translationGroup.fill": "Fill in",
+    "mangaTools.translationGroup.original": "Original",
+    "mangaTools.translationGroup.originalOn": "This gallery is the original text \u2014 nothing to translate",
+    "mangaTools.translationGroup.originalOff": "Not the original text after all \u2014 clear the mark",
+    "mangaTools.translationGroup.originalDetail": "original text (no translation group)",
     "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
     "mangaTools.bulk.remove": "Remove",
     "mangaTools.bulk.unmarkWarning": "Unmarking removes this plugin's manga, language, censorship and translation group fields from the selected galleries."
@@ -299,6 +307,10 @@
     "mangaTools.translationGroup.create": "\u521B\u5EFA",
     "mangaTools.translationGroup.placeholder": "\u586B\u5199\u7FFB\u8BD1\u7EC4\u2026",
     "mangaTools.translationGroup.fill": "\u586B\u5165",
+    "mangaTools.translationGroup.original": "\u539F\u6587",
+    "mangaTools.translationGroup.originalOn": "\u8FD9\u672C\u662F\u539F\u6587\uFF0C\u6CA1\u6709\u7FFB\u8BD1\u7EC4",
+    "mangaTools.translationGroup.originalOff": "\u4E0D\u662F\u539F\u6587\u4E86\uFF0C\u53D6\u6D88\u6807\u8BB0",
+    "mangaTools.translationGroup.originalDetail": "\u539F\u6587\uFF08\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
     "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E2D\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u6F2B\u753B\u3001\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5B57\u6BB5\u3002"
@@ -338,6 +350,10 @@
     "mangaTools.translationGroup.create": "\u5EFA\u7ACB",
     "mangaTools.translationGroup.placeholder": "\u586B\u5BEB\u7FFB\u8B6F\u7D44\u2026",
     "mangaTools.translationGroup.fill": "\u586B\u5165",
+    "mangaTools.translationGroup.original": "\u539F\u6587",
+    "mangaTools.translationGroup.originalOn": "\u9019\u672C\u662F\u539F\u6587\uFF0C\u6C92\u6709\u7FFB\u8B6F\u7D44",
+    "mangaTools.translationGroup.originalOff": "\u4E0D\u662F\u539F\u6587\u4E86\uFF0C\u53D6\u6D88\u6A19\u8A18",
+    "mangaTools.translationGroup.originalDetail": "\u539F\u6587\uFF08\u7121\u7FFB\u8B6F\u7D44\uFF09",
     "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E2D\u79FB\u9664\u672C\u5916\u639B\u7684\u6F2B\u756B\u3001\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u6B04\u4F4D\u3002"
@@ -1838,6 +1854,7 @@
   var CENSORSHIP_FIELD_NAME = NS.CENSORSHIP_FIELD_NAME;
   var MANGA_FIELD_NAME = NS.MANGA_FIELD_NAME;
   var TRANSLATION_GROUP_FIELD_NAME = NS.TRANSLATION_GROUP_FIELD_NAME;
+  var ORIGINAL_FIELD_NAME = NS.ORIGINAL_FIELD_NAME;
   var PLUGIN_ID = "mangaTools";
   var EDIT_ANCHOR = '.form-group[data-field="studio_id"]';
   var BULK_ANCHOR = '[data-field="studio"]';
@@ -2477,6 +2494,23 @@
         props.onChange(NS.setField(props.values, name, value));
       }
     };
+    const writeGroup = (value) => {
+      let next = NS.setField(props.values, TRANSLATION_GROUP_FIELD_NAME, value);
+      if (value) next = NS.setField(next, ORIGINAL_FIELD_NAME, "");
+      if (props.onChange) props.onChange(next);
+    };
+    const isOriginal = NS.isOriginal(props.values);
+    const toggleOriginal = () => {
+      let next = NS.setField(
+        props.values,
+        ORIGINAL_FIELD_NAME,
+        isOriginal ? "" : NS.ORIGINAL_VALUE
+      );
+      if (!isOriginal) {
+        next = NS.setField(next, TRANSLATION_GROUP_FIELD_NAME, "");
+      }
+      if (props.onChange) props.onChange(next);
+    };
     const current = NS.describe(pickLanguage(props.values), intl.locale);
     let options = NS.languageOptions(intl.locale).filter(
       (o) => {
@@ -2598,7 +2632,21 @@
         return { value: name, label: name, hint };
       })
     ];
-    const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement("div", { className: cls.control }, /* @__PURE__ */ React5.createElement(
+    const originalChip = /* @__PURE__ */ React5.createElement(
+      "button",
+      {
+        type: "button",
+        className: "btn btn-secondary manga-tools-chip manga-tools-original" + (isOriginal ? " active" : ""),
+        "aria-pressed": isOriginal,
+        title: t(
+          intl,
+          isOriginal ? "mangaTools.translationGroup.originalOff" : "mangaTools.translationGroup.originalOn"
+        ),
+        onClick: toggleOriginal
+      },
+      t(intl, "mangaTools.translationGroup.original")
+    );
+    const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement("div", { className: cls.control + " manga-tools-chip-row" }, /* @__PURE__ */ React5.createElement(
       Select,
       {
         className: "manga-tools-select",
@@ -2613,13 +2661,13 @@
         onMenuOpen: () => refreshForSuggestions(),
         onInputChange: (text, meta) => {
           if ((meta == null ? void 0 : meta.action) !== "input-change") return;
-          write(TRANSLATION_GROUP_FIELD_NAME, text.trim() ? text : "");
+          writeGroup(text.trim() ? text : "");
         },
         onChange: (opt) => {
-          write(TRANSLATION_GROUP_FIELD_NAME, opt ? opt.value : "");
+          writeGroup(opt ? opt.value : "");
         }
       }
-    )));
+    ), originalChip));
     return PluginApi5.ReactDOM.createPortal(
       /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React5.createElement("div", { className: cls.group }, /* @__PURE__ */ React5.createElement("div", { className: "col-12" }, /* @__PURE__ */ React5.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React5.createElement(
         Button,
@@ -3082,11 +3130,12 @@
     const language = NS.describe(pickLanguage(props.values), intl.locale);
     const mark = censorshipOf(props.values);
     const group = NS.translationGroupOf(props.values);
+    const original = NS.isOriginal(props.values);
     const Solid = PluginApi5.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi5.components.Icon;
     const Button = (_a = PluginApi5.libraries.Bootstrap) == null ? void 0 : _a.Button;
     const Collapse = (_b = PluginApi5.libraries.Bootstrap) == null ? void 0 : _b.Collapse;
-    if (!language && !mark && !group) return null;
+    if (!language && !mark && !group && !original) return null;
     const host = ensureDetailHost();
     if (!host) return null;
     const showFlag = NS.showFlags && !!(language == null ? void 0 : language.flag);
@@ -3095,6 +3144,12 @@
       // here to draw beside it. Drawn last, because it is the one row that is
       // the same shape on every gallery rather than picked from a list.
       /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.heading") + ": ", group)
+    ) : null, original ? (
+      // Under the same label as the group, because it answers the same question:
+      // this gallery was not translated. The wording carries that — a bare "原文"
+      // under "Translation group:" would read like a group called that, which is
+      // the reading this field exists to avoid.
+      /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.heading") + ": ", t(intl, "mangaTools.translationGroup.originalDetail"))
     ) : null);
     return PluginApi5.ReactDOM.createPortal(
       /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React5.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React5.createElement(
