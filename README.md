@@ -29,6 +29,7 @@ plugin, change its source and let this rebuild:
 | Plugin | Source |
 |---|---|
 | external-player-launcher | https://github.com/ravenddddd/external-player-launcher (a fork of [esumaka's](https://github.com/esumaka/external-player-launcher)) |
+| mangaReader | https://github.com/ravenddddd/mangaReader |
 | mangaTools | https://github.com/ravenddddd/mangaTools |
 
 The workflow lists the sources it builds, one per line, in its `SOURCES`

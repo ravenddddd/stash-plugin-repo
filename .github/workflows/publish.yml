@@ -41,6 +41,7 @@ env:
   # plugin's ID and the name of its directory under plugins/.
   SOURCES: |
     ravenddddd/external-player-launcher
+    ravenddddd/mangaReader
     ravenddddd/mangaTools
 
 jobs:
