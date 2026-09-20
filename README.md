@@ -54,6 +54,10 @@ is `<version from the plugin's manifest>-<short source commit>`. The two have to
 agree, because Stash decides whether an update is available by comparing the
 installed plugin's version with the index's.
 
+**A working copy of this repository is behind after every publish**, because the
+run commits the built plugin back to `main`. Pull before pushing anything here —
+the workflows it would otherwise conflict with are only its own.
+
 ## Licences
 
 A plugin's licence is its own and travels with it: the packaged directory carries
