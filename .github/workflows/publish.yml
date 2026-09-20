@@ -48,12 +48,18 @@ jobs:
           path: .source/external-player-launcher
           fetch-depth: 1
 
-      # pnpm, because that is what the plugin's repository locks with. `setup-node`
-      # caches the store against the source's lockfile, which is the file that
+      # pnpm, because that is what the plugin's repository locks with. The major
+      # version is pinned to 10 deliberately: the source's pnpm-workspace.yaml
+      # holds settings only (no `packages` list, which a single-package repository
+      # has no use for), and pnpm 9 refuses such a file with "packages field
+      # missing or empty" — which is exactly how this pipeline failed its first
+      # run.
+      #
+      # `setup-node` caches the store against the source's lockfile, the file that
       # actually decides what gets installed.
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
