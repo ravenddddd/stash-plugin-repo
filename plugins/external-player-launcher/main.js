@@ -19,6 +19,13 @@ var PLATFORM_KEYS = [
   "linux",
   "other"
 ];
+var PLATFORM_CHOICES = [
+  "windows",
+  "macos",
+  "ios",
+  "android",
+  "linux"
+];
 function platformKey(userAgent, maxTouchPoints = 0) {
   const ua = String(userAgent || "");
   if (/android/i.test(ua)) return "android";
@@ -209,7 +216,7 @@ function write(next) {
 (function() {
   const { PluginApi } = window;
   const { React, ReactDOM } = PluginApi;
-  const { Bootstrap, FontAwesomeSolid, Intl } = PluginApi.libraries;
+  const { Bootstrap, FontAwesomeSolid, FontAwesomeBrands, Intl, ReactSelect } = PluginApi.libraries;
   const {
     Nav,
     Tab,
@@ -225,7 +232,8 @@ function write(next) {
   const { faGear } = FontAwesomeSolid;
   const { useConfiguration } = PluginApi.utils.StashService;
   const { IntlProvider, FormattedMessage } = Intl;
-  const PLUGIN_VERSION = "1.4.0";
+  const Select = ReactSelect.default || ReactSelect.Select;
+  const PLUGIN_VERSION = "1.4.1";
   const pluginID = PLUGIN_ID;
   const iconsPath = "./plugin/external-player-launcher/assets/icons";
   const localesBase = `./plugin/external-player-launcher/assets/locales`;
@@ -518,15 +526,51 @@ function write(next) {
       /* @__PURE__ */ React.createElement("path", { d: "M0 12V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm6.79-6.907A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z" })
     );
   }
-  function platformName(intl, key) {
-    if (key === "other") return intl.formatMessage({ id: "settings.platform.other" });
+  function platformName(key) {
     return {
       windows: "Windows",
       macos: "macOS",
       ios: "iOS",
       android: "Android",
-      linux: "Linux"
+      linux: "Linux",
+      other: "Other"
     }[key];
+  }
+  function platformIcon(key) {
+    const Brands = PluginApi.libraries.FontAwesomeBrands || {};
+    const Solid = PluginApi.libraries.FontAwesomeSolid || {};
+    switch (key) {
+      case "windows":
+        return Brands.faWindows;
+      case "macos":
+      case "ios":
+        return Brands.faApple;
+      case "android":
+        return Brands.faAndroid;
+      case "linux":
+        return Brands.faLinux;
+      default:
+        return Solid.faGlobe;
+    }
+  }
+  function platformOptions(intl) {
+    const current = currentPlatform();
+    return [
+      {
+        value: "default",
+        label: intl.formatMessage({ id: "settings.platform.default" }),
+        icon: platformIcon("default")
+      }
+    ].concat(
+      PLATFORM_CHOICES.map((key) => ({
+        value: key,
+        label: platformName(key) + (key === current ? ` (${intl.formatMessage({ id: "settings.platform.current" })})` : ""),
+        icon: platformIcon(key)
+      }))
+    );
+  }
+  function formatPlatformOption(option) {
+    return /* @__PURE__ */ React.createElement("span", { className: "ep-label" }, option.icon ? /* @__PURE__ */ React.createElement(Icon, { icon: option.icon, fixedWidth: true }) : null, /* @__PURE__ */ React.createElement("span", null, option.label));
   }
   function SettingsModal({ refreshOnSave }) {
     return /* @__PURE__ */ React.createElement(PluginIntlProvider, null, /* @__PURE__ */ React.createElement(SettingsModalInner, { refreshOnSave }));
@@ -540,6 +584,10 @@ function write(next) {
     const [draftSettings, setDraftSettings] = React.useState(() => cloneSettings(settings));
     const editable = target === "default" || own;
     const inheriting = !editable;
+    const platformOptionsForPanel = platformOptions(intl);
+    const platformChoice = platformOptionsForPanel.find(
+      (option) => option.value === target
+    );
     const selectTarget = (next) => {
       setTarget(next);
       setOwn(next !== "default" && hasOverride(stored(), next));
@@ -611,15 +659,20 @@ function write(next) {
       },
       /* @__PURE__ */ React.createElement(Modal.Header, { closeButton: true }, /* @__PURE__ */ React.createElement(Modal.Title, null, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.modal.title" }))),
       /* @__PURE__ */ React.createElement(Modal.Body, null, /* @__PURE__ */ React.createElement("div", { className: "ep-note-block" }, /* @__PURE__ */ React.createElement("strong", null, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteBold" })), /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.noteText" })), /* @__PURE__ */ React.createElement("div", { className: "ep-section" }, /* @__PURE__ */ React.createElement("div", { className: "ep-heading" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.platform.title" })), /* @__PURE__ */ React.createElement("div", { className: "ep-options" }, /* @__PURE__ */ React.createElement(
-        Form.Control,
+        Select,
         {
-          as: "select",
           className: "ep-platform-select",
-          value: target,
-          onChange: (event) => selectTarget(event.target.value)
-        },
-        /* @__PURE__ */ React.createElement("option", { value: "default" }, intl.formatMessage({ id: "settings.platform.default" })),
-        PLATFORM_KEYS.map((key) => /* @__PURE__ */ React.createElement("option", { key, value: key }, platformName(intl, key), key === currentPlatform() ? ` \u2014 ${intl.formatMessage({ id: "settings.platform.current" })}` : ""))
+          classNamePrefix: "react-select",
+          inputId: "external-player-platform",
+          isSearchable: false,
+          isClearable: false,
+          components: { IndicatorSeparator: () => null },
+          menuPortalTarget: document.body,
+          value: platformChoice,
+          options: platformOptionsForPanel,
+          formatOptionLabel: formatPlatformOption,
+          onChange: (option) => selectTarget(option?.value || "default")
+        }
       ), /* @__PURE__ */ React.createElement("div", { className: "ep-hint" }, /* @__PURE__ */ React.createElement(FormattedMessage, { id: "settings.platform.hint" }))), target !== "default" ? /* @__PURE__ */ React.createElement("div", { className: "ep-options" }, /* @__PURE__ */ React.createElement(
         Form.Check,
         {
