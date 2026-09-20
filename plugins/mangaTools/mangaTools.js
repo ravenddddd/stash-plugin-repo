@@ -2708,7 +2708,7 @@
           }
         ),
         /* @__PURE__ */ React5.createElement("span", null, t(intl, "mangaTools.panel.heading"))
-      ) : null))), open ? languageField : null, open ? markField : null, open ? groupField : null),
+      ) : null))), open ? markField : null, open ? languageField : null, open ? groupField : null),
       host
     );
   }
@@ -3163,7 +3163,7 @@
     const host = ensureDetailHost();
     if (!host) return null;
     const showFlag = NS.showFlags && !!(language == null ? void 0 : language.flag);
-    const body = /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel-body" }, language ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, fieldLabel2(intl) + ": ", showFlag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: language.flag, className: "manga-tools-flag" }) : null, showFlag ? " " : null, language.name) : null, mark ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React5.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, group ? (
+    const body = /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React5.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, fieldLabel2(intl) + ": ", showFlag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: language.flag, className: "manga-tools-flag" }) : null, showFlag ? " " : null, language.name) : null, group ? (
       // No icon and no flag: a group's name is its own, and there is nothing
       // here to draw beside it. Drawn last, because it is the one row that is
       // the same shape on every gallery rather than picked from a list.
