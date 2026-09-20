@@ -233,7 +233,7 @@ function write(next) {
   const { useConfiguration } = PluginApi.utils.StashService;
   const { IntlProvider, FormattedMessage } = Intl;
   const Select = ReactSelect.default || ReactSelect.Select;
-  const PLUGIN_VERSION = "1.4.1";
+  const PLUGIN_VERSION = "1.4.2";
   const pluginID = PLUGIN_ID;
   const iconsPath = "./plugin/external-player-launcher/assets/icons";
   const localesBase = `./plugin/external-player-launcher/assets/locales`;
@@ -570,7 +570,7 @@ function write(next) {
     );
   }
   function formatPlatformOption(option) {
-    return /* @__PURE__ */ React.createElement("span", { className: "ep-label" }, option.icon ? /* @__PURE__ */ React.createElement(Icon, { icon: option.icon, fixedWidth: true }) : null, /* @__PURE__ */ React.createElement("span", null, option.label));
+    return /* @__PURE__ */ React.createElement("span", { className: "ep-platform-option" }, option.icon ? /* @__PURE__ */ React.createElement(Icon, { icon: option.icon, fixedWidth: true }) : null, /* @__PURE__ */ React.createElement("span", null, option.label));
   }
   function SettingsModal({ refreshOnSave }) {
     return /* @__PURE__ */ React.createElement(PluginIntlProvider, null, /* @__PURE__ */ React.createElement(SettingsModalInner, { refreshOnSave }));

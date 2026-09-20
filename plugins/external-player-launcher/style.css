@@ -52,6 +52,12 @@
 .external-player-settings-modal-content .ep-platform-select {
   width: 18rem;
   max-width: 100%;
+  margin-bottom: 0.5rem;
+}
+.external-player-settings-modal-content .ep-platform-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .external-player-settings-modal-content .ep-list {
   display: grid;
@@ -63,7 +69,6 @@
 .external-player-settings-modal-content .ep-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
   margin-left: 0.75rem;
 }
 .external-player-settings-modal-content .ep-note-block {
