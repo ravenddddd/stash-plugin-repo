@@ -66,10 +66,15 @@ jobs:
           cache: pnpm
           cache-dependency-path: .source/external-player-launcher/pnpm-lock.yaml
 
-      - name: Build the plugin
+      # The tests first, and they are not decoration: the plugin's own build does
+      # not type-check anything — esbuild strips types without reading them — so a
+      # name that does not exist compiles and ships, which is how one did. `tsc`
+      # is what catches that, and it runs here, before anything is packaged.
+      - name: Test and build the plugin
         working-directory: .source/external-player-launcher
         run: |
           pnpm install --frozen-lockfile
+          pnpm test
           pnpm build
 
       # The source's build writes dist/ with the plugin's manifest, its bundle,
