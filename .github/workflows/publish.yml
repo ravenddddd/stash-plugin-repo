@@ -1,35 +1,47 @@
 name: Publish plugins
 
-# Two repositories, one direction of travel:
+# Two repositories per plugin, and one direction of travel:
 #
-#   ravenddddd/external-player-launcher   the plugin's source (a fork)
-#                 │  checked out and built here
+#   ravenddddd/mangaTools                 ┐ the plugins' sources, one repository
+#   ravenddddd/external-player-launcher   ┘ each
+#                 │  cloned and built here
 #                 ▼
-#   ravenddddd/stash-plugin-repo          the built plugin + the index Stash reads
+#   ravenddddd/stash-plugin-repo          the built plugins + the index Stash reads
 #
-# The build happens *here*, in the repository that publishes, rather than in the
+# The build happens *here*, in the repository that publishes, rather than in each
 # source repository pushing its output across. That is a deliberate choice and it
 # is about credentials: this way nothing needs a token that can write to another
-# repository. The source is public, so reading it needs no credential at all, and
-# writing here needs nothing more than the GITHUB_TOKEN every workflow already
-# has.
+# repository. The sources are public, so reading them needs no credential at all,
+# and writing here needs nothing more than the GITHUB_TOKEN every workflow
+# already has.
 #
 # The cost is that publishing is not automatic — GitHub has no way for one
 # repository's push to start another's workflow without a stored credential, and
 # that credential would be able to write packages into the index Stash installs
 # from. A publish is therefore something somebody asks for. See the README for
 # the command.
+#
+# Adding a plugin is one line in SOURCES. The directory each source is built into
+# is named after its repository, which is also the plugin's ID, because a
+# manifest's file name is what decides that.
 on:
   workflow_dispatch: # runnable from the Actions tab, or with `gh workflow run`
 
 permissions:
-  contents: write # required to push the built plugin and the gh-pages branch
+  contents: write # required to push the built plugins and the gh-pages branch
 
 concurrency:
   # Cancel an in-flight run when another starts, so two runs never race to push
   # the same branch.
   group: publish
   cancel-in-progress: true
+
+env:
+  # Every plugin's source repository, one per line. The last path segment is the
+  # plugin's ID and the name of its directory under plugins/.
+  SOURCES: |
+    ravenddddd/external-player-launcher
+    ravenddddd/mangaTools
 
 jobs:
   publish:
@@ -39,24 +51,27 @@ jobs:
         with:
           fetch-depth: 1
 
-      # The plugin's own repository, into a directory of its own so it cannot be
-      # confused with this one. No token: it is a public repository.
-      - name: Check out the plugin's source
-        uses: actions/checkout@v4
-        with:
-          repository: ravenddddd/external-player-launcher
-          path: .source/external-player-launcher
-          fetch-depth: 1
+      # Every source, cloned rather than checked out with the action: a second
+      # `actions/checkout` in the same job cleans the workspace first, so N of
+      # them is not what it is for. Public repositories need no token, and
+      # `--depth 1` is enough — only the tip's commit is ever named.
+      - name: Clone the sources
+        run: |
+          mkdir -p .source
+          while read -r repo; do
+            [ -n "$repo" ] || continue
+            git clone --depth 1 "https://github.com/$repo.git" ".source/${repo##*/}"
+          done <<< "$SOURCES"
 
-      # pnpm, because that is what the plugin's repository locks with. The major
-      # version is pinned to 10 deliberately: the source's pnpm-workspace.yaml
-      # holds settings only (no `packages` list, which a single-package repository
+      # pnpm, because that is what every source repository locks with. The major
+      # version is pinned to 10 deliberately: a source's pnpm-workspace.yaml may
+      # hold settings only (no `packages` list, which a single-package repository
       # has no use for), and pnpm 9 refuses such a file with "packages field
       # missing or empty" — which is exactly how this pipeline failed its first
       # run.
       #
-      # `setup-node` caches the store against the source's lockfile, the file that
-      # actually decides what gets installed.
+      # `setup-node` caches the store against the lockfiles, the files that
+      # actually decide what gets installed.
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -64,40 +79,68 @@ jobs:
         with:
           node-version: "22"
           cache: pnpm
-          cache-dependency-path: .source/external-player-launcher/pnpm-lock.yaml
+          cache-dependency-path: .source/*/pnpm-lock.yaml
 
-      # The tests first, and they are not decoration: the plugin's own build does
-      # not type-check anything — esbuild strips types without reading them — so a
+      # The tests first, and they are not decoration: a source's build does not
+      # type-check anything — esbuild strips types without reading them — so a
       # name that does not exist compiles and ships, which is how one did. `tsc`
-      # is what catches that, and it runs here, before anything is packaged.
-      - name: Test and build the plugin
-        working-directory: .source/external-player-launcher
+      # is what catches that, and every source runs it in its own `test` script
+      # before anything is packaged.
+      #
+      # `pnpm build` after it is not redundant for every plugin — some build only
+      # there — and costs a rebuild of the ones that build in `test` too.
+      - name: Test and build each source
         run: |
-          pnpm install --frozen-lockfile
-          pnpm test
-          pnpm build
+          while read -r repo; do
+            [ -n "$repo" ] || continue
+            name="${repo##*/}"
+            echo "── $name"
+            ( cd ".source/$name" && pnpm install --frozen-lockfile && pnpm test && pnpm build )
+          done <<< "$SOURCES"
 
-      # The source's build writes dist/ with the plugin's manifest, its bundle,
-      # its stylesheet and its assets. The licence comes along because the zip is
-      # a distribution of somebody else's work, and the file travels with it.
-      - name: Stage it as a plugin directory
+      # A source's build writes dist/ with the plugin's manifest, its bundle, its
+      # stylesheet and its assets. A licence comes along when the source has one,
+      # because the zip is a distribution of somebody else's work and the file
+      # travels with it.
+      #
+      # The commit each plugin was built from is recorded beside the plugin rather
+      # than inside it — publishing appends it to the version, and a file that
+      # travelled into the zip would be shipped to users.
+      - name: Stage them as plugin directories
         run: |
-          rm -rf plugins/external-player-launcher
-          mkdir -p plugins/external-player-launcher
-          cp -r .source/external-player-launcher/dist/. plugins/external-player-launcher/
-          cp .source/external-player-launcher/LICENCE plugins/external-player-launcher/LICENCE
+          mkdir -p .shas
+          while read -r repo; do
+            [ -n "$repo" ] || continue
+            name="${repo##*/}"
+            rm -rf "plugins/$name"
+            mkdir -p "plugins/$name"
+            cp -r ".source/$name/dist/." "plugins/$name/"
+            for licence in LICENCE LICENSE; do
+              if [ -f ".source/$name/$licence" ]; then
+                cp ".source/$name/$licence" "plugins/$name/$licence"
+              fi
+            done
+            git -C ".source/$name" rev-parse --short HEAD > ".shas/$name"
+          done <<< "$SOURCES"
 
-      - name: Read the source commit
+      # What was published, for the two commit messages: each plugin and the
+      # commit of its source it came from.
+      - name: Read the source commits
         run: |
-          echo "SOURCE_SHA=$(git -C .source/external-player-launcher rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          published=$(while read -r repo; do
+            [ -n "$repo" ] || continue
+            name="${repo##*/}"
+            echo "$name @ $(cat ".shas/$name")"
+          done <<< "$SOURCES" | paste -sd "," - | sed "s/,/, /g")
+          echo "PUBLISHED=$published" >> "$GITHUB_ENV"
 
       - name: Package and write the index
         run: node tools/publish.mjs
 
-      # The built plugin is committed so the repository says what it published,
-      # and which commit of which source it came from. Nothing is committed when
-      # the source has not moved since the last publish.
-      - name: Commit the built plugin
+      # The built plugins are committed so the repository says what it published,
+      # and which commit of which source each came from. Nothing is committed when
+      # no source has moved since the last publish.
+      - name: Commit the built plugins
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -105,7 +148,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "nothing changed since the last publish"
           else
-            git commit -m "publish: external-player-launcher @ ${SOURCE_SHA}"
+            git commit -m "publish: $PUBLISHED"
             git push
           fi
 
@@ -119,7 +162,7 @@ jobs:
           publish_dir: ./_site
           publish_branch: gh-pages
           force_orphan: true
-          commit_message: "publish: external-player-launcher @ ${{ env.SOURCE_SHA }}"
+          commit_message: "publish: ${{ env.PUBLISHED }}"
 
       - name: Show the index
         run: cat _site/index.yml

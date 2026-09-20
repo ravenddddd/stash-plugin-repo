@@ -31,14 +31,24 @@ const PLUGINS_DIR = path.join(ROOT, "plugins");
 const OUT_DIR = path.join(ROOT, "_site");
 
 /**
- * The commit the source repository was at, or "" when this is run by hand.
+ * The commit a plugin's source repository was at, or "" when there is none to
+ * name.
  *
- * It is appended to the version, which is what makes a published package
- * traceable back to a commit — and, more practically, what makes Stash notice an
- * update at all: without a new version string, a rebuilt package with the same
- * version is invisible to it.
+ * The workflow writes one file per plugin into `.shas/` as it clones and builds
+ * them, because the plugins come from *different* repositories: one shared
+ * commit would make every plugin's version string change whenever any of them
+ * was rebuilt, which is an update Stash would offer for plugins that did not
+ * move. A single `SOURCE_SHA` in the environment is still honoured, for running
+ * this by hand against one plugin.
  */
-const SOURCE_SHA = process.env.SOURCE_SHA || "";
+function sourceSha(id) {
+  const file = path.join(ROOT, ".shas", id);
+  const sha = fs.existsSync(file)
+    ? fs.readFileSync(file, "utf8").trim()
+    : (process.env.SOURCE_SHA || "").trim();
+
+  return sha;
+}
 
 /** Reads a top-level `<key>: <value>` from a manifest, value unquoted. */
 function topLevel(text, key) {
@@ -84,7 +94,8 @@ function publishPlugin(id) {
     throw new Error(`plugins/${id}/${ymlName}: missing top-level version`);
   }
 
-  const version = SOURCE_SHA ? `${baseVersion}-${SOURCE_SHA}` : baseVersion;
+  const sha = sourceSha(id);
+  const version = sha ? `${baseVersion}-${sha}` : baseVersion;
 
   // Staged in a temporary directory because the manifest has to be rewritten on
   // the way into the zip, and the copy under plugins/ is what the source

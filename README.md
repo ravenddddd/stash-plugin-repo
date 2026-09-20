@@ -17,6 +17,7 @@ https://ravenddddd.github.io/stash-plugin-repo/index.yml
 | `tools/publish.mjs` | Packages them and writes `index.yml` |
 | `_site/` | The packaged result (`<id>.zip` + `index.yml`); published to `gh-pages`, not committed |
 | `.github/workflows/publish.yml` | Builds the plugins from their own repositories and publishes |
+| `.shas/` | Written by the workflow: the source commit each plugin was built from. Not committed |
 
 ## This repository holds no source
 
@@ -28,6 +29,12 @@ plugin, change its source and let this rebuild:
 | Plugin | Source |
 |---|---|
 | external-player-launcher | https://github.com/ravenddddd/external-player-launcher (a fork of [esumaka's](https://github.com/esumaka/external-player-launcher)) |
+| mangaTools | https://github.com/ravenddddd/mangaTools |
+
+The workflow lists the sources it builds, one per line, in its `SOURCES`
+variable. Adding a plugin is a line there and nothing else — the last path
+segment of a source is the plugin's ID, and a plugin's ID is what its manifest
+file is named and what its directory here is named.
 
 ## How a plugin gets published
 
@@ -50,9 +57,11 @@ The run builds whatever the sources are at that moment, so publishing a change
 means: push the change to its source repository, then ask for a publish.
 
 The version written into the index — and into the manifest **inside** the zip —
-is `<version from the plugin's manifest>-<short source commit>`. The two have to
-agree, because Stash decides whether an update is available by comparing the
-installed plugin's version with the index's.
+is `<version from the plugin's manifest>-<that plugin's own source commit>`. Each
+plugin gets its own, so rebuilding one does not change another's version and
+offer an update for a plugin that did not move. The two have to agree, because
+Stash decides whether an update is available by comparing the installed plugin's
+version with the index's.
 
 **A working copy of this repository is behind after every publish**, because the
 run commits the built plugin back to `main`. Pull before pushing anything here —
