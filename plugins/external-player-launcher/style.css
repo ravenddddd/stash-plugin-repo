@@ -57,7 +57,6 @@
 .external-player-settings-modal-content .ep-platform-option {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
 }
 .external-player-settings-modal-content .ep-list {
   display: grid;

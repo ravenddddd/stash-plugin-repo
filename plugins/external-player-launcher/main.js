@@ -233,7 +233,7 @@ function write(next) {
   const { useConfiguration } = PluginApi.utils.StashService;
   const { IntlProvider, FormattedMessage } = Intl;
   const Select = ReactSelect.default || ReactSelect.Select;
-  const PLUGIN_VERSION = "1.4.2";
+  const PLUGIN_VERSION = "1.4.3";
   const pluginID = PLUGIN_ID;
   const iconsPath = "./plugin/external-player-launcher/assets/icons";
   const localesBase = `./plugin/external-player-launcher/assets/locales`;
