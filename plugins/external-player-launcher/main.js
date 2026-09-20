@@ -83,6 +83,9 @@ function resolveSettings(stored2, platform2) {
 function hasOverride(stored2, platform2) {
   return stored2?.platforms?.[platform2] !== void 0;
 }
+function withDefaultSettings(stored2, settings) {
+  return { ...fromStored(stored2), default: settings };
+}
 function withPlatformSettings(stored2, platform2, settings) {
   const next = fromStored(stored2);
   const platforms = { ...next.platforms };
@@ -190,6 +193,9 @@ function load() {
 function save(settings, target = currentPlatform()) {
   return write((stored2) => withPlatformSettings(stored2, target, settings));
 }
+function saveDefault(settings) {
+  return write((stored2) => withDefaultSettings(stored2, settings));
+}
 function write(next) {
   const document2 = mutationDocument();
   const client = document2 ? pluginApi().utils.StashService.getClient() : null;
@@ -232,8 +238,8 @@ function write(next) {
   const { faGear } = FontAwesomeSolid;
   const { useConfiguration } = PluginApi.utils.StashService;
   const { IntlProvider, FormattedMessage } = Intl;
-  const Select = ReactSelect.default || ReactSelect.Select;
-  const PLUGIN_VERSION = "1.4.3";
+  const Select = ReactSelect.default;
+  const PLUGIN_VERSION = "1.4.4";
   const pluginID = PLUGIN_ID;
   const iconsPath = "./plugin/external-player-launcher/assets/icons";
   const localesBase = `./plugin/external-player-launcher/assets/locales`;
@@ -555,18 +561,21 @@ function write(next) {
   }
   function platformOptions(intl) {
     const current = currentPlatform();
-    return [
+    const entries = [
       {
         value: "default",
         label: intl.formatMessage({ id: "settings.platform.default" }),
         icon: platformIcon("default")
       }
-    ].concat(
-      PLATFORM_CHOICES.map((key) => ({
-        value: key,
-        label: platformName(key) + (key === current ? ` (${intl.formatMessage({ id: "settings.platform.current" })})` : ""),
-        icon: platformIcon(key)
-      }))
+    ];
+    return entries.concat(
+      PLATFORM_CHOICES.map(
+        (key) => ({
+          value: key,
+          label: platformName(key) + (key === current ? ` (${intl.formatMessage({ id: "settings.platform.current" })})` : ""),
+          icon: platformIcon(key)
+        })
+      )
     );
   }
   function formatPlatformOption(option) {
@@ -624,7 +633,7 @@ function write(next) {
       });
     };
     const confirmSettings = () => {
-      const writing = target === "default" ? saveDefaultSettings(draftSettings) : own ? save(draftSettings, target) : save(null, target);
+      const writing = target === "default" ? saveDefault(draftSettings) : own ? save(draftSettings, target) : save(null, target);
       writing.then(
         () => {
           setShow(false);
