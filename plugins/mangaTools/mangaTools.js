@@ -129,6 +129,31 @@
   NS.MANGA_FIELD_NAME = "plugin.mangaTools.manga";
   NS.TRANSLATION_GROUP_FIELD_NAME = "plugin.mangaTools.translationGroup";
   NS.translationGroupOf = (customFields) => NS.pickField(customFields, NS.TRANSLATION_GROUP_FIELD_NAME).trim();
+  NS.sameTranslationGroup = (a, b) => String(a != null ? a : "").trim().toLowerCase() === String(b != null ? b : "").trim().toLowerCase();
+  NS.usualLanguageFor = (galleries, group) => {
+    if (!galleries || !group.trim()) return null;
+    const counts = {};
+    galleries.forEach((fields) => {
+      if (!NS.sameTranslationGroup(NS.translationGroupOf(fields), group)) return;
+      const raw = NS.pickField(fields, NS.FIELD_NAME);
+      const code = NS.findCanonical(NS.normalize(raw));
+      if (!code) return;
+      counts[code] = (counts[code] || 0) + 1;
+    });
+    let best = "";
+    let count = 0;
+    let tied = false;
+    for (const code of Object.keys(counts)) {
+      if (counts[code] > count) {
+        best = code;
+        count = counts[code];
+        tied = false;
+      } else if (counts[code] === count) {
+        tied = true;
+      }
+    }
+    return best && !tied ? { code: best, count } : null;
+  };
   NS.MANGA_VALUE = "true";
   NS.isManga = (customFields) => NS.pickField(customFields, NS.MANGA_FIELD_NAME) !== "";
   NS.ownField = (key) => {
@@ -217,6 +242,7 @@
     "mangaTools.translationGroup.heading": "Translation group",
     "mangaTools.translationGroup.create": "Create",
     "mangaTools.translationGroup.placeholder": "Set a translation group\u2026",
+    "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
     "mangaTools.bulk.remove": "Remove",
     "mangaTools.bulk.unmarkWarning": "Unmarking removes this plugin's manga, language, censorship and translation group fields from the selected galleries."
   };
@@ -254,6 +280,7 @@
     "mangaTools.translationGroup.heading": "\u7FFB\u8BD1\u7EC4",
     "mangaTools.translationGroup.create": "\u521B\u5EFA",
     "mangaTools.translationGroup.placeholder": "\u586B\u5199\u7FFB\u8BD1\u7EC4\u2026",
+    "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E2D\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u6F2B\u753B\u3001\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5B57\u6BB5\u3002"
   };
@@ -291,6 +318,7 @@
     "mangaTools.translationGroup.heading": "\u7FFB\u8B6F\u7D44",
     "mangaTools.translationGroup.create": "\u5EFA\u7ACB",
     "mangaTools.translationGroup.placeholder": "\u586B\u5BEB\u7FFB\u8B6F\u7D44\u2026",
+    "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E2D\u79FB\u9664\u672C\u5916\u639B\u7684\u6F2B\u756B\u3001\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u6B04\u4F4D\u3002"
   };
@@ -2375,9 +2403,6 @@
   function formatLanguageOption(option) {
     return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-option" }, NS.showFlags && option.flag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: option.flag, className: "manga-tools-flag" }) : null, /* @__PURE__ */ React5.createElement("span", null, option.label));
   }
-  function sameGroup(a, b) {
-    return a.trim().toLowerCase() === b.trim().toLowerCase();
-  }
   function formatGroupOption(option, meta) {
     if (!option.createLabel || (meta == null ? void 0 : meta.context) !== "menu") return option.label;
     return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-option" }, option.createLabel);
@@ -2492,7 +2517,7 @@
     const groupRaw = NS.pickField(props.values, TRANSLATION_GROUP_FIELD_NAME);
     const groupName = NS.translationGroupOf(props.values);
     const known = knownTranslationGroups();
-    const namesANewGroup = !!groupName && !known.some((name) => sameGroup(name, groupName));
+    const namesANewGroup = !!groupName && !known.some((name) => NS.sameTranslationGroup(name, groupName));
     const groupOptions = [
       ...namesANewGroup ? [
         {
@@ -2507,28 +2532,49 @@
       ] : [],
       ...known.map((name) => ({ value: name, label: name }))
     ];
-    const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement("div", { className: cls.control }, /* @__PURE__ */ React5.createElement(
-      Select,
+    const usual = NS.usualLanguageFor(store, groupName);
+    const offered = usual && (!NS.enabledLanguages || NS.enabledLanguages.has(usual.code)) && NS.normalize(pickLanguage(props.values)) !== usual.code ? usual : null;
+    const offeredInfo = offered ? NS.describe(offered.code, intl.locale) : null;
+    const languageChip = offered && offeredInfo ? /* @__PURE__ */ React5.createElement(
+      "button",
       {
-        className: "manga-tools-select",
-        classNamePrefix: "react-select",
-        inputId: "manga_tools_translation_group",
-        isClearable: true,
-        placeholder: t(intl, "mangaTools.translationGroup.placeholder"),
-        value: groupRaw ? { value: groupRaw, label: groupName } : null,
-        options: groupOptions,
-        formatOptionLabel: formatGroupOption,
-        components: { IndicatorSeparator: () => null },
-        onMenuOpen: () => refreshForSuggestions(),
-        onInputChange: (text, meta) => {
-          if ((meta == null ? void 0 : meta.action) !== "input-change") return;
-          write(TRANSLATION_GROUP_FIELD_NAME, text.trim() ? text : "");
-        },
-        onChange: (opt) => {
-          write(TRANSLATION_GROUP_FIELD_NAME, opt ? opt.value : "");
+        type: "button",
+        className: "manga-tools-chip",
+        title: t(intl, "mangaTools.translationGroup.suggestedLanguage") + " (" + offered.count + ")",
+        onClick: () => write(FIELD_NAME, offered.code)
+      },
+      NS.showFlags && offeredInfo.flag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: offeredInfo.flag, className: "manga-tools-flag" }) : null,
+      /* @__PURE__ */ React5.createElement("span", null, offeredInfo.name)
+    ) : null;
+    const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement(
+      "div",
+      {
+        className: cls.control + (languageChip ? " manga-tools-chip-row" : "")
+      },
+      /* @__PURE__ */ React5.createElement(
+        Select,
+        {
+          className: "manga-tools-select",
+          classNamePrefix: "react-select",
+          inputId: "manga_tools_translation_group",
+          isClearable: true,
+          placeholder: t(intl, "mangaTools.translationGroup.placeholder"),
+          value: groupRaw ? { value: groupRaw, label: groupName } : null,
+          options: groupOptions,
+          formatOptionLabel: formatGroupOption,
+          components: { IndicatorSeparator: () => null },
+          onMenuOpen: () => refreshForSuggestions(),
+          onInputChange: (text, meta) => {
+            if ((meta == null ? void 0 : meta.action) !== "input-change") return;
+            write(TRANSLATION_GROUP_FIELD_NAME, text.trim() ? text : "");
+          },
+          onChange: (opt) => {
+            write(TRANSLATION_GROUP_FIELD_NAME, opt ? opt.value : "");
+          }
         }
-      }
-    )));
+      ),
+      languageChip
+    ));
     return PluginApi5.ReactDOM.createPortal(
       /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React5.createElement("div", { className: cls.group }, /* @__PURE__ */ React5.createElement("div", { className: "col-12" }, /* @__PURE__ */ React5.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React5.createElement(
         Button,
