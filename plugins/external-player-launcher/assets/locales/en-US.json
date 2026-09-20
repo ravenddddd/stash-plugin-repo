@@ -1,0 +1,22 @@
+{
+  "settings.openButton": "Settings",
+  "settings.modal.title": "External Player Settings",
+  "settings.noteBold": "Note: ",
+  "settings.noteText": "All settings only affect this browser.",
+  "settings.entryGroupTitle": "Display Locations",
+  "settings.showSceneCardButtons": "Show player buttons on scene cards",
+  "settings.showSceneCardButtonsHint": "When disabled, player buttons are hidden on scene cards.",
+  "settings.showSceneDetailButtons": "Show the Players tab on scene detail pages",
+  "settings.showSceneDetailButtonsHint": "When disabled, the Players tab is hidden on scene detail pages.",
+  "settings.showSceneToolbarButtons": "Show player buttons on the scene detail page toolbar",
+  "settings.showSceneToolbarButtonsHint": "When disabled, player buttons are hidden on the scene detail page toolbar.",
+  "settings.playerGroupTitle": "Player Settings",
+  "settings.singlePlayerMode": "Enable single player mode",
+  "settings.singlePlayerModeHint": "When enabled, the player selector at the bottom of scene cards is replaced with a button for the selected player.",
+  "settings.playerDisplay": "Player Display",
+  "settings.reset": "Reset all settings",
+  "settings.cancel": "Cancel",
+  "settings.confirm": "Confirm",
+  "tab.label": "Players",
+  "tab.header": "Play with external player:"
+}

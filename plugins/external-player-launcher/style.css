@@ -1,0 +1,70 @@
+/* src/style.scss */
+.external-player-settings-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  border: 0;
+}
+.external-player-tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.external-player-settings-modal {
+  max-width: min(32rem, 100vw - 2rem);
+}
+.external-player-settings-modal .modal-body {
+  overflow-y: auto;
+  padding: 1rem 1.6rem;
+}
+.external-player-settings-modal-content {
+  max-height: 80vh;
+}
+.external-player-settings-modal-content .ep-section {
+  margin-bottom: 2rem;
+}
+.external-player-settings-modal-content .ep-heading {
+  margin-bottom: 0.75rem;
+  font-size: 16px;
+  font-weight: bold;
+}
+.external-player-settings-modal-content .ep-subheading {
+  margin-bottom: 0.5rem;
+  font-size: 14px;
+  font-weight: bold;
+}
+.external-player-settings-modal-content .ep-desc {
+  margin-bottom: 0.75rem;
+  font-size: 12px;
+}
+.external-player-settings-modal-content .ep-hint {
+  font-size: 12px;
+}
+.external-player-settings-modal-content .ep-options {
+  margin-bottom: 0.75rem;
+}
+.external-player-settings-modal-content .ep-options:last-child {
+  margin-bottom: 0;
+}
+.external-player-settings-modal-content .ep-list {
+  display: grid;
+  gap: 0.25rem;
+}
+.external-player-settings-modal-content .ep-item {
+  padding-left: 1.5rem;
+}
+.external-player-settings-modal-content .ep-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.75rem;
+}
+.external-player-settings-modal-content .ep-note-block {
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  background-color: rgba(30, 30, 30, 0.3);
+}

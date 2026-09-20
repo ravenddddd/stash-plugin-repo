@@ -1,0 +1,114 @@
+name: Publish plugins
+
+# Two repositories, one direction of travel:
+#
+#   ravenddddd/external-player-launcher   the plugin's source (a fork)
+#                 │  checked out and built here
+#                 ▼
+#   ravenddddd/stash-plugin-repo          the built plugin + the index Stash reads
+#
+# The build happens *here*, in the repository that publishes, rather than in the
+# source repository pushing its output across. That is a deliberate choice and it
+# is about credentials: this way nothing needs a token that can write to another
+# repository. The source is public, so reading it needs no credential at all, and
+# writing here needs nothing more than the GITHUB_TOKEN every workflow already
+# has.
+#
+# The cost is that publishing is not automatic — GitHub has no way for one
+# repository's push to start another's workflow without a stored credential, and
+# that credential would be able to write packages into the index Stash installs
+# from. A publish is therefore something somebody asks for. See the README for
+# the command.
+on:
+  workflow_dispatch: # runnable from the Actions tab, or with `gh workflow run`
+
+permissions:
+  contents: write # required to push the built plugin and the gh-pages branch
+
+concurrency:
+  # Cancel an in-flight run when another starts, so two runs never race to push
+  # the same branch.
+  group: publish
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # The plugin's own repository, into a directory of its own so it cannot be
+      # confused with this one. No token: it is a public repository.
+      - name: Check out the plugin's source
+        uses: actions/checkout@v4
+        with:
+          repository: ravenddddd/external-player-launcher
+          path: .source/external-player-launcher
+          fetch-depth: 1
+
+      # pnpm, because that is what the plugin's repository locks with. `setup-node`
+      # caches the store against the source's lockfile, which is the file that
+      # actually decides what gets installed.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: .source/external-player-launcher/pnpm-lock.yaml
+
+      - name: Build the plugin
+        working-directory: .source/external-player-launcher
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # The source's build writes dist/ with the plugin's manifest, its bundle,
+      # its stylesheet and its assets. The licence comes along because the zip is
+      # a distribution of somebody else's work, and the file travels with it.
+      - name: Stage it as a plugin directory
+        run: |
+          rm -rf plugins/external-player-launcher
+          mkdir -p plugins/external-player-launcher
+          cp -r .source/external-player-launcher/dist/. plugins/external-player-launcher/
+          cp .source/external-player-launcher/LICENCE plugins/external-player-launcher/LICENCE
+
+      - name: Read the source commit
+        run: |
+          echo "SOURCE_SHA=$(git -C .source/external-player-launcher rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
+      - name: Package and write the index
+        run: node tools/publish.mjs
+
+      # The built plugin is committed so the repository says what it published,
+      # and which commit of which source it came from. Nothing is committed when
+      # the source has not moved since the last publish.
+      - name: Commit the built plugin
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A plugins
+          if git diff --cached --quiet; then
+            echo "nothing changed since the last publish"
+          else
+            git commit -m "publish: external-player-launcher @ ${SOURCE_SHA}"
+            git push
+          fi
+
+      # gh-pages, the way the monorepo publishes: one branch holding the site's
+      # files, and Pages set to serve it. Kept to a single commit so the branch
+      # is the current state rather than a history of it.
+      - name: Publish the packages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "publish: external-player-launcher @ ${{ env.SOURCE_SHA }}"
+
+      - name: Show the index
+        run: cat _site/index.yml

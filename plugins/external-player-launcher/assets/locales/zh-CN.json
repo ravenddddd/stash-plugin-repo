@@ -1,0 +1,22 @@
+{
+  "settings.openButton": "设置",
+  "settings.modal.title": "外部播放器设置",
+  "settings.noteBold": "注意：",
+  "settings.noteText": "所有设置仅对当前浏览器生效。",
+  "settings.entryGroupTitle": "显示位置",
+  "settings.showSceneCardButtons": "显示短片卡片播放器按钮",
+  "settings.showSceneCardButtonsHint": "关闭后，短片卡片上不再显示播放器按钮。",
+  "settings.showSceneDetailButtons": "显示短片详情页播放器标签页",
+  "settings.showSceneDetailButtonsHint": "关闭后，短片详情页不再显示“播放器”标签页。",
+  "settings.showSceneToolbarButtons": "显示短片详情页工具栏播放器按钮",
+  "settings.showSceneToolbarButtonsHint": "关闭后，短片详情页工具栏不再显示播放器按钮。",
+  "settings.playerGroupTitle": "播放器设置",
+  "settings.singlePlayerMode": "启用单播放器模式",
+  "settings.singlePlayerModeHint": "启用后，短片卡片底部将显示下方选择的播放器按钮，而不是播放器选择器。",
+  "settings.playerDisplay": "播放器显示",
+  "settings.reset": "重置所有设置",
+  "settings.cancel": "取消",
+  "settings.confirm": "确定",
+  "tab.label": "播放器",
+  "tab.header": "用外部播放器播放："
+}
