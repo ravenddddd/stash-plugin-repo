@@ -50,6 +50,26 @@ function sourceSha(id) {
   return sha;
 }
 
+/**
+ * The date of the commit a plugin was built from, or "" when there is none.
+ *
+ * Stash shows this beside the plugin, so it has to mean something the reader can
+ * use — and the clock does not: stamping the moment of packaging made every
+ * plugin's date move on every publish, including the ones whose sources had not
+ * been touched, which says the opposite of what the date is for. Taken from the
+ * commit, a plugin that did not move keeps the date it had, and one that did moves
+ * with it — the same thing its version says, in a form a person reads.
+ *
+ * The workflow writes one file per plugin into `.dates/`, beside the `.shas/` one
+ * and for the same reason: they come from different repositories.
+ */
+function sourceDate(id) {
+  const file = path.join(ROOT, ".dates", id);
+  if (!fs.existsSync(file)) return "";
+
+  return fs.readFileSync(file, "utf8").trim();
+}
+
 /** Reads a top-level `<key>: <value>` from a manifest, value unquoted. */
 function topLevel(text, key) {
   const m = new RegExp(`^${key}:[ \\t]*(.*)$`, "m").exec(text);
@@ -133,11 +153,10 @@ function main() {
     throw new Error("no plugin directories under plugins/ — nothing to publish");
   }
 
-  // A fixed date string, so two runs over the same plugins produce the same
-  // index: the file is committed, and a diff that only means "the clock moved"
-  // is noise in the history. The date is when this packaging ran, which is what
-  // Stash shows as the plugin's date.
-  const date = new Date().toISOString().replace("T", " ").slice(0, 19);
+  // The clock, for a run that has nothing better to say — one made by hand, without
+  // the workflow that records each source's commit date. See sourceDate for why the
+  // date is not simply when this ran.
+  const now = new Date().toISOString().replace("T", " ").slice(0, 19);
 
   const index = ids.map((id) => {
     const entry = publishPlugin(id);
@@ -149,7 +168,7 @@ function main() {
       "  metadata:",
       `    description: ${entry.description}`,
       `  version: ${entry.version}`,
-      `  date: ${date}`,
+      `  date: ${sourceDate(id) || now}`,
       `  path: ${entry.path}`,
       `  sha256: ${entry.sha256}`,
       "",

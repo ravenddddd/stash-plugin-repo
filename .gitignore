@@ -1,5 +1,6 @@
 _site/
 
 # Where the workflow records which commit of which source each plugin was built
-# from. It is an input to packaging, not part of what is published.
+# from, and that commit's date. Inputs to packaging, not part of what is published.
 .shas/
+.dates/

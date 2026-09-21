@@ -64,6 +64,13 @@ offer an update for a plugin that did not move. The two have to agree, because
 Stash decides whether an update is available by comparing the installed plugin's
 version with the index's.
 
+The **date** beside each plugin is that commit's own date, not the moment of
+packaging. It used to be the clock, which meant every plugin's date moved on every
+publish — including the ones whose sources had not been touched, saying the opposite
+of what the date is there for. Taken from the commit, a plugin that did not move
+keeps the date it had, and a plugin that did moves with it: the same thing its
+version says, in a form a person reads.
+
 **A working copy of this repository is behind after every publish**, because the
 run commits the built plugin back to `main`. Pull before pushing anything here —
 the workflows it would otherwise conflict with are only its own.

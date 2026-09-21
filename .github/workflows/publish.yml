@@ -104,12 +104,19 @@ jobs:
       # because the zip is a distribution of somebody else's work and the file
       # travels with it.
       #
-      # The commit each plugin was built from is recorded beside the plugin rather
-      # than inside it — publishing appends it to the version, and a file that
-      # travelled into the zip would be shipped to users.
+      # Two things are recorded beside each plugin rather than inside it, because a
+      # file that travelled into the zip would be shipped to users:
+      #
+      #   .shas/<id>   the commit it was built from — publishing appends it to the
+      #                version, which is how Stash notices an update at all
+      #   .dates/<id>  that commit's date, which is what Stash shows beside the
+      #                plugin. Taken from the commit and not from the clock, so
+      #                republishing leaves the plugins that did not move alone: a
+      #                date that changed on every publish would say the opposite of
+      #                what it is there to say.
       - name: Stage them as plugin directories
         run: |
-          mkdir -p .shas
+          mkdir -p .shas .dates
           while read -r repo; do
             [ -n "$repo" ] || continue
             name="${repo##*/}"
@@ -122,6 +129,7 @@ jobs:
               fi
             done
             git -C ".source/$name" rev-parse --short HEAD > ".shas/$name"
+            git -C ".source/$name" log -1 --format=%cd --date=format-local:'%Y-%m-%d %H:%M:%S' > ".dates/$name"
           done <<< "$SOURCES"
 
       # What was published, for the two commit messages: each plugin and the
