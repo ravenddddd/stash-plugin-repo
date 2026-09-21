@@ -657,6 +657,29 @@
     const input = document.getElementById(id);
     if (input) input.checked = checked;
   }
+  function arrowsBelongTo(target) {
+    if (!target) return false;
+    if (target.isContentEditable) return true;
+    const tag = target.tagName;
+    if (tag === "TEXTAREA") return true;
+    if (tag !== "INPUT") return false;
+    const type = (target.type || "text").toLowerCase();
+    return [
+      "date",
+      "datetime-local",
+      "email",
+      "month",
+      "number",
+      "password",
+      "range",
+      "search",
+      "tel",
+      "text",
+      "time",
+      "url",
+      "week"
+    ].indexOf(type) !== -1;
+  }
   function onKeyDown(event) {
     if (!event.isTrusted || !wanted() || !root) return;
     const lightbox = root;
@@ -671,10 +694,7 @@
     }
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
     if (event.repeat) return;
-    const target = event.target;
-    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
-      return;
-    }
+    if (arrowsBelongTo(event.target)) return;
     const at = currentIndex(lightbox);
     if (at === null) return;
     const steps = stepsToAdjacent(
