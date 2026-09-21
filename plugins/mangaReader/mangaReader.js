@@ -450,6 +450,14 @@
   }
   var REVEAL_BUDGET_MS = 300;
   NR.REVEAL_BUDGET_MS = REVEAL_BUDGET_MS;
+  var FADE_MS = 140;
+  function fadeIn(element) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    element.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: FADE_MS,
+      easing: "ease-out"
+    });
+  }
   function pageUrl(page) {
     const query = /\?.*$/.exec(page.url || "");
     return "/image/" + page.id + "/image" + (query ? query[0] : "");
@@ -485,6 +493,7 @@
       boxes.forEach((box) => {
         container == null ? void 0 : container.appendChild(box);
       });
+      fadeIn(container);
       preload(at);
     };
     if (images.every((image) => image.complete !== false)) {
