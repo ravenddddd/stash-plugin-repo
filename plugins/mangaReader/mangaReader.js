@@ -239,6 +239,9 @@
     "          height",
     "        }",
     "      }",
+    "      paths {",
+    "        image",
+    "      }",
     "    }",
     "  }",
     "}"
@@ -252,13 +255,18 @@
     const data = await requirePluginApi().utils.StashService.getClient().query({ query, variables: { galleryId: galleryId2 }, fetchPolicy: "no-cache" }).then((res) => res == null ? void 0 : res.data);
     const pages = (((_a = data == null ? void 0 : data.findImages) == null ? void 0 : _a.images) || []).map(
       (image) => {
+        var _a2;
         const file = (image.visual_files || []).find(
           (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
         );
         return {
           id: String(image.id),
           width: (file == null ? void 0 : file.width) || 0,
-          height: (file == null ? void 0 : file.height) || 0
+          height: (file == null ? void 0 : file.height) || 0,
+          // Stash's own URL for the image, kept for the query on it — which is a
+          // version stamp, and is the whole reason this field is fetched at all. See
+          // pageUrl in takeover.ts.
+          url: ((_a2 = image.paths) == null ? void 0 : _a2.image) || ""
         };
       }
     );
@@ -286,6 +294,7 @@
   var loaded = /* @__PURE__ */ new Map();
   var galleryId = null;
   var shownAt = -1;
+  var drawGeneration = 0;
   var offset = 0;
   var offsetFor = null;
   var reinsers = 0;
@@ -417,20 +426,49 @@
     display.appendChild(container);
     lightbox.classList.add(CLASS_ACTIVE);
   }
+  var REVEAL_BUDGET_MS = 300;
+  NR.REVEAL_BUDGET_MS = REVEAL_BUDGET_MS;
+  function pageUrl(page) {
+    const query = /\?.*$/.exec(page.url || "");
+    return "/image/" + page.id + "/image" + (query ? query[0] : "");
+  }
+  function decodedImage(image) {
+    return typeof image.decode === "function" ? image.decode().catch(() => {
+    }) : Promise.resolve();
+  }
   function draw(screen, at) {
     if (!container) return;
-    container.textContent = "";
-    container.classList.toggle(CLASS_SINGLE, screen.pages.length === 1);
+    const boxes = [];
+    const images = [];
     screen.pages.forEach((page, index) => {
       const box = document.createElement("div");
       box.className = CLASS_PAGE;
       const image = document.createElement("img");
-      image.src = "/image/" + page.id + "/image";
+      image.src = pageUrl(page);
       image.alt = String(screen.start + index + 1);
       image.decoding = "async";
       box.appendChild(image);
-      container == null ? void 0 : container.appendChild(box);
+      boxes.push(box);
+      images.push(image);
     });
+    const mine = ++drawGeneration;
+    let revealed = false;
+    const reveal = () => {
+      if (revealed || mine !== drawGeneration || !container) return;
+      revealed = true;
+      container.textContent = "";
+      container.classList.toggle(CLASS_SINGLE, screen.pages.length === 1);
+      boxes.forEach((box) => {
+        container == null ? void 0 : container.appendChild(box);
+      });
+      preload(at);
+    };
+    if (images.every((image) => image.complete !== false)) {
+      reveal();
+    } else {
+      Promise.all(images.map(decodedImage)).then(reveal);
+      window.setTimeout(reveal, REVEAL_BUDGET_MS);
+    }
     shownAt = at;
     const gallery = current();
     if (!logged && gallery) {
@@ -439,7 +477,6 @@
         "[mangaReader] " + gallery.screens.length + " screen(s) from " + gallery.pages.length + " page(s), offset " + offset + " \u2014 the lightbox's options menu can shift the pairing, and O does the same"
       );
     }
-    preload(at);
   }
   function preload(at) {
     const gallery = current();
@@ -449,7 +486,7 @@
       if (!screen) continue;
       for (const page of screen.pages) {
         const image = new Image();
-        image.src = "/image/" + page.id + "/image";
+        image.src = pageUrl(page);
       }
     }
   }
