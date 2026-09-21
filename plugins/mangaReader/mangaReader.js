@@ -295,6 +295,7 @@
   var galleryId = null;
   var shownAt = -1;
   var drawGeneration = 0;
+  var awaiting = -1;
   var offset = 0;
   var offsetFor = null;
   var reinsers = 0;
@@ -396,7 +397,9 @@
       deactivate();
       return;
     }
-    if (at === shownAt && (container == null ? void 0 : container.childElementCount)) return;
+    if (at === shownAt && container && (container.childElementCount || awaiting === at)) {
+      return;
+    }
     ensureContainer(lightbox);
     if (!container) return;
     draw(gallery.screens[at], at);
@@ -438,6 +441,7 @@
   }
   function draw(screen, at) {
     if (!container) return;
+    awaiting = -1;
     const boxes = [];
     const images = [];
     screen.pages.forEach((page, index) => {
@@ -456,6 +460,7 @@
     const reveal = () => {
       if (revealed || mine !== drawGeneration || !container) return;
       revealed = true;
+      if (awaiting === at) awaiting = -1;
       container.textContent = "";
       container.classList.toggle(CLASS_SINGLE, screen.pages.length === 1);
       boxes.forEach((box) => {
@@ -466,6 +471,7 @@
     if (images.every((image) => image.complete !== false)) {
       reveal();
     } else {
+      awaiting = at;
       Promise.all(images.map(decodedImage)).then(reveal);
       window.setTimeout(reveal, REVEAL_BUDGET_MS);
     }
