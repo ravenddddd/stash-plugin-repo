@@ -193,6 +193,7 @@
   var SELECTOR_DISPLAY = ".Lightbox-display";
   var SELECTOR_INDICATOR = ".Lightbox-header-indicator";
   var SELECTOR_POPOVER_BODY = ".popover .popover-body";
+  var CLASS_NAVBUTTON = "Lightbox-navbutton";
   function parseIndicator(text) {
     const match = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(text);
     if (!match) return null;
@@ -215,6 +216,15 @@
     document.dispatchEvent(
       new KeyboardEvent("keydown", {
         key: direction > 0 ? "ArrowRight" : "ArrowLeft",
+        bubbles: true,
+        cancelable: true
+      })
+    );
+  }
+  function pressEscape() {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
         bubbles: true,
         cancelable: true
       })
@@ -301,6 +311,7 @@
   var reinsers = 0;
   var language = null;
   var logged = false;
+  var clickRoot = null;
   var errand = null;
   var PRESS_RETRY_MS = 120;
   var MAX_ATTEMPTS = 3;
@@ -404,12 +415,19 @@
     if (!container) return;
     draw(gallery.screens[at], at);
   }
+  function watchClicks(lightbox) {
+    if (clickRoot === lightbox) return;
+    if (clickRoot) clickRoot.removeEventListener("click", onNavClick, true);
+    lightbox.addEventListener("click", onNavClick, true);
+    clickRoot = lightbox;
+  }
   function ensureContainer(lightbox) {
     const display = lightbox.querySelector(SELECTOR_DISPLAY);
     if (!display) {
       deactivate();
       return;
     }
+    watchClicks(lightbox);
     if (container && container.parentNode === display) return;
     if (container) {
       reinsers += 1;
@@ -424,6 +442,7 @@
     if (!container) {
       container = document.createElement("div");
       container.className = CLASS_SPREAD;
+      container.addEventListener("click", onSpreadClick);
     }
     display.style.position = "relative";
     display.appendChild(container);
@@ -577,6 +596,10 @@
     shownAt = -1;
   }
   function closeLightbox() {
+    if (clickRoot) {
+      clickRoot.removeEventListener("click", onNavClick, true);
+      clickRoot = null;
+    }
     deactivate();
     root = null;
     galleryId = null;
@@ -695,17 +718,60 @@
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
     if (event.repeat) return;
     if (arrowsBelongTo(event.target)) return;
-    const at = currentIndex(lightbox);
-    if (at === null) return;
-    const steps = stepsToAdjacent(
-      gallery.screens,
-      at,
-      event.key === "ArrowRight" ? 1 : -1
-    );
-    if (steps === 0) return;
+    if (!turnBy(lightbox, event.key === "ArrowRight" ? 1 : -1)) return;
     event.preventDefault();
     event.stopPropagation();
+  }
+  function turnBy(lightbox, direction) {
+    const gallery = current();
+    if (!gallery) return false;
+    const at = currentIndex(lightbox);
+    if (at === null) return false;
+    const steps = stepsToAdjacent(gallery.screens, at, direction);
+    if (steps === 0) return false;
     startErrand(lightbox, at + steps);
+    return true;
+  }
+  function navIcon(button) {
+    var _a;
+    for (const child of Array.from(button.children)) {
+      const name = (_a = child.dataset) == null ? void 0 : _a.icon;
+      if (name) return name;
+    }
+    return "";
+  }
+  function navDirection(target) {
+    var _a;
+    let el = target;
+    while (el && !((_a = el.classList) == null ? void 0 : _a.contains(CLASS_NAVBUTTON))) el = el.parentElement;
+    if (!el) return 0;
+    const icon = navIcon(el);
+    if (icon === "chevron-right") return 1;
+    if (icon === "chevron-left") return -1;
+    return 0;
+  }
+  function onNavClick(event) {
+    if (!wanted() || !container || !root) return;
+    const direction = navDirection(event.target);
+    if (!direction) return;
+    if (turnBy(root, direction)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+  function onSpreadClick(event) {
+    const lightbox = root;
+    if (!lightbox || !container) return;
+    const target = event.target;
+    if ((target == null ? void 0 : target.tagName) !== "IMG") {
+      event.stopPropagation();
+      pressEscape();
+      return;
+    }
+    const click = event;
+    const width = target.offsetWidth;
+    const forward = !width || click.offsetX >= width / 2;
+    if (turnBy(lightbox, forward ? 1 : -1)) event.stopPropagation();
   }
   function setOffset(gallery, next) {
     offset = next;
