@@ -80,10 +80,11 @@
   var LABELS = {
     en: {
       doublePage: "Double page",
+      fade: "Fade in",
       offset: "Shift the pairing by one page"
     },
-    "zh-Hans": { doublePage: "\u53CC\u9875\u9605\u8BFB", offset: "\u914D\u5BF9\u504F\u79FB\u4E00\u683C" },
-    "zh-Hant": { doublePage: "\u96D9\u9801\u95B1\u8B80", offset: "\u914D\u5C0D\u504F\u79FB\u4E00\u683C" }
+    "zh-Hans": { doublePage: "\u53CC\u9875\u9605\u8BFB", fade: "\u6DE1\u5165", offset: "\u914D\u5BF9\u504F\u79FB\u4E00\u683C" },
+    "zh-Hant": { doublePage: "\u96D9\u9801\u95B1\u8B80", fade: "\u6DE1\u5165", offset: "\u914D\u5C0D\u504F\u79FB\u4E00\u683C" }
   };
   var ALIASES = {
     zh: "zh-Hans",
@@ -108,10 +109,12 @@
 
   // src/settings.ts
   var STORAGE_KEY = "mangaReader.settings";
+  var FADE_MAX_MS = 1e3;
   var DEFAULT_SETTINGS = {
     doublePage: false,
     coverAlone: true,
-    detectSpreads: true
+    detectSpreads: true,
+    fadeMs: 140
   };
   function parseSettings(raw) {
     const stored = (() => {
@@ -124,10 +127,18 @@
       }
     })();
     const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
+    const duration = (key) => {
+      const value = stored[key];
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        return DEFAULT_SETTINGS[key];
+      }
+      return Math.min(FADE_MAX_MS, Math.max(0, Math.round(value)));
+    };
     return {
       doublePage: flag("doublePage"),
       coverAlone: flag("coverAlone"),
-      detectSpreads: flag("detectSpreads")
+      detectSpreads: flag("detectSpreads"),
+      fadeMs: duration("fadeMs")
     };
   }
   function readSettings() {
@@ -187,6 +198,7 @@
   }
   NR.parseSettings = parseSettings;
   NR.parseOffsets = parseOffsets;
+  NR.FADE_MAX_MS = FADE_MAX_MS;
 
   // src/stash-lightbox.ts
   var SELECTOR_LIGHTBOX = ".Lightbox";
@@ -294,6 +306,7 @@
   var CLASS_PAGE = "manga-reader-page";
   var CLASS_SINGLE = "is-single";
   var SWITCH_ID = "manga-reader-double-page";
+  var FADE_ID = "manga-reader-fade";
   var OFFSET_ID = "manga-reader-offset";
   var CLASS_OPTIONS = "manga-reader-options";
   var MAX_REINSERTS = 8;
@@ -450,11 +463,11 @@
   }
   var REVEAL_BUDGET_MS = 300;
   NR.REVEAL_BUDGET_MS = REVEAL_BUDGET_MS;
-  var FADE_MS = 140;
   function fadeIn(element) {
+    if (settings.fadeMs <= 0) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     element.animate([{ opacity: 0 }, { opacity: 1 }], {
-      duration: FADE_MS,
+      duration: settings.fadeMs,
       easing: "ease-out"
     });
   }
@@ -639,8 +652,52 @@
         }
       })
     );
+    group.appendChild(
+      slider({
+        id: FADE_ID,
+        label: labelFor(language, "fade"),
+        value: settings.fadeMs,
+        max: FADE_MAX_MS,
+        step: 20,
+        unit: " ms",
+        onChange: (value) => {
+          settings = writeSettings({ fadeMs: value });
+        }
+      })
+    );
     addOffsetSwitch(group);
     body.appendChild(group);
+  }
+  function slider(option) {
+    const row = document.createElement("div");
+    row.className = "row mb-1";
+    const column = document.createElement("div");
+    column.className = "col";
+    const label = document.createElement("label");
+    label.className = "form-label mb-0";
+    label.htmlFor = option.id;
+    label.textContent = option.label;
+    const readout = document.createElement("span");
+    readout.className = "ml-1";
+    readout.textContent = option.value + option.unit;
+    label.appendChild(readout);
+    const input = document.createElement("input");
+    input.type = "range";
+    input.className = "form-control-range";
+    input.id = option.id;
+    input.min = "0";
+    input.max = String(option.max);
+    input.step = String(option.step);
+    input.value = String(option.value);
+    input.addEventListener("input", () => {
+      const value = Number(input.value);
+      readout.textContent = value + option.unit;
+      option.onChange(value);
+    });
+    column.appendChild(label);
+    column.appendChild(input);
+    row.appendChild(column);
+    return row;
   }
   function addOffsetSwitch(group) {
     if (!current() || group.querySelector("#" + OFFSET_ID)) return;
