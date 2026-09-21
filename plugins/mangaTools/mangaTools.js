@@ -1861,6 +1861,7 @@
   var PLUGIN_ID = "mangaTools";
   var EDIT_ANCHOR = '.form-group[data-field="studio_id"]';
   var BULK_ANCHOR = '[data-field="studio"]';
+  var BULK_DIALOG_MARK = '[data-field="rating"]';
   var REFRESH_MS = 6e4;
   function originalFrom(args) {
     return args[args.length - 1];
@@ -2465,8 +2466,7 @@
     }
     return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-option" }, option.createLabel);
   }
-  function readNativeFieldClasses(anchorSelector) {
-    const anchor = document.querySelector(anchorSelector);
+  function readNativeFieldClasses(anchor) {
     if (!anchor) return null;
     const label = anchor.querySelector("label");
     const control = label == null ? void 0 : label.nextElementSibling;
@@ -2559,7 +2559,7 @@
       },
       NS.showFlags && offeredInfo.flag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: offeredInfo.flag, className: "manga-tools-flag" }) : chipIcon ? /* @__PURE__ */ React5.createElement(Icon, { icon: chipIcon }) : /* @__PURE__ */ React5.createElement("span", null, offeredInfo.name)
     ) : null;
-    const cls = readNativeFieldClasses(EDIT_ANCHOR) || {
+    const cls = readNativeFieldClasses(document.querySelector(EDIT_ANCHOR)) || {
       group: "form-group row",
       label: "form-label col-form-label col-sm-3",
       control: "col-sm-9"
@@ -2989,7 +2989,7 @@
     });
     React5.useEffect(
       () => () => {
-        if (!document.querySelector(BULK_ANCHOR)) {
+        if (!bulkAnchor()) {
           bulkLanguage = null;
           bulkCensorship = null;
           bulkManga = null;
@@ -2998,7 +2998,7 @@
       []
     );
     if (!isGalleryContext() || !Select || !host) return null;
-    const cls = readNativeFieldClasses(BULK_ANCHOR) || {
+    const cls = readNativeFieldClasses(bulkAnchor()) || {
       group: "row",
       label: "col-form-label col-3",
       control: "col-9"
@@ -3263,12 +3263,22 @@
     return detailHost;
   }
   var FIELD_HOST_CLASS = "manga-tools-field-host";
+  function bulkAnchor() {
+    let el = document.querySelector(BULK_DIALOG_MARK);
+    while (el) {
+      const element = el;
+      if (element.tagName === "form") {
+        return element.querySelector(BULK_ANCHOR);
+      }
+      el = el.parentNode;
+    }
+    return null;
+  }
   var fieldHosts = {
     edit: null,
     bulk: null
   };
-  function ensureHostAfter(anchorSelector, key) {
-    const anchor = document.querySelector(anchorSelector);
+  function ensureHostAfter(anchor, key) {
     if (!(anchor == null ? void 0 : anchor.parentNode)) {
       fieldHosts[key] = null;
       return null;
@@ -3285,10 +3295,10 @@
     return host;
   }
   function ensureFieldHost() {
-    return ensureHostAfter(EDIT_ANCHOR, "edit");
+    return ensureHostAfter(document.querySelector(EDIT_ANCHOR), "edit");
   }
   function ensureBulkFieldHost() {
-    return ensureHostAfter(BULK_ANCHOR, "bulk");
+    return ensureHostAfter(bulkAnchor(), "bulk");
   }
   function fieldLabel2(intl) {
     return intl.formatMessage({

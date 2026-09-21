@@ -955,6 +955,22 @@ canonical spelling.
   open, and a tag drawn for the card joins Stash's tag row, or a row the plugin
   makes when Stash has none.
 
+  **An anchor is only as unique as the attribute it names, and one of them is
+  shared**: the scrape dialog's rows come from `ScrapeDialogRow`, and its studio
+  row carries the same `data-field="studio"` the bulk dialog's row does. Since the
+  bulk row is mounted by `RatingSystem` — which the gallery page renders behind the
+  dialog, not the dialog itself — the mark checkbox turned up inside a gallery
+  scrape, under the studio field.
+
+  The bulk anchor is therefore looked for **inside the bulk dialog's own form**,
+  and entered from the one row that dialog has and nothing else in Stash emits:
+  `BulkUpdateFormGroup name="rating"` (the edit pages do not name a rating row that
+  way, and a gallery scrape has no rating row at all). A dialog without one has no
+  form to search, so its rows are never in scope — and when the question cannot be
+  answered, nothing is drawn. That is the right way round for an insertion: a scope
+  that fails closed, rather than a blacklist of the dialogs not to draw in, which
+  fails open the day something else reuses the attribute.
+
   The censorship mark adds one more of each kind: a span next to the gallery
   card's `.card-popovers` row, named by the gallery id so the right card's row is
   the one found, and a span after the toolbar's `.organized-button` — see
