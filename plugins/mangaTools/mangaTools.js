@@ -442,12 +442,13 @@
   };
 
   // src/reader/bridge.ts
-  var handle = null;
+  var handles = [];
   function bridged() {
-    return handle !== null;
+    return handles.length > 0;
   }
   function takeOver(request) {
-    handle == null ? void 0 : handle.takeOver(request);
+    var _a2;
+    (_a2 = handles[handles.length - 1]) == null ? void 0 : _a2.takeOver(request);
   }
   function LightboxBridge() {
     const api = requirePluginApi();
@@ -455,7 +456,7 @@
     const entries = React6.useRef([]).current;
     const show = api.hooks.useLightbox({}, entries);
     React6.useEffect(() => {
-      handle = {
+      const mine = {
         takeOver(request) {
           entries.splice(0, entries.length, ...entriesFor(request));
           show({
@@ -465,12 +466,17 @@
             // saying which images it holds.
             pages: 1,
             pageSize: request.images.length,
-            totalCount: request.totalCount
+            totalCount: request.totalCount,
+            // Only read when the lightbox mounts, which is how a chapter clicked on
+            // the gallery page opens one — see the chapters tab.
+            initialIndex: request.at
           });
         }
       };
+      handles.push(mine);
       return () => {
-        handle = null;
+        const at = handles.indexOf(mine);
+        if (at !== -1) handles.splice(at, 1);
       };
     }, [entries, show, api]);
     return null;
@@ -490,7 +496,12 @@
   function installBridge() {
     const api = requirePluginApi();
     const React6 = api.React;
-    api.patch.after("ImageList", (...args) => {
+    for (const target of ["ImageList", "HeaderImage"]) {
+      installAgainst(api, React6, target);
+    }
+  }
+  function installAgainst(api, React6, target) {
+    api.patch.after(target, (...args) => {
       const result = args[args.length - 1];
       return React6.createElement(
         React6.Fragment,
@@ -521,16 +532,16 @@
     const chapters = [];
     for (const entry of stored.chapters) {
       if (!entry || typeof entry !== "object") continue;
-      const row = entry;
-      if (!Array.isArray(row.images)) continue;
+      const row2 = entry;
+      if (!Array.isArray(row2.images)) continue;
       const images = [];
-      for (const id of row.images) {
+      for (const id of row2.images) {
         if (typeof id === "string" || typeof id === "number") {
           images.push(String(id));
         }
       }
       chapters.push({
-        title: typeof row.title === "string" ? row.title : "",
+        title: typeof row2.title === "string" ? row2.title : "",
         images
       });
     }
@@ -539,12 +550,12 @@
   function chaptersFromStash(rows, pathIds) {
     if (!Array.isArray(rows)) return [];
     const starts = [];
-    for (const row of rows) {
-      const index = Number(row == null ? void 0 : row.image_index);
+    for (const row2 of rows) {
+      const index = Number(row2 == null ? void 0 : row2.image_index);
       if (!Number.isInteger(index) || index < 1 || index > pathIds.length)
         continue;
       starts.push({
-        title: typeof (row == null ? void 0 : row.title) === "string" ? row.title : "",
+        title: typeof (row2 == null ? void 0 : row2.title) === "string" ? row2.title : "",
         index
       });
     }
@@ -580,167 +591,6 @@
   NR.parseChapters = parseChapters;
   NR.chaptersFromStash = chaptersFromStash;
   NR.placeChapters = placeChapters;
-
-  // src/reader/settings.ts
-  var STORAGE_KEY = "plugin.mangaTools.settings";
-  var LEGACY_STORAGE_KEY = "mangaReader.settings";
-  function storedValue(key, legacyKey) {
-    const current2 = window.localStorage.getItem(key);
-    if (current2 !== null) return current2;
-    const legacy = window.localStorage.getItem(legacyKey);
-    if (legacy !== null) window.localStorage.setItem(key, legacy);
-    return legacy;
-  }
-  var FADE_MAX_MS = 1e3;
-  var DEFAULT_SETTINGS = {
-    doublePage: false,
-    coverAlone: true,
-    detectSpreads: true,
-    fadeMs: 140
-  };
-  function parseSettings(raw) {
-    const stored = (() => {
-      if (!raw) return {};
-      try {
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch {
-        return {};
-      }
-    })();
-    const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
-    const duration = (key) => {
-      const value = stored[key];
-      if (typeof value !== "number" || !Number.isFinite(value)) {
-        return DEFAULT_SETTINGS[key];
-      }
-      return Math.min(FADE_MAX_MS, Math.max(0, Math.round(value)));
-    };
-    return {
-      doublePage: flag("doublePage"),
-      coverAlone: flag("coverAlone"),
-      detectSpreads: flag("detectSpreads"),
-      fadeMs: duration("fadeMs")
-    };
-  }
-  function readSettings() {
-    try {
-      return parseSettings(storedValue(STORAGE_KEY, LEGACY_STORAGE_KEY));
-    } catch (e) {
-      console.error(
-        "[mangaReader] settings are not readable, using defaults:",
-        e
-      );
-      return { ...DEFAULT_SETTINGS };
-    }
-  }
-  function writeSettings(next) {
-    const merged = { ...readSettings(), ...next };
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-    } catch (e) {
-      console.error("[mangaReader] settings are not writable:", e);
-    }
-    return merged;
-  }
-  var OFFSET_KEY = "plugin.mangaTools.offsets";
-  var LEGACY_OFFSET_KEY = "mangaReader.offsets";
-  function parseOffsets(raw) {
-    const stored = (() => {
-      if (!raw) return {};
-      try {
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch {
-        return {};
-      }
-    })();
-    const offsets = {};
-    for (const [id, value] of Object.entries(stored)) {
-      if (value === 1) offsets[id] = 1;
-    }
-    return offsets;
-  }
-  function readOffset(galleryId2) {
-    try {
-      return parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY))[galleryId2] || 0;
-    } catch (e) {
-      console.error("[mangaReader] offsets are not readable:", e);
-      return 0;
-    }
-  }
-  function writeOffset(galleryId2, offset2) {
-    try {
-      const offsets = parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY));
-      if (offset2 === 1) offsets[galleryId2] = 1;
-      else delete offsets[galleryId2];
-      window.localStorage.setItem(OFFSET_KEY, JSON.stringify(offsets));
-    } catch (e) {
-      console.error("[mangaReader] offsets are not writable:", e);
-    }
-  }
-  NR.parseSettings = parseSettings;
-  NR.parseOffsets = parseOffsets;
-  NR.readSettings = readSettings;
-  NR.readOffset = readOffset;
-  NR.FADE_MAX_MS = FADE_MAX_MS;
-
-  // src/reader/spreads.ts
-  var DEFAULT_SPREAD_OPTIONS = {
-    coverAlone: true,
-    offset: 0,
-    detectSpreads: true
-  };
-  var SPREAD_RATIO = 1;
-  function isWideSpreadPage(page) {
-    if (!page.height || page.width <= 0) return false;
-    return page.width / page.height > SPREAD_RATIO;
-  }
-  function layout(pages, options) {
-    const opts = {
-      ...DEFAULT_SPREAD_OPTIONS,
-      ...options || {}
-    };
-    const screens = [];
-    const pairable = (page) => !(opts.detectSpreads && isWideSpreadPage(page));
-    let i = 0;
-    const standAlone = () => {
-      screens.push({ start: i, pages: [pages[i]] });
-      i += 1;
-    };
-    if (opts.coverAlone && i < pages.length) standAlone();
-    if (opts.offset === 1 && i < pages.length) standAlone();
-    while (i < pages.length) {
-      const next = pages[i + 1];
-      if (next && pairable(pages[i]) && pairable(next)) {
-        screens.push({ start: i, pages: [pages[i], next] });
-        i += 2;
-      } else {
-        standAlone();
-      }
-    }
-    return screens;
-  }
-  function screenAt(screens, pageIndex) {
-    for (let i = 0; i < screens.length; i++) {
-      const screen = screens[i];
-      if (pageIndex >= screen.start && pageIndex < screen.start + screen.pages.length) {
-        return i;
-      }
-    }
-    return -1;
-  }
-  function stepsToAdjacent(screens, pageIndex, direction) {
-    const at = screenAt(screens, pageIndex);
-    if (at < 0) return 0;
-    const target = screens[at + direction];
-    if (!target) return 0;
-    return target.start - pageIndex;
-  }
-  NR.isWideSpreadPage = isWideSpreadPage;
-  NR.layout = layout;
-  NR.screenAt = screenAt;
-  NR.stepsToAdjacent = stepsToAdjacent;
 
   // src/reader/stash-lightbox.ts
   var SELECTOR_LIGHTBOX = ".Lightbox";
@@ -935,6 +785,266 @@
   NR.lightboxOrder = lightboxOrder;
   NR.carouselImage = carouselImage;
 
+  // src/reader/chapters-tab.ts
+  var SEL_PANEL = ".container";
+  var HIDDEN = "data-manga-reader-hidden";
+  var renderedFor = "";
+  var inHand = null;
+  function syncChaptersTab() {
+    const id = galleryIdFromPath(window.location.pathname);
+    if (!id) {
+      forgetChaptersTab();
+      return;
+    }
+    const panel = findPanel();
+    if (!panel) return;
+    if (!bridged()) return;
+    if ((inHand == null ? void 0 : inHand.id) === id) {
+      render(panel, inHand);
+      return;
+    }
+    if ((inHand == null ? void 0 : inHand.id) !== id) {
+      inHand = null;
+      renderedFor = "";
+      fetchGallery(id, { sort: "path", direction: "ASC" }).then((answer) => {
+        if (galleryIdFromPath(window.location.pathname) !== id) return;
+        const chapters = placeChapters(chaptersOf(answer), answer.pages);
+        inHand = { id, images: answer.images, chapters };
+        syncChaptersTab();
+      }).catch((e) => {
+        console.error(
+          "[mangaReader] could not read this gallery's chapters, so its tab is left as Stash drew it:",
+          e
+        );
+      });
+    }
+  }
+  function chaptersOf(answer) {
+    const own = parseChapters(
+      NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null
+    );
+    if (own) return own;
+    return chaptersFromStash(
+      answer.stashChapters,
+      answer.pages.map((page) => page.id)
+    );
+  }
+  function findPanel() {
+    const panels = document.querySelectorAll(SEL_PANEL);
+    for (let i = 0; i < panels.length; i++) {
+      const panel = panels[i];
+      if (isStashButton(panel.previousElementSibling)) return panel;
+    }
+    return null;
+  }
+  function isStashButton(node) {
+    return !!node && node.tagName === "BUTTON" && node.classList.contains("btn") && node.getAttribute(HIDDEN) === null;
+  }
+  function render(panel, gallery) {
+    const key = [
+      gallery.id,
+      ...gallery.chapters.map((c) => c.title + "@" + c.at)
+    ].join("|");
+    if (key === renderedFor && panel.childElementCount > 0) return;
+    renderedFor = key;
+    const button = panel.previousElementSibling;
+    if (button) button.setAttribute(HIDDEN, "");
+    panel.textContent = "";
+    for (const chapter of gallery.chapters) {
+      panel.appendChild(row(gallery, chapter));
+    }
+  }
+  function row(gallery, chapter) {
+    const wrap = document.createElement("div");
+    const rule = document.createElement("hr");
+    wrap.appendChild(rule);
+    const line = document.createElement("div");
+    line.className = "row";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-link";
+    const label = document.createElement("div");
+    label.className = "row";
+    label.textContent = (chapter.title.length > 0 ? chapter.title + " - #" : "#") + (chapter.at + 1);
+    button.appendChild(label);
+    button.addEventListener("click", () => {
+      takeOver({
+        images: gallery.images,
+        chapters: gallery.chapters,
+        totalCount: gallery.images.length,
+        at: chapter.at
+      });
+    });
+    line.appendChild(button);
+    wrap.appendChild(line);
+    return wrap;
+  }
+  function forgetChaptersTab() {
+    inHand = null;
+    renderedFor = "";
+  }
+
+  // src/reader/settings.ts
+  var STORAGE_KEY = "plugin.mangaTools.settings";
+  var LEGACY_STORAGE_KEY = "mangaReader.settings";
+  function storedValue(key, legacyKey) {
+    const current2 = window.localStorage.getItem(key);
+    if (current2 !== null) return current2;
+    const legacy = window.localStorage.getItem(legacyKey);
+    if (legacy !== null) window.localStorage.setItem(key, legacy);
+    return legacy;
+  }
+  var FADE_MAX_MS = 1e3;
+  var DEFAULT_SETTINGS = {
+    doublePage: false,
+    coverAlone: true,
+    detectSpreads: true,
+    fadeMs: 140
+  };
+  function parseSettings(raw) {
+    const stored = (() => {
+      if (!raw) return {};
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    })();
+    const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
+    const duration = (key) => {
+      const value = stored[key];
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        return DEFAULT_SETTINGS[key];
+      }
+      return Math.min(FADE_MAX_MS, Math.max(0, Math.round(value)));
+    };
+    return {
+      doublePage: flag("doublePage"),
+      coverAlone: flag("coverAlone"),
+      detectSpreads: flag("detectSpreads"),
+      fadeMs: duration("fadeMs")
+    };
+  }
+  function readSettings() {
+    try {
+      return parseSettings(storedValue(STORAGE_KEY, LEGACY_STORAGE_KEY));
+    } catch (e) {
+      console.error(
+        "[mangaReader] settings are not readable, using defaults:",
+        e
+      );
+      return { ...DEFAULT_SETTINGS };
+    }
+  }
+  function writeSettings(next) {
+    const merged = { ...readSettings(), ...next };
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    } catch (e) {
+      console.error("[mangaReader] settings are not writable:", e);
+    }
+    return merged;
+  }
+  var OFFSET_KEY = "plugin.mangaTools.offsets";
+  var LEGACY_OFFSET_KEY = "mangaReader.offsets";
+  function parseOffsets(raw) {
+    const stored = (() => {
+      if (!raw) return {};
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    })();
+    const offsets = {};
+    for (const [id, value] of Object.entries(stored)) {
+      if (value === 1) offsets[id] = 1;
+    }
+    return offsets;
+  }
+  function readOffset(galleryId2) {
+    try {
+      return parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY))[galleryId2] || 0;
+    } catch (e) {
+      console.error("[mangaReader] offsets are not readable:", e);
+      return 0;
+    }
+  }
+  function writeOffset(galleryId2, offset2) {
+    try {
+      const offsets = parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY));
+      if (offset2 === 1) offsets[galleryId2] = 1;
+      else delete offsets[galleryId2];
+      window.localStorage.setItem(OFFSET_KEY, JSON.stringify(offsets));
+    } catch (e) {
+      console.error("[mangaReader] offsets are not writable:", e);
+    }
+  }
+  NR.parseSettings = parseSettings;
+  NR.parseOffsets = parseOffsets;
+  NR.readSettings = readSettings;
+  NR.readOffset = readOffset;
+  NR.FADE_MAX_MS = FADE_MAX_MS;
+
+  // src/reader/spreads.ts
+  var DEFAULT_SPREAD_OPTIONS = {
+    coverAlone: true,
+    offset: 0,
+    detectSpreads: true
+  };
+  var SPREAD_RATIO = 1;
+  function isWideSpreadPage(page) {
+    if (!page.height || page.width <= 0) return false;
+    return page.width / page.height > SPREAD_RATIO;
+  }
+  function layout(pages, options) {
+    const opts = {
+      ...DEFAULT_SPREAD_OPTIONS,
+      ...options || {}
+    };
+    const screens = [];
+    const pairable = (page) => !(opts.detectSpreads && isWideSpreadPage(page));
+    let i = 0;
+    const standAlone = () => {
+      screens.push({ start: i, pages: [pages[i]] });
+      i += 1;
+    };
+    if (opts.coverAlone && i < pages.length) standAlone();
+    if (opts.offset === 1 && i < pages.length) standAlone();
+    while (i < pages.length) {
+      const next = pages[i + 1];
+      if (next && pairable(pages[i]) && pairable(next)) {
+        screens.push({ start: i, pages: [pages[i], next] });
+        i += 2;
+      } else {
+        standAlone();
+      }
+    }
+    return screens;
+  }
+  function screenAt(screens, pageIndex) {
+    for (let i = 0; i < screens.length; i++) {
+      const screen = screens[i];
+      if (pageIndex >= screen.start && pageIndex < screen.start + screen.pages.length) {
+        return i;
+      }
+    }
+    return -1;
+  }
+  function stepsToAdjacent(screens, pageIndex, direction) {
+    const at = screenAt(screens, pageIndex);
+    if (at < 0) return 0;
+    const target = screens[at + direction];
+    if (!target) return 0;
+    return target.start - pageIndex;
+  }
+  NR.isWideSpreadPage = isWideSpreadPage;
+  NR.layout = layout;
+  NR.screenAt = screenAt;
+  NR.stepsToAdjacent = stepsToAdjacent;
+
   // src/reader/takeover.ts
   var labelFor = (locale, key) => stringFor(locale, `mangaReader.${key}`);
   var CLASS_ACTIVE = "manga-reader-active";
@@ -967,6 +1077,7 @@
   var MAX_ATTEMPTS = 3;
   var attempts = 0;
   function step() {
+    syncChaptersTab();
     const lightbox = document.querySelector(SELECTOR_LIGHTBOX);
     if (!lightbox) {
       if (root) closeLightbox();
@@ -1021,7 +1132,7 @@
         id,
         pages: answer.pages,
         screens: layout(answer.pages, { ...settings, offset }),
-        chapters: placeChapters(chaptersOf(answer), answer.pages)
+        chapters: placeChapters(chaptersOf2(answer), answer.pages)
       };
       remember(id, gallery);
       handOverChapters(forLightbox, gallery, answer);
@@ -1057,7 +1168,7 @@
     }
     return fallback;
   }
-  function chaptersOf(answer) {
+  function chaptersOf2(answer) {
     const own = parseChapters(
       NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null
     );
@@ -1353,8 +1464,8 @@
     body.appendChild(group);
   }
   function slider(option) {
-    const row = document.createElement("div");
-    row.className = "row mb-1";
+    const row2 = document.createElement("div");
+    row2.className = "row mb-1";
     const column = document.createElement("div");
     column.className = "col";
     const label = document.createElement("label");
@@ -1380,8 +1491,8 @@
     });
     column.appendChild(label);
     column.appendChild(input);
-    row.appendChild(column);
-    return row;
+    row2.appendChild(column);
+    return row2;
   }
   function addOffsetSwitch(group) {
     if (!current() || group.querySelector("#" + OFFSET_ID)) return;
@@ -1398,8 +1509,8 @@
     );
   }
   function checkbox(option) {
-    const row = document.createElement("div");
-    row.className = "row mb-1";
+    const row2 = document.createElement("div");
+    row2.className = "row mb-1";
     const column = document.createElement("div");
     column.className = "col";
     const check = document.createElement("div");
@@ -1417,8 +1528,8 @@
     check.appendChild(input);
     check.appendChild(text);
     column.appendChild(check);
-    row.appendChild(column);
-    return row;
+    row2.appendChild(column);
+    return row2;
   }
   function setSwitchChecked(checked) {
     setChecked(SWITCH_ID, checked);
@@ -3333,28 +3444,28 @@
     );
     if (!(anchor == null ? void 0 : anchor.parentNode)) return null;
     const previous = anchor.previousElementSibling;
-    let row;
+    let row2;
     if (hasClass(previous, "card-popovers") || hasClass(previous, POPOVER_ROW_CLASS)) {
-      row = previous;
+      row2 = previous;
     } else {
-      row = document.createElement("div");
-      row.className = "btn-group card-popovers " + POPOVER_ROW_CLASS;
-      anchor.parentNode.insertBefore(row, anchor);
+      row2 = document.createElement("div");
+      row2.className = "btn-group card-popovers " + POPOVER_ROW_CLASS;
+      anchor.parentNode.insertBefore(row2, anchor);
     }
     let slot = null;
-    for (let i = 0; i < row.children.length; i++) {
-      if (hasClass(row.children[i], POPOVER_SLOT_CLASS)) {
-        slot = row.children[i];
+    for (let i = 0; i < row2.children.length; i++) {
+      if (hasClass(row2.children[i], POPOVER_SLOT_CLASS)) {
+        slot = row2.children[i];
         break;
       }
     }
     if (slot) {
-      if (row.lastElementChild !== slot) row.appendChild(slot);
+      if (row2.lastElementChild !== slot) row2.appendChild(slot);
       return slot;
     }
     slot = document.createElement("span");
     slot.className = POPOVER_SLOT_CLASS;
-    row.appendChild(slot);
+    row2.appendChild(slot);
     return slot;
   }
   function MangaPopoverMark(props) {
