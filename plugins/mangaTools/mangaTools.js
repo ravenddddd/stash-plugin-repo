@@ -329,9 +329,257 @@
   NS.catalogFor = catalogFor;
   NS.catalogs = catalogs;
 
+  // src/tools/fields.ts
+  NS.FIELD_NAME = "plugin.mangaTools.language";
+  NS.CENSORSHIP_FIELD_NAME = "plugin.mangaTools.censorship";
+  NS.MANGA_FIELD_NAME = "plugin.mangaTools.manga";
+  NS.TRANSLATION_GROUP_FIELD_NAME = "plugin.mangaTools.translationGroup";
+  NS.translationGroupOf = (customFields) => NS.pickField(customFields, NS.TRANSLATION_GROUP_FIELD_NAME).trim();
+  NS.groupKey = (name) => String(name != null ? name : "").trim().toLowerCase();
+  NS.sameTranslationGroup = (a, b) => NS.groupKey(a) === NS.groupKey(b);
+  NS.usualLanguageFor = (galleries, group) => {
+    const key = NS.groupKey(group);
+    return key ? NS.usualLanguagesOf(galleries)[key] || null : null;
+  };
+  NS.usualLanguagesOf = (galleries) => {
+    const out = {};
+    if (!galleries) return out;
+    const counts = {};
+    galleries.forEach((fields) => {
+      const key = NS.groupKey(NS.translationGroupOf(fields));
+      if (!key) return;
+      const code = NS.findCanonical(
+        NS.normalize(NS.pickField(fields, NS.FIELD_NAME))
+      );
+      if (!code) return;
+      if (!counts[key]) counts[key] = {};
+      const byLanguage = counts[key];
+      byLanguage[code] = (byLanguage[code] || 0) + 1;
+    });
+    for (const key of Object.keys(counts)) {
+      const usual = majorityOf(counts[key]);
+      if (usual) out[key] = usual;
+    }
+    return out;
+  };
+  function majorityOf(counts) {
+    let best = "";
+    let count = 0;
+    let tied = false;
+    for (const code of Object.keys(counts)) {
+      if (counts[code] > count) {
+        best = code;
+        count = counts[code];
+        tied = false;
+      } else if (counts[code] === count) {
+        tied = true;
+      }
+    }
+    return best && !tied ? { code: best, count } : null;
+  }
+  NS.MANGA_VALUE = "true";
+  NS.isManga = (customFields) => NS.pickField(customFields, NS.MANGA_FIELD_NAME) !== "";
+  NS.ORIGINAL_FIELD_NAME = "plugin.mangaTools.original";
+  NS.ORIGINAL_VALUE = NS.MANGA_VALUE;
+  NS.isOriginal = (customFields) => NS.pickField(customFields, NS.ORIGINAL_FIELD_NAME) !== "";
+  NS.CHAPTER_FIELD_NAME = "plugin.mangaTools.chapters";
+  NS.ownField = (key) => {
+    const k = String(key != null ? key : "").trim().toLowerCase();
+    if (k === "") return "";
+    const names = [
+      NS.FIELD_NAME,
+      NS.CENSORSHIP_FIELD_NAME,
+      NS.MANGA_FIELD_NAME,
+      NS.TRANSLATION_GROUP_FIELD_NAME,
+      NS.ORIGINAL_FIELD_NAME,
+      // Recognised but never drawn: no row, no sidebar section, no bulk entry.
+      // What it means is the reader half's business — a key of this plugin's must
+      // not be left behind in Stash's own custom-field rows either way.
+      NS.CHAPTER_FIELD_NAME
+    ];
+    for (let i = 0; i < names.length; i++) {
+      if (names[i].toLowerCase() === k) return names[i];
+    }
+    return "";
+  };
+  NS.isOwnField = (key) => NS.ownField(key) !== "";
+  NS.fieldsToClear = (customFields) => {
+    const map = customFields || {};
+    if (!map || typeof map !== "object") return [NS.MANGA_FIELD_NAME];
+    const keys = Object.keys(map).filter((key) => NS.isOwnField(key));
+    return keys.length ? keys : [NS.MANGA_FIELD_NAME];
+  };
+  NS.clearFields = (customFields) => {
+    let next = customFields || {};
+    if (!next || typeof next !== "object") next = {};
+    NS.fieldsToClear(next).forEach((name) => {
+      next = NS.setField(next, name, "");
+    });
+    return next;
+  };
+  NS.pickField = (customFields, name) => {
+    if (!customFields || typeof customFields !== "object") return "";
+    const map = customFields;
+    const key = name.toLowerCase();
+    const keys = Object.keys(map);
+    for (let i = 0; i < keys.length; i++) {
+      if (keys[i].toLowerCase() === key) {
+        const v = map[keys[i]];
+        if (v === null || v === void 0) return "";
+        return String(v);
+      }
+    }
+    return "";
+  };
+  NS.setField = (customFields, name, value) => {
+    const next = Object.assign({}, customFields || {});
+    const key = name.toLowerCase();
+    Object.keys(next).forEach((k) => {
+      if (k.toLowerCase() === key) delete next[k];
+    });
+    if (value) next[name] = value;
+    return next;
+  };
+
+  // src/reader/bridge.ts
+  var handle = null;
+  function bridged() {
+    return handle !== null;
+  }
+  function takeOver(request) {
+    handle == null ? void 0 : handle.takeOver(request);
+  }
+  function LightboxBridge() {
+    const api = requirePluginApi();
+    const React6 = api.React;
+    const entries = React6.useRef([]).current;
+    const show = api.hooks.useLightbox({}, entries);
+    React6.useEffect(() => {
+      handle = {
+        takeOver(request) {
+          entries.splice(0, entries.length, ...entriesFor(request));
+          show({
+            images: request.images,
+            // One page of everything, so the lightbox never asks for another: this
+            // list is the whole gallery, and a page callback would be a second way of
+            // saying which images it holds.
+            pages: 1,
+            pageSize: request.images.length,
+            totalCount: request.totalCount
+          });
+        }
+      };
+      return () => {
+        handle = null;
+      };
+    }, [entries, show, api]);
+    return null;
+  }
+  function entriesFor(request) {
+    const entries = [];
+    for (let i = 0; i < request.chapters.length; i++) {
+      const chapter = request.chapters[i];
+      entries.push({
+        id: "plugin.mangaTools.chapter." + i,
+        title: chapter.title,
+        image_index: chapter.at + 1
+      });
+    }
+    return entries;
+  }
+  function installBridge() {
+    const api = requirePluginApi();
+    const React6 = api.React;
+    api.patch.after("ImageList", (...args) => {
+      const result = args[args.length - 1];
+      return React6.createElement(
+        React6.Fragment,
+        null,
+        result,
+        React6.createElement(LightboxBridge)
+      );
+    });
+  }
+
   // src/reader/namespace.ts
   window.MangaReader = window.MangaReader || {};
   var NR = window.MangaReader;
+
+  // src/reader/chapters.ts
+  var CHAPTERS_VERSION = 1;
+  function parseChapters(raw) {
+    if (!raw) return null;
+    let stored = null;
+    try {
+      stored = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+    if (!stored || typeof stored !== "object") return null;
+    if (stored.v !== CHAPTERS_VERSION) return null;
+    if (!Array.isArray(stored.chapters)) return null;
+    const chapters = [];
+    for (const entry of stored.chapters) {
+      if (!entry || typeof entry !== "object") continue;
+      const row = entry;
+      if (!Array.isArray(row.images)) continue;
+      const images = [];
+      for (const id of row.images) {
+        if (typeof id === "string" || typeof id === "number") {
+          images.push(String(id));
+        }
+      }
+      chapters.push({
+        title: typeof row.title === "string" ? row.title : "",
+        images
+      });
+    }
+    return chapters;
+  }
+  function chaptersFromStash(rows, pathIds) {
+    if (!Array.isArray(rows)) return [];
+    const starts = [];
+    for (const row of rows) {
+      const index = Number(row == null ? void 0 : row.image_index);
+      if (!Number.isInteger(index) || index < 1 || index > pathIds.length)
+        continue;
+      starts.push({
+        title: typeof (row == null ? void 0 : row.title) === "string" ? row.title : "",
+        index
+      });
+    }
+    starts.sort((a, b) => a.index - b.index);
+    return starts.map((start2, i) => {
+      const next = starts[i + 1];
+      const end = next ? next.index - 1 : pathIds.length;
+      return {
+        title: start2.title,
+        images: pathIds.slice(start2.index - 1, end)
+      };
+    });
+  }
+  function placeChapters(chapters, pages) {
+    const position = /* @__PURE__ */ new Map();
+    for (let i = 0; i < pages.length; i++) {
+      if (!position.has(pages[i].id)) position.set(pages[i].id, i);
+    }
+    const placed = [];
+    for (const chapter of chapters) {
+      let at = -1;
+      for (const id of chapter.images) {
+        const index = position.get(id);
+        if (index !== void 0 && (at < 0 || index < at)) at = index;
+      }
+      if (at < 0) continue;
+      placed.push({ title: chapter.title, images: chapter.images, at });
+    }
+    placed.sort((a, b) => a.at - b.at);
+    return placed;
+  }
+  NR.CHAPTERS_VERSION = CHAPTERS_VERSION;
+  NR.parseChapters = parseChapters;
+  NR.chaptersFromStash = chaptersFromStash;
+  NR.placeChapters = placeChapters;
 
   // src/reader/settings.ts
   var STORAGE_KEY = "plugin.mangaTools.settings";
@@ -497,6 +745,7 @@
   // src/reader/stash-lightbox.ts
   var SELECTOR_LIGHTBOX = ".Lightbox";
   var SELECTOR_DISPLAY = ".Lightbox-display";
+  var SELECTOR_CAROUSEL = ".Lightbox-carousel";
   var SELECTOR_INDICATOR = ".Lightbox-header-indicator";
   var SELECTOR_POPOVER_BODY = ".popover .popover-body";
   var CLASS_NAVBUTTON = "Lightbox-navbutton";
@@ -536,20 +785,41 @@
       })
     );
   }
+  function lightboxOrder(search) {
+    const params = new URLSearchParams(search || "");
+    const sort = params.get("sortby") || "path";
+    const direction = params.get("sortdir");
+    return {
+      sort,
+      direction: direction === "desc" || direction === null && sort === "date" ? "DESC" : "ASC"
+    };
+  }
   var GALLERY_QUERY_TEXT = [
-    "query MangaReaderGallery($galleryId: ID!) {",
+    "query MangaReaderGallery($galleryId: ID!, $sort: String, $direction: SortDirectionEnum, $withPathIds: Boolean!) {",
     "  configuration {",
     "    interface {",
     "      language",
     "    }",
     "  }",
-    "  findImages(",
+    "  findGallery(id: $galleryId) {",
+    "    id",
+    "    custom_fields",
+    "    chapters {",
+    "      title",
+    "      image_index",
+    "    }",
+    "  }",
+    "  pages: findImages(",
     "    image_filter: { galleries: { value: [$galleryId], modifier: INCLUDES } }",
-    '    filter: { per_page: -1, sort: "path" }',
+    "    filter: { per_page: -1, sort: $sort, direction: $direction }",
     "  ) {",
     "    images {",
     "      id",
     "      visual_files {",
+    "        __typename",
+    "        ... on VideoFile {",
+    "          video_codec",
+    "        }",
     "        ... on ImageFile {",
     "          width",
     "          height",
@@ -560,41 +830,102 @@
     "      }",
     "    }",
     "  }",
+    "  byPath: findImages(",
+    "    image_filter: { galleries: { value: [$galleryId], modifier: INCLUDES } }",
+    '    filter: { per_page: -1, sort: "path", direction: ASC }',
+    "  ) @include(if: $withPathIds) {",
+    "    images {",
+    "      id",
+    "    }",
+    "  }",
     "}"
   ].join("\n");
   var galleryQuery = null;
-  async function fetchGallery(galleryId2) {
-    var _a2, _b2, _c;
+  function carouselImage(lightbox) {
+    var _a2, _b2;
+    const carousel = lightbox.querySelector(
+      SELECTOR_CAROUSEL
+    );
+    if (!carousel) return null;
+    const offset2 = /^(-?\d+(?:\.\d+)?)vw$/.exec(((_a2 = carousel.style) == null ? void 0 : _a2.left) || "");
+    if (!offset2) return null;
+    const at = Math.round(-Number(offset2[1]) / 100);
+    if (!Number.isFinite(at) || at < 0) return null;
+    const slide = carousel.children[at];
+    const media = (slide == null ? void 0 : slide.querySelector("img")) || (slide == null ? void 0 : slide.querySelector("video"));
+    const src = (media == null ? void 0 : media.src) || "";
+    const id = (_b2 = /\/image\/([^/]+)\//.exec(src)) == null ? void 0 : _b2[1];
+    if (!id) return null;
+    return { at, id };
+  }
+  async function fetchGallery(galleryId2, order) {
+    var _a2, _b2, _c, _d, _e, _f, _g;
     if (!galleryQuery) {
       galleryQuery = gqlDoc(GALLERY_QUERY_TEXT, "build the gallery query");
     }
     const query = galleryQuery;
     if (!query) throw new Error("[mangaReader] no gallery query document");
-    const data = await requirePluginApi().utils.StashService.getClient().query({ query, variables: { galleryId: galleryId2 }, fetchPolicy: "no-cache" }).then((res) => res == null ? void 0 : res.data);
-    const pages = (((_a2 = data == null ? void 0 : data.findImages) == null ? void 0 : _a2.images) || []).map(
-      (image) => {
-        var _a3;
-        const file = (image.visual_files || []).find(
-          (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
-        );
-        return {
-          id: String(image.id),
-          width: (file == null ? void 0 : file.width) || 0,
-          height: (file == null ? void 0 : file.height) || 0,
-          // Stash's own URL for the image, kept for the query on it — which is a
-          // version stamp, and is the whole reason this field is fetched at all. See
-          // pageUrl in takeover.ts.
-          url: ((_a3 = image.paths) == null ? void 0 : _a3.image) || ""
-        };
-      }
-    );
+    const pathIdsNeeded = order.sort !== "path";
+    const data = await requirePluginApi().utils.StashService.getClient().query({
+      query,
+      variables: {
+        galleryId: galleryId2,
+        sort: order.sort,
+        direction: order.direction,
+        withPathIds: pathIdsNeeded
+      },
+      fetchPolicy: "no-cache"
+    }).then((res) => res == null ? void 0 : res.data);
+    const pages = (((_a2 = data == null ? void 0 : data.pages) == null ? void 0 : _a2.images) || []).map((image) => {
+      var _a3;
+      const file = (image.visual_files || []).find(
+        (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
+      );
+      return {
+        id: String(image.id),
+        width: (file == null ? void 0 : file.width) || 0,
+        height: (file == null ? void 0 : file.height) || 0,
+        // Stash's own URL for the image, kept for the query on it — which is a
+        // version stamp, and is the whole reason this field is fetched at all. See
+        // pageUrl in takeover.ts.
+        url: ((_a3 = image.paths) == null ? void 0 : _a3.image) || ""
+      };
+    });
+    const images = (((_b2 = data == null ? void 0 : data.pages) == null ? void 0 : _b2.images) || []).map((image) => {
+      var _a3;
+      const files = image.visual_files || [];
+      const sized = files.find(
+        (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
+      );
+      return {
+        id: String(image.id),
+        // Stash shows this nowhere this plugin can see, but the shape is Stash's and
+        // an image without a title is the ordinary case rather than a missing field.
+        title: "",
+        paths: { image: ((_a3 = image.paths) == null ? void 0 : _a3.image) || "" },
+        visual_files: [
+          {
+            __typename: String((sized == null ? void 0 : sized.__typename) || "ImageFile"),
+            video_codec: sized == null ? void 0 : sized.video_codec,
+            width: (sized == null ? void 0 : sized.width) || 0,
+            height: (sized == null ? void 0 : sized.height) || 0
+          }
+        ]
+      };
+    });
     return {
-      language: ((_c = (_b2 = data == null ? void 0 : data.configuration) == null ? void 0 : _b2.interface) == null ? void 0 : _c.language) || null,
-      pages
+      language: ((_d = (_c = data == null ? void 0 : data.configuration) == null ? void 0 : _c.interface) == null ? void 0 : _d.language) || null,
+      pages,
+      images,
+      customFields: ((_e = data == null ? void 0 : data.findGallery) == null ? void 0 : _e.custom_fields) || {},
+      stashChapters: ((_f = data == null ? void 0 : data.findGallery) == null ? void 0 : _f.chapters) || [],
+      pathIds: pathIdsNeeded ? (((_g = data == null ? void 0 : data.byPath) == null ? void 0 : _g.images) || []).map((image) => String(image.id)) : null
     };
   }
   NR.parseIndicator = parseIndicator;
   NR.galleryIdFromPath = galleryIdFromPath;
+  NR.lightboxOrder = lightboxOrder;
+  NR.carouselImage = carouselImage;
 
   // src/reader/takeover.ts
   var labelFor = (locale, key) => stringFor(locale, `mangaReader.${key}`);
@@ -622,6 +953,7 @@
   var language = null;
   var logged = false;
   var clickRoot = null;
+  var pending = null;
   var errand = null;
   var PRESS_RETRY_MS = 120;
   var MAX_ATTEMPTS = 3;
@@ -669,25 +1001,62 @@
       step();
       return;
     }
+    if (pending === id) return;
     const forLightbox = root;
-    fetchGallery(id).then((answer) => {
+    if (!forLightbox) return;
+    pending = id;
+    loadPages(id, lightboxOrder(window.location.search), forLightbox).then((answer) => {
+      if (pending !== id) return;
+      pending = null;
       if (root !== forLightbox) return;
-      remember(id, {
+      const gallery = {
         id,
         pages: answer.pages,
-        screens: layout(answer.pages, { ...settings, offset })
-      });
+        screens: layout(answer.pages, { ...settings, offset }),
+        chapters: placeChapters(chaptersOf(answer), answer.pages)
+      };
+      remember(id, gallery);
+      handOverChapters(forLightbox, gallery, answer);
       language = answer.language;
       galleryId = id;
       shownAt = -1;
       step();
     }).catch((e) => {
+      if (pending === id) pending = null;
       console.error(
         "[mangaReader] could not read this gallery's pages, turning the spread view off:",
         e
       );
       deactivate();
     });
+  }
+  async function loadPages(id, order, lightbox) {
+    var _a2, _b2, _c, _d;
+    const answer = await fetchGallery(id, order);
+    const shown = carouselImage(lightbox);
+    if (!shown || ((_a2 = answer.pages[shown.at]) == null ? void 0 : _a2.id) === shown.id) return answer;
+    if (order.sort === "path") {
+      throw new Error(
+        "[mangaReader] the lightbox is showing image " + shown.id + " where a path-ordered list has " + ((_c = (_b2 = answer.pages[shown.at]) == null ? void 0 : _b2.id) != null ? _c : "nothing") + " \u2014 the list behind it is filtered, so its pages cannot be paired"
+      );
+    }
+    const fallback = await fetchGallery(id, { sort: "path", direction: "ASC" });
+    const still = carouselImage(lightbox);
+    if (still && ((_d = fallback.pages[still.at]) == null ? void 0 : _d.id) !== still.id) {
+      throw new Error(
+        "[mangaReader] the pages could not be matched to the lightbox in either order, so the spread view would pair the wrong ones"
+      );
+    }
+    return fallback;
+  }
+  function chaptersOf(answer) {
+    const own = parseChapters(
+      NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null
+    );
+    if (own) return own;
+    if (answer.stashChapters.length === 0) return [];
+    const pathIds = answer.pathIds || answer.pages.map((page) => page.id);
+    return chaptersFromStash(answer.stashChapters, pathIds);
   }
   function remember(id, gallery) {
     loaded.delete(id);
@@ -923,6 +1292,16 @@
     root = null;
     galleryId = null;
     logged = false;
+  }
+  function handOverChapters(lightbox, gallery, answer) {
+    if (!bridged()) return;
+    const position = readPosition(lightbox);
+    if (!position || position.total !== answer.images.length) return;
+    takeOver({
+      images: answer.images,
+      chapters: gallery.chapters,
+      totalCount: answer.images.length
+    });
   }
   function injectSwitch(lightbox) {
     const body = lightbox.querySelector(SELECTOR_POPOVER_BODY);
@@ -1163,115 +1542,9 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("keydown", onKeyDown, true);
+    installBridge();
     step();
   }
-
-  // src/tools/fields.ts
-  NS.FIELD_NAME = "plugin.mangaTools.language";
-  NS.CENSORSHIP_FIELD_NAME = "plugin.mangaTools.censorship";
-  NS.MANGA_FIELD_NAME = "plugin.mangaTools.manga";
-  NS.TRANSLATION_GROUP_FIELD_NAME = "plugin.mangaTools.translationGroup";
-  NS.translationGroupOf = (customFields) => NS.pickField(customFields, NS.TRANSLATION_GROUP_FIELD_NAME).trim();
-  NS.groupKey = (name) => String(name != null ? name : "").trim().toLowerCase();
-  NS.sameTranslationGroup = (a, b) => NS.groupKey(a) === NS.groupKey(b);
-  NS.usualLanguageFor = (galleries, group) => {
-    const key = NS.groupKey(group);
-    return key ? NS.usualLanguagesOf(galleries)[key] || null : null;
-  };
-  NS.usualLanguagesOf = (galleries) => {
-    const out = {};
-    if (!galleries) return out;
-    const counts = {};
-    galleries.forEach((fields) => {
-      const key = NS.groupKey(NS.translationGroupOf(fields));
-      if (!key) return;
-      const code = NS.findCanonical(
-        NS.normalize(NS.pickField(fields, NS.FIELD_NAME))
-      );
-      if (!code) return;
-      if (!counts[key]) counts[key] = {};
-      const byLanguage = counts[key];
-      byLanguage[code] = (byLanguage[code] || 0) + 1;
-    });
-    for (const key of Object.keys(counts)) {
-      const usual = majorityOf(counts[key]);
-      if (usual) out[key] = usual;
-    }
-    return out;
-  };
-  function majorityOf(counts) {
-    let best = "";
-    let count = 0;
-    let tied = false;
-    for (const code of Object.keys(counts)) {
-      if (counts[code] > count) {
-        best = code;
-        count = counts[code];
-        tied = false;
-      } else if (counts[code] === count) {
-        tied = true;
-      }
-    }
-    return best && !tied ? { code: best, count } : null;
-  }
-  NS.MANGA_VALUE = "true";
-  NS.isManga = (customFields) => NS.pickField(customFields, NS.MANGA_FIELD_NAME) !== "";
-  NS.ORIGINAL_FIELD_NAME = "plugin.mangaTools.original";
-  NS.ORIGINAL_VALUE = NS.MANGA_VALUE;
-  NS.isOriginal = (customFields) => NS.pickField(customFields, NS.ORIGINAL_FIELD_NAME) !== "";
-  NS.ownField = (key) => {
-    const k = String(key != null ? key : "").trim().toLowerCase();
-    if (k === "") return "";
-    const names = [
-      NS.FIELD_NAME,
-      NS.CENSORSHIP_FIELD_NAME,
-      NS.MANGA_FIELD_NAME,
-      NS.TRANSLATION_GROUP_FIELD_NAME,
-      NS.ORIGINAL_FIELD_NAME
-    ];
-    for (let i = 0; i < names.length; i++) {
-      if (names[i].toLowerCase() === k) return names[i];
-    }
-    return "";
-  };
-  NS.isOwnField = (key) => NS.ownField(key) !== "";
-  NS.fieldsToClear = (customFields) => {
-    const map = customFields || {};
-    if (!map || typeof map !== "object") return [NS.MANGA_FIELD_NAME];
-    const keys = Object.keys(map).filter((key) => NS.isOwnField(key));
-    return keys.length ? keys : [NS.MANGA_FIELD_NAME];
-  };
-  NS.clearFields = (customFields) => {
-    let next = customFields || {};
-    if (!next || typeof next !== "object") next = {};
-    NS.fieldsToClear(next).forEach((name) => {
-      next = NS.setField(next, name, "");
-    });
-    return next;
-  };
-  NS.pickField = (customFields, name) => {
-    if (!customFields || typeof customFields !== "object") return "";
-    const map = customFields;
-    const key = name.toLowerCase();
-    const keys = Object.keys(map);
-    for (let i = 0; i < keys.length; i++) {
-      if (keys[i].toLowerCase() === key) {
-        const v = map[keys[i]];
-        if (v === null || v === void 0) return "";
-        return String(v);
-      }
-    }
-    return "";
-  };
-  NS.setField = (customFields, name, value) => {
-    const next = Object.assign({}, customFields || {});
-    const key = name.toLowerCase();
-    Object.keys(next).forEach((k) => {
-      if (k.toLowerCase() === key) delete next[k];
-    });
-    if (value) next[name] = value;
-    return next;
-  };
 
   // src/tools/censorship.tsx
   var PluginApi = requirePluginApi();
@@ -2995,9 +3268,9 @@
     }
   }
   function refreshAfterWrite() {
-    const pending = inFlight;
-    if (pending) {
-      pending.then(() => {
+    const pending2 = inFlight;
+    if (pending2) {
+      pending2.then(() => {
         refresh();
       });
     } else {

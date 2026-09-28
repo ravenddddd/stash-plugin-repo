@@ -761,6 +761,17 @@ query is lifted onto the reader's own relative path: same resource, same cache
 entry, and now the pages Stash has already loaded are there the moment they are
 asked for.
 
+**And in the order the lightbox is showing them.** Which is not always path: the
+lightbox opened from the gallery page's Chapters tab is Stash's own and path-sorted,
+but the one opened from the **Images** tab holds *the list's* images, in the list's
+own sort — and the list keeps that sort in the URL (`?sortby=title&perPage=500`).
+Pairing path-ordered pages against a title-ordered carousel draws the wrong pages,
+and puts every index the reader computes off by however much the two orders
+disagree. So the sort and direction are read from the URL and asked for back, with
+Stash's own rules for them — including that an absent direction means descending
+for `date` and nothing else, and that a seeded `random_…` is a sort name to hand
+back rather than a shuffle to roll again.
+
 What remains is genuinely cold: the first screen, a jump, a slow disk. For those,
 the screen is built **detached** and shown in one step — the reader keeps whatever
 is already on screen until both images can be painted (the browser is asked with
@@ -776,6 +787,59 @@ before it — a cross-fade is smoother on a photograph and worse on everything e
 since two pages of text superimposed are illegible soup for as long as it lasts. It
 starts only once the images are there, so it is never a wait in disguise, and it
 does not happen at all for a reader whose system asks for less motion.
+
+### Chapters, in the order you are reading
+
+Stash keeps a chapter as a title and a **number** — the Nth image — and that N
+counts in **path order**, because that is the order its own lightbox reads a
+gallery in. Everything follows from that: sort the same gallery by title and the
+number points somewhere else, add an image near the front and every chapter after
+it is off by one. Stash knows this, which is why it hands the lightbox **no
+chapters at all** unless the list behind it is in path order — the chapter menu
+simply is not there in a gallery sorted any other way.
+
+So this plugin keeps its own list, under `plugin.mangaTools.chapters`: a title and
+the **ids of the images in it**. Identity does not move when the order does, so the
+same list is right in every sort, and it survives images being added and removed
+around it.
+
+**Which images are in a chapter is a fact about the images, so it is stored; what
+order they are in is a fact about the view, so it is not.** The ids are written in
+path order only to keep the field stable and diffable — a chapter is placed at
+whichever of its images comes *first* on screen, so the same list reads correctly
+under a title sort, a path sort, or anything else. And an image in no chapter is
+an ordinary thing to have: a cover, a divider, a page nobody has decided about
+yet. The button says so rather than guessing, which is how a page that still needs
+a chapter becomes visible.
+
+**The menu is Stash's own.** Not a menu of this plugin's dressed up to look like
+one: the lightbox's own chapter control, in its own place, offering this plugin's
+chapters. What makes that possible is that both halves of Stash's rule are about
+the *numbers*, not the menu. It refuses to show chapters for a lightbox whose list
+is not in path order, because its chapter numbers count in path order and would
+point at the wrong images — so hand it a list **and** chapters numbered in that
+list, and its own menu is right in any order at all, and its own jump — `setIndex`,
+which lands instantly — is the jump.
+
+Which is what this plugin does, once the double-page mode is on and it has read
+the gallery: it hands the lightbox the images it is drawing and its own chapters,
+numbered by where each one begins on screen. The header's chapter name follows for
+free, since it reads the same list.
+
+**Only on a list it has checked.** The handover is skipped when the list is not the
+one the lightbox is showing — a filtered list behind it, say — because replacing a
+lightbox's images with a different set is not a takeover but a swap, and every
+number after the first difference would be wrong. A gallery whose pages could not
+be matched to what is on screen is not drawn at all, and nothing is handed over.
+
+**Nothing is written until you edit a gallery's chapters.****Nothing is written until you edit a gallery's chapters.** A gallery with no list
+of its own — which is every gallery to begin with, including the ones whose
+chapters you made by hand in Stash — is read from Stash's own numbers instead:
+Stash gives each chapter a start and nothing else, so its ranges (each chapter up
+to the next one's start) are expanded into sets of images, against path order, on
+the spot. So opening a gallery changes nothing, the plugin's own list appears only
+for galleries whose chapters somebody actually edited, and deleting that one
+custom field puts a gallery back exactly where it was.
 
 ### What is not here yet
 
@@ -1243,6 +1307,14 @@ The reading half's own:
   the second time the menu is opened in a session.
 - **Reading progress is not tracked.** That needs a viewer of our own rather than a
   takeover of Stash's.
+- **Chapters are read, not yet edited, from the lightbox.** The list this plugin
+  keeps is what the reader reads and hands over; making one — a button that says
+  "this image starts a chapter" — is the next piece.
+- **A page in no chapter is not marked as such.** Stash's own header names the last
+  chapter that began at or before where the reader is, which is what its numbers
+  mean, so a cover before the first chapter shows no name and a divider between two
+  shows the one before it. Saying "no chapter" would mean drawing a header of this
+  plugin's own, and the native one is worth more than the distinction.
 
 ## Extending
 
