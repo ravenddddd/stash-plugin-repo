@@ -4,6 +4,27 @@
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
+  // src/plugin-api.ts
+  function requirePluginApi() {
+    const api = window.PluginApi;
+    if (!api) {
+      throw new Error(
+        "[mangaTools] window.PluginApi is missing \u2014 the plugin cannot load"
+      );
+    }
+    return api;
+  }
+  function gqlDoc(text, what) {
+    var _a2, _b2;
+    const api = requirePluginApi();
+    const gql = ((_a2 = api.libraries.Apollo) == null ? void 0 : _a2.gql) || ((_b2 = api.GQL) == null ? void 0 : _b2.gql);
+    if (!gql) {
+      console.error("[mangaTools] gql not available, cannot " + what);
+      return null;
+    }
+    return gql(text);
+  }
+
   // src/languages.ts
   window.MangaTools = window.MangaTools || {};
   var NS = window.MangaTools;
@@ -123,7 +144,1026 @@
     return fallback;
   };
 
-  // src/fields.ts
+  // src/messages/en.json
+  var en_default = {
+    "mangaReader.doublePage": "Double page",
+    "mangaReader.fade": "Fade in",
+    "mangaReader.offset": "Shift the pairing by one page",
+    "mangaTools.select.placeholder": "Select language\u2026",
+    "mangaTools.settings.enabledLanguages.heading": "Enabled languages",
+    "mangaTools.settings.enabledLanguages.description": "Only these languages appear in the edit-page dropdown. Display (badge and detail row) is unaffected. Leave empty to show every language.",
+    "mangaTools.settings.enabledLanguages.placeholder": "All languages",
+    "mangaTools.settings.showFlags.heading": "Show flags",
+    "mangaTools.settings.showFlags.description": "Draw the flag beside the language name. Turn this off to show the name on its own.",
+    "mangaTools.settings.showCoverBadge.heading": "Show the language on gallery covers",
+    "mangaTools.settings.showCoverBadge.description": "The badge in the bottom-right of a gallery's cover. With flags turned off it shows the language name instead of a flag.",
+    "mangaTools.settings.openDetailsBlock.heading": "Start the details block expanded",
+    "mangaTools.settings.openDetailsBlock.description": "The Manga info section in a gallery's details tab. Collapsed, its heading is what says the section is there. This decides the state a block opens in, not whether it can be opened.",
+    "mangaTools.settings.openEditBlock.heading": "Start the edit block expanded",
+    "mangaTools.settings.openEditBlock.description": "The Manga info block in a gallery's edit form, where its language, censorship and translation group are set. This decides the state a block opens in, not whether it can be opened.",
+    "mangaTools.settings.hidePerformers.heading": "Hide the performers field on a manga gallery",
+    "mangaTools.settings.hidePerformers.description": "A manga gallery rarely has performers, so its edit page leaves the field out. Only the field is hidden \u2014 whatever a gallery already has stays on the gallery and is kept when it is saved. The bulk edit dialog and the details tab are unaffected.",
+    "mangaTools.manga.mark": "Mark as manga",
+    "mangaTools.manga.marked": "Manga",
+    "mangaTools.manga.isManga": "Is manga",
+    "mangaTools.filter.manga.marked": "Marked",
+    "mangaTools.filter.manga.unmarked": "Unmarked",
+    "mangaTools.manga.confirm": "Are you sure you want to stop managing this gallery? Its language, censorship and translation group values will be removed.",
+    "mangaTools.manga.confirmResetsForm": "The edit form has unsaved changes, and taking the mark off will reset it.",
+    "mangaTools.manga.confirmCancel": "Cancel",
+    "mangaTools.manga.confirmOk": "Unmark",
+    "mangaTools.panel.heading": "Manga info",
+    "mangaTools.censorship.heading": "Censorship",
+    "mangaTools.censorship.censored": "Censored",
+    "mangaTools.censorship.uncensored": "Uncensored",
+    "mangaTools.censorship.unset": "Not marked",
+    "mangaTools.translationGroup.heading": "Translation group",
+    "mangaTools.translationGroup.create": "Create",
+    "mangaTools.translationGroup.placeholder": "Set a translation group\u2026",
+    "mangaTools.translationGroup.fill": "Fill in",
+    "mangaTools.translationGroup.original": "Raw",
+    "mangaTools.translationGroup.originalOn": "Mark as raw: the original text, no translation group",
+    "mangaTools.translationGroup.originalOff": "No longer raw \u2014 clear the mark",
+    "mangaTools.translationGroup.originalOffRestore": "No longer raw \u2014 clear the mark and put the translation group back",
+    "mangaTools.translationGroup.originalDetail": "raw (no translation group)",
+    "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
+    "mangaTools.bulk.remove": "Remove",
+    "mangaTools.bulk.unmarkWarning": "Unmarking removes this plugin's manga, language, censorship and translation group fields from the selected galleries."
+  };
+
+  // src/messages/zh-Hans.json
+  var zh_Hans_default = {
+    "mangaReader.doublePage": "\u53CC\u9875\u9605\u8BFB",
+    "mangaReader.fade": "\u6DE1\u5165",
+    "mangaReader.offset": "\u914D\u5BF9\u504F\u79FB\u4E00\u683C",
+    "mangaTools.select.placeholder": "\u9009\u62E9\u8BED\u8A00\u2026",
+    "mangaTools.settings.enabledLanguages.heading": "\u542F\u7528\u7684\u8BED\u8A00",
+    "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u8FD9\u4E9B\u8BED\u8A00\u4F1A\u51FA\u73B0\u5728\u7F16\u8F91\u9875\u7684\u4E0B\u62C9\u6846\u91CC\u3002\u663E\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8BE6\u60C5\u9875\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u54CD\u3002\u7559\u7A7A\u8868\u793A\u663E\u793A\u5168\u90E8\u8BED\u8A00\u3002",
+    "mangaTools.settings.enabledLanguages.placeholder": "\u5168\u90E8\u8BED\u8A00",
+    "mangaTools.settings.showFlags.heading": "\u663E\u793A\u56FD\u65D7",
+    "mangaTools.settings.showFlags.description": "\u5728\u8BED\u8A00\u540D\u79F0\u65C1\u753B\u51FA\u56FD\u65D7\u3002\u5173\u6389\u540E\u53EA\u663E\u793A\u540D\u79F0\u3002",
+    "mangaTools.settings.showCoverBadge.heading": "\u5728\u5C01\u9762\u663E\u793A\u8BED\u8A00",
+    "mangaTools.settings.showCoverBadge.description": "\u753B\u5ECA\u5C01\u9762\u53F3\u4E0B\u89D2\u7684\u5FBD\u7AE0\u3002\u5173\u6389\u56FD\u65D7\u65F6\u663E\u793A\u8BED\u8A00\u540D\u79F0\u800C\u4E0D\u662F\u56FD\u65D7\u3002",
+    "mangaTools.settings.openDetailsBlock.heading": "\u7B80\u4ECB\u7684\u6F2B\u753B\u4FE1\u606F\u9ED8\u8BA4\u5C55\u5F00",
+    "mangaTools.settings.openDetailsBlock.description": "\u753B\u5ECA\u7B80\u4ECB\u9875\u91CC\u7684\u90A3\u4E00\u8282\u3002\u6536\u8D77\u65F6\uFF0C\u90A3\u4E00\u884C\u6807\u9898\u5C31\u662F\u300C\u8FD9\u91CC\u6709\u4E00\u8282\u300D\u7684\u8BF4\u660E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00\u3002",
+    "mangaTools.settings.openEditBlock.heading": "\u7F16\u8F91\u9875\u7684\u6F2B\u753B\u4FE1\u606F\u9ED8\u8BA4\u5C55\u5F00",
+    "mangaTools.settings.openEditBlock.description": "\u753B\u5ECA\u7F16\u8F91\u8868\u5355\u91CC\u7684\u90A3\u4E00\u5757\uFF0C\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5728\u90A3\u91CC\u8BBE\u7F6E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00.",
+    "mangaTools.settings.hidePerformers.heading": "\u5728\u6F2B\u753B\u7684\u7F16\u8F91\u9875\u9690\u85CF\u300C\u6F14\u5458\u300D",
+    "mangaTools.settings.hidePerformers.description": "\u6F2B\u753B\u4E00\u822C\u6CA1\u6709\u6F14\u5458\uFF0C\u6240\u4EE5\u7F16\u8F91\u9875\u4E0D\u663E\u793A\u8FD9\u4E00\u680F\u3002\u53EA\u662F\u9690\u85CF\uFF1A\u753B\u5ECA\u5DF2\u6709\u7684\u6F14\u5458\u4ECD\u7136\u7559\u5728\u753B\u5ECA\u4E0A\uFF0C\u4FDD\u5B58\u65F6\u4E5F\u4E0D\u4F1A\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7F16\u8F91\u5BF9\u8BDD\u6846\u548C\u7B80\u4ECB\u9875\u4E0D\u53D7\u5F71\u54CD\u3002",
+    "mangaTools.manga.mark": "\u6807\u8BB0\u4E3A\u6F2B\u753B",
+    "mangaTools.manga.marked": "\u6F2B\u753B",
+    "mangaTools.manga.isManga": "\u662F\u5426\u4E3A\u6F2B\u753B",
+    "mangaTools.filter.manga.marked": "\u5DF2\u6807\u8BB0",
+    "mangaTools.filter.manga.unmarked": "\u672A\u6807\u8BB0",
+    "mangaTools.manga.confirm": "\u786E\u5B9A\u4E0D\u518D\u628A\u8FD9\u4E2A\u753B\u5ECA\u4F5C\u4E3A\u6F2B\u753B\u7BA1\u7406\u5417\uFF1F\u5B83\u7684\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u7684\u503C\u4F1A\u88AB\u5220\u9664\u3002",
+    "mangaTools.manga.confirmResetsForm": "\u7F16\u8F91\u9875\u6709\u672A\u4FDD\u5B58\u7684\u6539\u52A8\uFF0C\u53D6\u6D88\u6807\u8BB0\u4F1A\u628A\u8BE5\u8868\u5355\u91CD\u7F6E\u3002",
+    "mangaTools.manga.confirmCancel": "\u53D6\u6D88",
+    "mangaTools.manga.confirmOk": "\u53D6\u6D88\u6807\u8BB0",
+    "mangaTools.panel.heading": "\u6F2B\u753B\u4FE1\u606F",
+    "mangaTools.censorship.heading": "\u4FEE\u6B63",
+    "mangaTools.censorship.censored": "\u6709\u4FEE\u6B63",
+    "mangaTools.censorship.uncensored": "\u65E0\u4FEE\u6B63",
+    "mangaTools.censorship.unset": "\u672A\u6807\u6CE8",
+    "mangaTools.translationGroup.heading": "\u7FFB\u8BD1\u7EC4",
+    "mangaTools.translationGroup.create": "\u521B\u5EFA",
+    "mangaTools.translationGroup.placeholder": "\u586B\u5199\u7FFB\u8BD1\u7EC4\u2026",
+    "mangaTools.translationGroup.fill": "\u586B\u5165",
+    "mangaTools.translationGroup.original": "\u751F\u8089",
+    "mangaTools.translationGroup.originalOn": "\u6807\u4E3A\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6CA1\u6709\u7FFB\u8BD1\u7EC4",
+    "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0",
+    "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0\uFF0C\u5E76\u6062\u590D\u539F\u6765\u7684\u7FFB\u8BD1\u7EC4",
+    "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
+    "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
+    "mangaTools.bulk.remove": "\u79FB\u9664",
+    "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E2D\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u6F2B\u753B\u3001\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5B57\u6BB5\u3002"
+  };
+
+  // src/messages/zh-Hant.json
+  var zh_Hant_default = {
+    "mangaReader.doublePage": "\u96D9\u9801\u95B1\u8B80",
+    "mangaReader.fade": "\u6DE1\u5165",
+    "mangaReader.offset": "\u914D\u5C0D\u504F\u79FB\u4E00\u683C",
+    "mangaTools.select.placeholder": "\u9078\u64C7\u8A9E\u8A00\u2026",
+    "mangaTools.settings.enabledLanguages.heading": "\u555F\u7528\u7684\u8A9E\u8A00",
+    "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u9019\u4E9B\u8A9E\u8A00\u6703\u51FA\u73FE\u5728\u7DE8\u8F2F\u9801\u7684\u4E0B\u62C9\u9078\u55AE\u88E1\u3002\u986F\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8A73\u7D30\u9801\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u97FF\u3002\u7559\u7A7A\u8868\u793A\u986F\u793A\u5168\u90E8\u8A9E\u8A00\u3002",
+    "mangaTools.settings.enabledLanguages.placeholder": "\u5168\u90E8\u8A9E\u8A00",
+    "mangaTools.settings.showFlags.heading": "\u986F\u793A\u570B\u65D7",
+    "mangaTools.settings.showFlags.description": "\u5728\u8A9E\u8A00\u540D\u7A31\u65C1\u756B\u51FA\u570B\u65D7\u3002\u95DC\u6389\u5F8C\u53EA\u986F\u793A\u540D\u7A31\u3002",
+    "mangaTools.settings.showCoverBadge.heading": "\u5728\u5C01\u9762\u986F\u793A\u8A9E\u8A00",
+    "mangaTools.settings.showCoverBadge.description": "\u756B\u5ECA\u5C01\u9762\u53F3\u4E0B\u89D2\u7684\u5FBD\u7AE0\u3002\u95DC\u6389\u570B\u65D7\u6642\u986F\u793A\u8A9E\u8A00\u540D\u7A31\u800C\u4E0D\u662F\u570B\u65D7\u3002",
+    "mangaTools.settings.openDetailsBlock.heading": "\u7C21\u4ECB\u7684\u6F2B\u756B\u8CC7\u8A0A\u9810\u8A2D\u5C55\u958B",
+    "mangaTools.settings.openDetailsBlock.description": "\u756B\u5ECA\u7C21\u4ECB\u9801\u88E1\u7684\u90A3\u4E00\u7BC0\u3002\u6536\u8D77\u6642\uFF0C\u90A3\u4E00\u884C\u6A19\u984C\u5C31\u662F\u300C\u9019\u88E1\u6709\u4E00\u7BC0\u300D\u7684\u8AAA\u660E\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B\u3002",
+    "mangaTools.settings.openEditBlock.heading": "\u7DE8\u8F2F\u9801\u7684\u6F2B\u756B\u8CC7\u8A0A\u9810\u8A2D\u5C55\u958B",
+    "mangaTools.settings.openEditBlock.description": "\u756B\u5ECA\u7DE8\u8F2F\u8868\u55AE\u88E1\u7684\u90A3\u4E00\u584A\uFF0C\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u5728\u90A3\u88E1\u8A2D\u5B9A\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B.",
+    "mangaTools.settings.hidePerformers.heading": "\u5728\u6F2B\u756B\u7684\u7DE8\u8F2F\u9801\u96B1\u85CF\u300C\u6F14\u54E1\u300D",
+    "mangaTools.settings.hidePerformers.description": "\u6F2B\u756B\u4E00\u822C\u6C92\u6709\u6F14\u54E1\uFF0C\u6240\u4EE5\u7DE8\u8F2F\u9801\u4E0D\u986F\u793A\u9019\u4E00\u6B04\u3002\u53EA\u662F\u96B1\u85CF\uFF1A\u756B\u5ECA\u5DF2\u6709\u7684\u6F14\u54E1\u4ECD\u7136\u7559\u5728\u756B\u5ECA\u4E0A\uFF0C\u5132\u5B58\u6642\u4E5F\u4E0D\u6703\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7DE8\u8F2F\u5C0D\u8A71\u6846\u548C\u7C21\u4ECB\u9801\u4E0D\u53D7\u5F71\u97FF\u3002",
+    "mangaTools.manga.mark": "\u6A19\u8A18\u70BA\u6F2B\u756B",
+    "mangaTools.manga.marked": "\u6F2B\u756B",
+    "mangaTools.manga.isManga": "\u662F\u5426\u70BA\u6F2B\u756B",
+    "mangaTools.filter.manga.marked": "\u5DF2\u6A19\u8A18",
+    "mangaTools.filter.manga.unmarked": "\u672A\u6A19\u8A18",
+    "mangaTools.manga.confirm": "\u78BA\u5B9A\u4E0D\u518D\u628A\u9019\u500B\u756B\u5ECA\u4F5C\u70BA\u6F2B\u756B\u7BA1\u7406\u55CE\uFF1F\u5B83\u7684\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u7684\u503C\u6703\u88AB\u522A\u9664\u3002",
+    "mangaTools.manga.confirmResetsForm": "\u7DE8\u8F2F\u9801\u6709\u672A\u5132\u5B58\u7684\u6539\u52D5\uFF0C\u53D6\u6D88\u6A19\u8A18\u6703\u628A\u8A72\u8868\u55AE\u91CD\u7F6E\u3002",
+    "mangaTools.manga.confirmCancel": "\u53D6\u6D88",
+    "mangaTools.manga.confirmOk": "\u53D6\u6D88\u6A19\u8A18",
+    "mangaTools.panel.heading": "\u6F2B\u756B\u8CC7\u8A0A",
+    "mangaTools.censorship.heading": "\u4FEE\u6B63",
+    "mangaTools.censorship.censored": "\u6709\u4FEE\u6B63",
+    "mangaTools.censorship.uncensored": "\u7121\u4FEE\u6B63",
+    "mangaTools.censorship.unset": "\u672A\u6A19\u8A3B",
+    "mangaTools.translationGroup.heading": "\u7FFB\u8B6F\u7D44",
+    "mangaTools.translationGroup.create": "\u5EFA\u7ACB",
+    "mangaTools.translationGroup.placeholder": "\u586B\u5BEB\u7FFB\u8B6F\u7D44\u2026",
+    "mangaTools.translationGroup.fill": "\u586B\u5165",
+    "mangaTools.translationGroup.original": "\u751F\u8089",
+    "mangaTools.translationGroup.originalOn": "\u6A19\u70BA\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6C92\u6709\u7FFB\u8B6F\u7D44",
+    "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18",
+    "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18\uFF0C\u4E26\u9084\u539F\u539F\u672C\u7684\u7FFB\u8B6F\u7D44",
+    "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u7121\u7FFB\u8B6F\u7D44\uFF09",
+    "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
+    "mangaTools.bulk.remove": "\u79FB\u9664",
+    "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E2D\u79FB\u9664\u672C\u5916\u639B\u7684\u6F2B\u756B\u3001\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u6B04\u4F4D\u3002"
+  };
+
+  // src/i18n.ts
+  var CATALOGS = {
+    en: en_default,
+    "zh-Hans": zh_Hans_default,
+    "zh-Hant": zh_Hant_default
+  };
+  var ALIASES = {
+    zh: "zh-Hans",
+    "zh-CN": "zh-Hans",
+    "zh-SG": "zh-Hans",
+    "zh-Hans": "zh-Hans",
+    "zh-TW": "zh-Hant",
+    "zh-HK": "zh-Hant",
+    "zh-MO": "zh-Hant",
+    "zh-Hant": "zh-Hant"
+  };
+  function catalogs() {
+    return CATALOGS;
+  }
+  function catalogFor(locale) {
+    const parts = String(locale || "").replace("_", "-").split("-");
+    while (parts.length > 0) {
+      const tag = parts.join("-");
+      const catalog = CATALOGS[ALIASES[tag] || tag];
+      if (catalog) return catalog;
+      parts.pop();
+    }
+    return CATALOGS.en;
+  }
+  function t(intl, id) {
+    return stringFor(intl.locale, id);
+  }
+  function stringFor(locale, id) {
+    var _a2, _b2;
+    return (_b2 = (_a2 = catalogFor(locale != null ? locale : "")[id]) != null ? _a2 : CATALOGS.en[id]) != null ? _b2 : id;
+  }
+  NS.t = t;
+  NS.stringFor = stringFor;
+  NS.catalogFor = catalogFor;
+  NS.catalogs = catalogs;
+
+  // src/reader/namespace.ts
+  window.MangaReader = window.MangaReader || {};
+  var NR = window.MangaReader;
+
+  // src/reader/settings.ts
+  var STORAGE_KEY = "plugin.mangaTools.settings";
+  var LEGACY_STORAGE_KEY = "mangaReader.settings";
+  function storedValue(key, legacyKey) {
+    const current2 = window.localStorage.getItem(key);
+    if (current2 !== null) return current2;
+    const legacy = window.localStorage.getItem(legacyKey);
+    if (legacy !== null) window.localStorage.setItem(key, legacy);
+    return legacy;
+  }
+  var FADE_MAX_MS = 1e3;
+  var DEFAULT_SETTINGS = {
+    doublePage: false,
+    coverAlone: true,
+    detectSpreads: true,
+    fadeMs: 140
+  };
+  function parseSettings(raw) {
+    const stored = (() => {
+      if (!raw) return {};
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    })();
+    const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
+    const duration = (key) => {
+      const value = stored[key];
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        return DEFAULT_SETTINGS[key];
+      }
+      return Math.min(FADE_MAX_MS, Math.max(0, Math.round(value)));
+    };
+    return {
+      doublePage: flag("doublePage"),
+      coverAlone: flag("coverAlone"),
+      detectSpreads: flag("detectSpreads"),
+      fadeMs: duration("fadeMs")
+    };
+  }
+  function readSettings() {
+    try {
+      return parseSettings(storedValue(STORAGE_KEY, LEGACY_STORAGE_KEY));
+    } catch (e) {
+      console.error(
+        "[mangaReader] settings are not readable, using defaults:",
+        e
+      );
+      return { ...DEFAULT_SETTINGS };
+    }
+  }
+  function writeSettings(next) {
+    const merged = { ...readSettings(), ...next };
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    } catch (e) {
+      console.error("[mangaReader] settings are not writable:", e);
+    }
+    return merged;
+  }
+  var OFFSET_KEY = "plugin.mangaTools.offsets";
+  var LEGACY_OFFSET_KEY = "mangaReader.offsets";
+  function parseOffsets(raw) {
+    const stored = (() => {
+      if (!raw) return {};
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    })();
+    const offsets = {};
+    for (const [id, value] of Object.entries(stored)) {
+      if (value === 1) offsets[id] = 1;
+    }
+    return offsets;
+  }
+  function readOffset(galleryId2) {
+    try {
+      return parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY))[galleryId2] || 0;
+    } catch (e) {
+      console.error("[mangaReader] offsets are not readable:", e);
+      return 0;
+    }
+  }
+  function writeOffset(galleryId2, offset2) {
+    try {
+      const offsets = parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY));
+      if (offset2 === 1) offsets[galleryId2] = 1;
+      else delete offsets[galleryId2];
+      window.localStorage.setItem(OFFSET_KEY, JSON.stringify(offsets));
+    } catch (e) {
+      console.error("[mangaReader] offsets are not writable:", e);
+    }
+  }
+  NR.parseSettings = parseSettings;
+  NR.parseOffsets = parseOffsets;
+  NR.readSettings = readSettings;
+  NR.readOffset = readOffset;
+  NR.FADE_MAX_MS = FADE_MAX_MS;
+
+  // src/reader/spreads.ts
+  var DEFAULT_SPREAD_OPTIONS = {
+    coverAlone: true,
+    offset: 0,
+    detectSpreads: true
+  };
+  var SPREAD_RATIO = 1;
+  function isWideSpreadPage(page) {
+    if (!page.height || page.width <= 0) return false;
+    return page.width / page.height > SPREAD_RATIO;
+  }
+  function layout(pages, options) {
+    const opts = {
+      ...DEFAULT_SPREAD_OPTIONS,
+      ...options || {}
+    };
+    const screens = [];
+    const pairable = (page) => !(opts.detectSpreads && isWideSpreadPage(page));
+    let i = 0;
+    const standAlone = () => {
+      screens.push({ start: i, pages: [pages[i]] });
+      i += 1;
+    };
+    if (opts.coverAlone && i < pages.length) standAlone();
+    if (opts.offset === 1 && i < pages.length) standAlone();
+    while (i < pages.length) {
+      const next = pages[i + 1];
+      if (next && pairable(pages[i]) && pairable(next)) {
+        screens.push({ start: i, pages: [pages[i], next] });
+        i += 2;
+      } else {
+        standAlone();
+      }
+    }
+    return screens;
+  }
+  function screenAt(screens, pageIndex) {
+    for (let i = 0; i < screens.length; i++) {
+      const screen = screens[i];
+      if (pageIndex >= screen.start && pageIndex < screen.start + screen.pages.length) {
+        return i;
+      }
+    }
+    return -1;
+  }
+  function stepsToAdjacent(screens, pageIndex, direction) {
+    const at = screenAt(screens, pageIndex);
+    if (at < 0) return 0;
+    const target = screens[at + direction];
+    if (!target) return 0;
+    return target.start - pageIndex;
+  }
+  NR.isWideSpreadPage = isWideSpreadPage;
+  NR.layout = layout;
+  NR.screenAt = screenAt;
+  NR.stepsToAdjacent = stepsToAdjacent;
+
+  // src/reader/stash-lightbox.ts
+  var SELECTOR_LIGHTBOX = ".Lightbox";
+  var SELECTOR_DISPLAY = ".Lightbox-display";
+  var SELECTOR_INDICATOR = ".Lightbox-header-indicator";
+  var SELECTOR_POPOVER_BODY = ".popover .popover-body";
+  var CLASS_NAVBUTTON = "Lightbox-navbutton";
+  function parseIndicator(text) {
+    const match = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(text);
+    if (!match) return null;
+    const current2 = Number(match[1]);
+    const total = Number(match[2]);
+    if (!total || current2 < 1 || current2 > total) return null;
+    return { current: current2, total };
+  }
+  function readPosition(root2) {
+    const indicator = root2.querySelector(SELECTOR_INDICATOR);
+    const counter = indicator == null ? void 0 : indicator.querySelector("b");
+    if (!counter) return null;
+    return parseIndicator(counter.textContent || "");
+  }
+  function galleryIdFromPath(pathname) {
+    const match = /^\/galleries\/(\d+)/.exec(pathname);
+    return match ? match[1] : null;
+  }
+  function pressArrow(direction) {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: direction > 0 ? "ArrowRight" : "ArrowLeft",
+        bubbles: true,
+        cancelable: true
+      })
+    );
+  }
+  function pressEscape() {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true
+      })
+    );
+  }
+  var GALLERY_QUERY_TEXT = [
+    "query MangaReaderGallery($galleryId: ID!) {",
+    "  configuration {",
+    "    interface {",
+    "      language",
+    "    }",
+    "  }",
+    "  findImages(",
+    "    image_filter: { galleries: { value: [$galleryId], modifier: INCLUDES } }",
+    '    filter: { per_page: -1, sort: "path" }',
+    "  ) {",
+    "    images {",
+    "      id",
+    "      visual_files {",
+    "        ... on ImageFile {",
+    "          width",
+    "          height",
+    "        }",
+    "      }",
+    "      paths {",
+    "        image",
+    "      }",
+    "    }",
+    "  }",
+    "}"
+  ].join("\n");
+  var galleryQuery = null;
+  async function fetchGallery(galleryId2) {
+    var _a2, _b2, _c;
+    if (!galleryQuery) {
+      galleryQuery = gqlDoc(GALLERY_QUERY_TEXT, "build the gallery query");
+    }
+    const query = galleryQuery;
+    if (!query) throw new Error("[mangaReader] no gallery query document");
+    const data = await requirePluginApi().utils.StashService.getClient().query({ query, variables: { galleryId: galleryId2 }, fetchPolicy: "no-cache" }).then((res) => res == null ? void 0 : res.data);
+    const pages = (((_a2 = data == null ? void 0 : data.findImages) == null ? void 0 : _a2.images) || []).map(
+      (image) => {
+        var _a3;
+        const file = (image.visual_files || []).find(
+          (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
+        );
+        return {
+          id: String(image.id),
+          width: (file == null ? void 0 : file.width) || 0,
+          height: (file == null ? void 0 : file.height) || 0,
+          // Stash's own URL for the image, kept for the query on it — which is a
+          // version stamp, and is the whole reason this field is fetched at all. See
+          // pageUrl in takeover.ts.
+          url: ((_a3 = image.paths) == null ? void 0 : _a3.image) || ""
+        };
+      }
+    );
+    return {
+      language: ((_c = (_b2 = data == null ? void 0 : data.configuration) == null ? void 0 : _b2.interface) == null ? void 0 : _c.language) || null,
+      pages
+    };
+  }
+  NR.parseIndicator = parseIndicator;
+  NR.galleryIdFromPath = galleryIdFromPath;
+
+  // src/reader/takeover.ts
+  var labelFor = (locale, key) => stringFor(locale, `mangaReader.${key}`);
+  var CLASS_ACTIVE = "manga-reader-active";
+  var CLASS_SPREAD = "manga-reader-spread";
+  var CLASS_PAGE = "manga-reader-page";
+  var CLASS_SINGLE = "is-single";
+  var SWITCH_ID = "manga-reader-double-page";
+  var FADE_ID = "manga-reader-fade";
+  var OFFSET_ID = "manga-reader-offset";
+  var CLASS_OPTIONS = "manga-reader-options";
+  var MAX_REINSERTS = 8;
+  var CACHE_LIMIT = 8;
+  var settings = readSettings();
+  var root = null;
+  var container = null;
+  var loaded = /* @__PURE__ */ new Map();
+  var galleryId = null;
+  var shownAt = -1;
+  var drawGeneration = 0;
+  var awaiting = -1;
+  var offset = 0;
+  var offsetFor = null;
+  var reinsers = 0;
+  var language = null;
+  var logged = false;
+  var clickRoot = null;
+  var errand = null;
+  var PRESS_RETRY_MS = 120;
+  var MAX_ATTEMPTS = 3;
+  var attempts = 0;
+  function step() {
+    const lightbox = document.querySelector(SELECTOR_LIGHTBOX);
+    if (!lightbox) {
+      if (root) closeLightbox();
+      return;
+    }
+    if (lightbox !== root) {
+      closeLightbox();
+      root = lightbox;
+      galleryId = null;
+      shownAt = -1;
+      reinsers = 0;
+      logged = false;
+    }
+    injectSwitch(lightbox);
+    if (!wanted()) return;
+    const wantedId = galleryIdFromPath(window.location.pathname);
+    if (!wantedId) return;
+    if (galleryId !== wantedId || !loaded.has(wantedId)) {
+      loadGallery(wantedId);
+      return;
+    }
+    sync(lightbox);
+    arrived(lightbox);
+  }
+  function wanted() {
+    return settings.doublePage && root !== null && galleryIdFromPath(window.location.pathname) !== null;
+  }
+  function current() {
+    return galleryId ? loaded.get(galleryId) || null : null;
+  }
+  function loadGallery(id) {
+    if (offsetFor !== id) {
+      offsetFor = id;
+      offset = readOffset(id);
+    }
+    const already = loaded.get(id);
+    if (already) {
+      galleryId = id;
+      shownAt = -1;
+      step();
+      return;
+    }
+    const forLightbox = root;
+    fetchGallery(id).then((answer) => {
+      if (root !== forLightbox) return;
+      remember(id, {
+        id,
+        pages: answer.pages,
+        screens: layout(answer.pages, { ...settings, offset })
+      });
+      language = answer.language;
+      galleryId = id;
+      shownAt = -1;
+      step();
+    }).catch((e) => {
+      console.error(
+        "[mangaReader] could not read this gallery's pages, turning the spread view off:",
+        e
+      );
+      deactivate();
+    });
+  }
+  function remember(id, gallery) {
+    loaded.delete(id);
+    loaded.set(id, gallery);
+    while (loaded.size > CACHE_LIMIT) {
+      const oldest = loaded.keys().next();
+      if (oldest.done) break;
+      loaded.delete(oldest.value);
+    }
+  }
+  function sync(lightbox) {
+    const gallery = current();
+    if (!gallery) return;
+    const position = readPosition(lightbox);
+    if (!position) {
+      if (gallery.pages.length <= 1) return;
+      console.error(
+        "[mangaReader] the lightbox header could not be read, so the spread view cannot follow it \u2014 turning itself off"
+      );
+      deactivate();
+      return;
+    }
+    const at = screenAt(gallery.screens, position.current - 1);
+    if (at < 0) {
+      console.error(
+        "[mangaReader] the lightbox is at page " + position.current + ", which is not among the pages this plugin read \u2014 turning the spread view off"
+      );
+      deactivate();
+      return;
+    }
+    if (at === shownAt && container && (container.childElementCount || awaiting === at)) {
+      return;
+    }
+    ensureContainer(lightbox);
+    if (!container) return;
+    draw(gallery.screens[at], at);
+  }
+  function watchClicks(lightbox) {
+    if (clickRoot === lightbox) return;
+    if (clickRoot) clickRoot.removeEventListener("click", onNavClick, true);
+    lightbox.addEventListener("click", onNavClick, true);
+    clickRoot = lightbox;
+  }
+  function ensureContainer(lightbox) {
+    const display = lightbox.querySelector(SELECTOR_DISPLAY);
+    if (!display) {
+      deactivate();
+      return;
+    }
+    watchClicks(lightbox);
+    if (container && container.parentNode === display) return;
+    if (container) {
+      reinsers += 1;
+      if (reinsers > MAX_REINSERTS) {
+        console.error(
+          "[mangaReader] the lightbox keeps removing the reader's container \u2014 turning the spread view off rather than fighting it"
+        );
+        deactivate();
+        return;
+      }
+    }
+    if (!container) {
+      container = document.createElement("div");
+      container.className = CLASS_SPREAD;
+      container.addEventListener("click", onSpreadClick);
+    }
+    display.style.position = "relative";
+    display.appendChild(container);
+    lightbox.classList.add(CLASS_ACTIVE);
+  }
+  var REVEAL_BUDGET_MS = 300;
+  NR.REVEAL_BUDGET_MS = REVEAL_BUDGET_MS;
+  function fadeIn(element) {
+    if (settings.fadeMs <= 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    element.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: settings.fadeMs,
+      easing: "ease-out"
+    });
+  }
+  function pageUrl(page) {
+    const query = /\?.*$/.exec(page.url || "");
+    return "/image/" + page.id + "/image" + (query ? query[0] : "");
+  }
+  function decodedImage(image) {
+    return typeof image.decode === "function" ? image.decode().catch(() => {
+    }) : Promise.resolve();
+  }
+  function draw(screen, at) {
+    if (!container) return;
+    awaiting = -1;
+    const boxes = [];
+    const images = [];
+    screen.pages.forEach((page, index) => {
+      const box = document.createElement("div");
+      box.className = CLASS_PAGE;
+      const image = document.createElement("img");
+      image.src = pageUrl(page);
+      image.alt = String(screen.start + index + 1);
+      image.decoding = "async";
+      box.appendChild(image);
+      boxes.push(box);
+      images.push(image);
+    });
+    const mine = ++drawGeneration;
+    let revealed = false;
+    const reveal = () => {
+      if (revealed || mine !== drawGeneration || !container) return;
+      revealed = true;
+      if (awaiting === at) awaiting = -1;
+      container.textContent = "";
+      container.classList.toggle(CLASS_SINGLE, screen.pages.length === 1);
+      boxes.forEach((box) => {
+        container == null ? void 0 : container.appendChild(box);
+      });
+      fadeIn(container);
+      preload(at);
+    };
+    if (images.every((image) => image.complete !== false)) {
+      reveal();
+    } else {
+      awaiting = at;
+      Promise.all(images.map(decodedImage)).then(reveal);
+      window.setTimeout(reveal, REVEAL_BUDGET_MS);
+    }
+    shownAt = at;
+    const gallery = current();
+    if (!logged && gallery) {
+      logged = true;
+      console.info(
+        "[mangaReader] " + gallery.screens.length + " screen(s) from " + gallery.pages.length + " page(s), offset " + offset + " \u2014 the lightbox's options menu can shift the pairing, and O does the same"
+      );
+    }
+  }
+  function preload(at) {
+    const gallery = current();
+    if (!gallery) return;
+    for (const step2 of [1, -1]) {
+      const screen = gallery.screens[at + step2];
+      if (!screen) continue;
+      for (const page of screen.pages) {
+        const image = new Image();
+        image.src = pageUrl(page);
+      }
+    }
+  }
+  function currentIndex(lightbox) {
+    const position = readPosition(lightbox);
+    return position ? position.current - 1 : null;
+  }
+  function startErrand(lightbox, to) {
+    const from = currentIndex(lightbox);
+    if (from === null || from === to) return;
+    endErrand();
+    attempts = 0;
+    errand = { from, to, retry: null };
+    press(lightbox);
+  }
+  function press(lightbox) {
+    if (!errand) return;
+    const from = currentIndex(lightbox);
+    if (from === null) {
+      endErrand();
+      return;
+    }
+    if (from === errand.to) {
+      endErrand();
+      return;
+    }
+    errand.from = from;
+    attempts += 1;
+    pressArrow(from < errand.to ? 1 : -1);
+    armRetry(lightbox);
+  }
+  function armRetry(lightbox) {
+    if (!errand) return;
+    if (errand.retry !== null) window.clearTimeout(errand.retry);
+    errand.retry = window.setTimeout(() => {
+      if (!errand) return;
+      errand.retry = null;
+      const at = currentIndex(lightbox);
+      if (at === null || at !== errand.from) return;
+      if (attempts >= MAX_ATTEMPTS) {
+        console.error(
+          "[mangaReader] the lightbox did not respond to the arrow keys, so the spread view has stopped moving it \u2014 the page shown is the one it is on"
+        );
+        endErrand();
+        return;
+      }
+      press(lightbox);
+    }, PRESS_RETRY_MS);
+  }
+  function arrived(lightbox) {
+    if (!errand) return;
+    const at = currentIndex(lightbox);
+    if (at === null) {
+      endErrand();
+      return;
+    }
+    if (at === errand.to) {
+      endErrand();
+      return;
+    }
+    if (at !== errand.from) press(lightbox);
+  }
+  function endErrand() {
+    if (errand && errand.retry !== null) window.clearTimeout(errand.retry);
+    errand = null;
+  }
+  function activate() {
+    settings = writeSettings({ doublePage: true });
+    setSwitchChecked(true);
+    step();
+  }
+  function deactivate() {
+    if (container) {
+      container.remove();
+      container = null;
+    }
+    if (root) {
+      root.classList.remove(CLASS_ACTIVE);
+      const display = root.querySelector(SELECTOR_DISPLAY);
+      if (display) display.style.position = "";
+    }
+    shownAt = -1;
+  }
+  function closeLightbox() {
+    if (clickRoot) {
+      clickRoot.removeEventListener("click", onNavClick, true);
+      clickRoot = null;
+    }
+    deactivate();
+    root = null;
+    galleryId = null;
+    logged = false;
+  }
+  function injectSwitch(lightbox) {
+    const body = lightbox.querySelector(SELECTOR_POPOVER_BODY);
+    if (!body) return;
+    const existing = body.querySelector("." + CLASS_OPTIONS);
+    if (existing) {
+      addOffsetSwitch(existing);
+      return;
+    }
+    const group = document.createElement("div");
+    group.className = "form-group " + CLASS_OPTIONS;
+    group.appendChild(
+      checkbox({
+        id: SWITCH_ID,
+        label: labelFor(language, "doublePage"),
+        checked: settings.doublePage,
+        onChange: (checked) => {
+          if (checked) {
+            activate();
+          } else {
+            settings = writeSettings({ doublePage: false });
+            deactivate();
+          }
+        }
+      })
+    );
+    group.appendChild(
+      slider({
+        id: FADE_ID,
+        label: labelFor(language, "fade"),
+        value: settings.fadeMs,
+        max: FADE_MAX_MS,
+        step: 20,
+        unit: " ms",
+        onChange: (value) => {
+          settings = writeSettings({ fadeMs: value });
+        }
+      })
+    );
+    addOffsetSwitch(group);
+    body.appendChild(group);
+  }
+  function slider(option) {
+    const row = document.createElement("div");
+    row.className = "row mb-1";
+    const column = document.createElement("div");
+    column.className = "col";
+    const label = document.createElement("label");
+    label.className = "form-label mb-0";
+    label.htmlFor = option.id;
+    label.textContent = option.label;
+    const readout = document.createElement("span");
+    readout.className = "ml-1";
+    readout.textContent = option.value + option.unit;
+    label.appendChild(readout);
+    const input = document.createElement("input");
+    input.type = "range";
+    input.className = "form-control-range";
+    input.id = option.id;
+    input.min = "0";
+    input.max = String(option.max);
+    input.step = String(option.step);
+    input.value = String(option.value);
+    input.addEventListener("input", () => {
+      const value = Number(input.value);
+      readout.textContent = value + option.unit;
+      option.onChange(value);
+    });
+    column.appendChild(label);
+    column.appendChild(input);
+    row.appendChild(column);
+    return row;
+  }
+  function addOffsetSwitch(group) {
+    if (!current() || group.querySelector("#" + OFFSET_ID)) return;
+    group.appendChild(
+      checkbox({
+        id: OFFSET_ID,
+        label: labelFor(language, "offset"),
+        checked: offset === 1,
+        onChange: (checked) => {
+          const gallery = current();
+          if (gallery) setOffset(gallery, checked ? 1 : 0);
+        }
+      })
+    );
+  }
+  function checkbox(option) {
+    const row = document.createElement("div");
+    row.className = "row mb-1";
+    const column = document.createElement("div");
+    column.className = "col";
+    const check = document.createElement("div");
+    check.className = "form-check";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "form-check-input";
+    input.id = option.id;
+    input.checked = option.checked;
+    const text = document.createElement("label");
+    text.className = "form-check-label";
+    text.htmlFor = option.id;
+    text.textContent = option.label;
+    input.addEventListener("change", () => option.onChange(input.checked));
+    check.appendChild(input);
+    check.appendChild(text);
+    column.appendChild(check);
+    row.appendChild(column);
+    return row;
+  }
+  function setSwitchChecked(checked) {
+    setChecked(SWITCH_ID, checked);
+  }
+  function setOffsetSwitchChecked(checked) {
+    setChecked(OFFSET_ID, checked);
+  }
+  function setChecked(id, checked) {
+    const input = document.getElementById(id);
+    if (input) input.checked = checked;
+  }
+  function arrowsBelongTo(target) {
+    if (!target) return false;
+    if (target.isContentEditable) return true;
+    const tag = target.tagName;
+    if (tag === "TEXTAREA") return true;
+    if (tag !== "INPUT") return false;
+    const type = (target.type || "text").toLowerCase();
+    return [
+      "date",
+      "datetime-local",
+      "email",
+      "month",
+      "number",
+      "password",
+      "range",
+      "search",
+      "tel",
+      "text",
+      "time",
+      "url",
+      "week"
+    ].indexOf(type) !== -1;
+  }
+  function onKeyDown(event) {
+    if (!event.isTrusted || !wanted() || !root) return;
+    const lightbox = root;
+    const gallery = current();
+    if (!gallery) return;
+    if (event.key === "o" || event.key === "O") {
+      if (event.repeat) return;
+      setOffset(gallery, offset === 0 ? 1 : 0);
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    if (event.repeat) return;
+    if (arrowsBelongTo(event.target)) return;
+    if (!turnBy(lightbox, event.key === "ArrowRight" ? 1 : -1)) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  function turnBy(lightbox, direction) {
+    const gallery = current();
+    if (!gallery) return false;
+    const at = currentIndex(lightbox);
+    if (at === null) return false;
+    const steps = stepsToAdjacent(gallery.screens, at, direction);
+    if (steps === 0) return false;
+    startErrand(lightbox, at + steps);
+    return true;
+  }
+  function navIcon(button) {
+    var _a2;
+    for (const child of Array.from(button.children)) {
+      const name = (_a2 = child.dataset) == null ? void 0 : _a2.icon;
+      if (name) return name;
+    }
+    return "";
+  }
+  function navDirection(target) {
+    var _a2;
+    let el = target;
+    while (el && !((_a2 = el.classList) == null ? void 0 : _a2.contains(CLASS_NAVBUTTON))) el = el.parentElement;
+    if (!el) return 0;
+    const icon = navIcon(el);
+    if (icon === "chevron-right") return 1;
+    if (icon === "chevron-left") return -1;
+    return 0;
+  }
+  function onNavClick(event) {
+    if (!wanted() || !container || !root) return;
+    const direction = navDirection(event.target);
+    if (!direction) return;
+    if (turnBy(root, direction)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+  function onSpreadClick(event) {
+    const lightbox = root;
+    if (!lightbox || !container) return;
+    const target = event.target;
+    if ((target == null ? void 0 : target.tagName) !== "IMG") {
+      event.stopPropagation();
+      pressEscape();
+      return;
+    }
+    const click = event;
+    const width = target.offsetWidth;
+    const forward = !width || click.offsetX >= width / 2;
+    if (turnBy(lightbox, forward ? 1 : -1)) event.stopPropagation();
+  }
+  function setOffset(gallery, next) {
+    offset = next;
+    offsetFor = gallery.id;
+    writeOffset(gallery.id, next);
+    gallery.screens = layout(gallery.pages, { ...settings, offset });
+    shownAt = -1;
+    setOffsetSwitchChecked(next === 1);
+    step();
+  }
+  function install() {
+    if (!document.body) {
+      document.addEventListener("DOMContentLoaded", install);
+      return;
+    }
+    const observer = new MutationObserver(() => {
+      try {
+        step();
+      } catch (e) {
+        console.error(
+          "[mangaReader] the reader failed and has been turned off:",
+          e
+        );
+        deactivate();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("keydown", onKeyDown, true);
+    step();
+  }
+
+  // src/tools/fields.ts
   NS.FIELD_NAME = "plugin.mangaTools.language";
   NS.CENSORSHIP_FIELD_NAME = "plugin.mangaTools.censorship";
   NS.MANGA_FIELD_NAME = "plugin.mangaTools.manga";
@@ -230,178 +1270,7 @@
     return next;
   };
 
-  // src/messages/en.json
-  var en_default = {
-    "mangaTools.select.placeholder": "Select language\u2026",
-    "mangaTools.settings.enabledLanguages.heading": "Enabled languages",
-    "mangaTools.settings.enabledLanguages.description": "Only these languages appear in the edit-page dropdown. Display (badge and detail row) is unaffected. Leave empty to show every language.",
-    "mangaTools.settings.enabledLanguages.placeholder": "All languages",
-    "mangaTools.settings.showFlags.heading": "Show flags",
-    "mangaTools.settings.showFlags.description": "Draw the flag beside the language name. Turn this off to show the name on its own.",
-    "mangaTools.settings.showCoverBadge.heading": "Show the language on gallery covers",
-    "mangaTools.settings.showCoverBadge.description": "The badge in the bottom-right of a gallery's cover. With flags turned off it shows the language name instead of a flag.",
-    "mangaTools.settings.openDetailsBlock.heading": "Start the details block expanded",
-    "mangaTools.settings.openDetailsBlock.description": "The Manga info section in a gallery's details tab. Collapsed, its heading is what says the section is there. This decides the state a block opens in, not whether it can be opened.",
-    "mangaTools.settings.openEditBlock.heading": "Start the edit block expanded",
-    "mangaTools.settings.openEditBlock.description": "The Manga info block in a gallery's edit form, where its language, censorship and translation group are set. This decides the state a block opens in, not whether it can be opened.",
-    "mangaTools.settings.hidePerformers.heading": "Hide the performers field on a manga gallery",
-    "mangaTools.settings.hidePerformers.description": "A manga gallery rarely has performers, so its edit page leaves the field out. Only the field is hidden \u2014 whatever a gallery already has stays on the gallery and is kept when it is saved. The bulk edit dialog and the details tab are unaffected.",
-    "mangaTools.manga.mark": "Mark as manga",
-    "mangaTools.manga.marked": "Manga",
-    "mangaTools.manga.isManga": "Is manga",
-    "mangaTools.filter.manga.marked": "Marked",
-    "mangaTools.filter.manga.unmarked": "Unmarked",
-    "mangaTools.manga.confirm": "Are you sure you want to stop managing this gallery? Its language, censorship and translation group values will be removed.",
-    "mangaTools.manga.confirmResetsForm": "The edit form has unsaved changes, and taking the mark off will reset it.",
-    "mangaTools.manga.confirmCancel": "Cancel",
-    "mangaTools.manga.confirmOk": "Unmark",
-    "mangaTools.panel.heading": "Manga info",
-    "mangaTools.censorship.heading": "Censorship",
-    "mangaTools.censorship.censored": "Censored",
-    "mangaTools.censorship.uncensored": "Uncensored",
-    "mangaTools.censorship.unset": "Not marked",
-    "mangaTools.translationGroup.heading": "Translation group",
-    "mangaTools.translationGroup.create": "Create",
-    "mangaTools.translationGroup.placeholder": "Set a translation group\u2026",
-    "mangaTools.translationGroup.fill": "Fill in",
-    "mangaTools.translationGroup.original": "Raw",
-    "mangaTools.translationGroup.originalOn": "Mark as raw: the original text, no translation group",
-    "mangaTools.translationGroup.originalOff": "No longer raw \u2014 clear the mark",
-    "mangaTools.translationGroup.originalOffRestore": "No longer raw \u2014 clear the mark and put the translation group back",
-    "mangaTools.translationGroup.originalDetail": "raw (no translation group)",
-    "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
-    "mangaTools.bulk.remove": "Remove",
-    "mangaTools.bulk.unmarkWarning": "Unmarking removes this plugin's manga, language, censorship and translation group fields from the selected galleries."
-  };
-
-  // src/messages/zh-Hans.json
-  var zh_Hans_default = {
-    "mangaTools.select.placeholder": "\u9009\u62E9\u8BED\u8A00\u2026",
-    "mangaTools.settings.enabledLanguages.heading": "\u542F\u7528\u7684\u8BED\u8A00",
-    "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u8FD9\u4E9B\u8BED\u8A00\u4F1A\u51FA\u73B0\u5728\u7F16\u8F91\u9875\u7684\u4E0B\u62C9\u6846\u91CC\u3002\u663E\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8BE6\u60C5\u9875\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u54CD\u3002\u7559\u7A7A\u8868\u793A\u663E\u793A\u5168\u90E8\u8BED\u8A00\u3002",
-    "mangaTools.settings.enabledLanguages.placeholder": "\u5168\u90E8\u8BED\u8A00",
-    "mangaTools.settings.showFlags.heading": "\u663E\u793A\u56FD\u65D7",
-    "mangaTools.settings.showFlags.description": "\u5728\u8BED\u8A00\u540D\u79F0\u65C1\u753B\u51FA\u56FD\u65D7\u3002\u5173\u6389\u540E\u53EA\u663E\u793A\u540D\u79F0\u3002",
-    "mangaTools.settings.showCoverBadge.heading": "\u5728\u5C01\u9762\u663E\u793A\u8BED\u8A00",
-    "mangaTools.settings.showCoverBadge.description": "\u753B\u5ECA\u5C01\u9762\u53F3\u4E0B\u89D2\u7684\u5FBD\u7AE0\u3002\u5173\u6389\u56FD\u65D7\u65F6\u663E\u793A\u8BED\u8A00\u540D\u79F0\u800C\u4E0D\u662F\u56FD\u65D7\u3002",
-    "mangaTools.settings.openDetailsBlock.heading": "\u7B80\u4ECB\u7684\u6F2B\u753B\u4FE1\u606F\u9ED8\u8BA4\u5C55\u5F00",
-    "mangaTools.settings.openDetailsBlock.description": "\u753B\u5ECA\u7B80\u4ECB\u9875\u91CC\u7684\u90A3\u4E00\u8282\u3002\u6536\u8D77\u65F6\uFF0C\u90A3\u4E00\u884C\u6807\u9898\u5C31\u662F\u300C\u8FD9\u91CC\u6709\u4E00\u8282\u300D\u7684\u8BF4\u660E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00\u3002",
-    "mangaTools.settings.openEditBlock.heading": "\u7F16\u8F91\u9875\u7684\u6F2B\u753B\u4FE1\u606F\u9ED8\u8BA4\u5C55\u5F00",
-    "mangaTools.settings.openEditBlock.description": "\u753B\u5ECA\u7F16\u8F91\u8868\u5355\u91CC\u7684\u90A3\u4E00\u5757\uFF0C\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5728\u90A3\u91CC\u8BBE\u7F6E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00.",
-    "mangaTools.settings.hidePerformers.heading": "\u5728\u6F2B\u753B\u7684\u7F16\u8F91\u9875\u9690\u85CF\u300C\u6F14\u5458\u300D",
-    "mangaTools.settings.hidePerformers.description": "\u6F2B\u753B\u4E00\u822C\u6CA1\u6709\u6F14\u5458\uFF0C\u6240\u4EE5\u7F16\u8F91\u9875\u4E0D\u663E\u793A\u8FD9\u4E00\u680F\u3002\u53EA\u662F\u9690\u85CF\uFF1A\u753B\u5ECA\u5DF2\u6709\u7684\u6F14\u5458\u4ECD\u7136\u7559\u5728\u753B\u5ECA\u4E0A\uFF0C\u4FDD\u5B58\u65F6\u4E5F\u4E0D\u4F1A\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7F16\u8F91\u5BF9\u8BDD\u6846\u548C\u7B80\u4ECB\u9875\u4E0D\u53D7\u5F71\u54CD\u3002",
-    "mangaTools.manga.mark": "\u6807\u8BB0\u4E3A\u6F2B\u753B",
-    "mangaTools.manga.marked": "\u6F2B\u753B",
-    "mangaTools.manga.isManga": "\u662F\u5426\u4E3A\u6F2B\u753B",
-    "mangaTools.filter.manga.marked": "\u5DF2\u6807\u8BB0",
-    "mangaTools.filter.manga.unmarked": "\u672A\u6807\u8BB0",
-    "mangaTools.manga.confirm": "\u786E\u5B9A\u4E0D\u518D\u628A\u8FD9\u4E2A\u753B\u5ECA\u4F5C\u4E3A\u6F2B\u753B\u7BA1\u7406\u5417\uFF1F\u5B83\u7684\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u7684\u503C\u4F1A\u88AB\u5220\u9664\u3002",
-    "mangaTools.manga.confirmResetsForm": "\u7F16\u8F91\u9875\u6709\u672A\u4FDD\u5B58\u7684\u6539\u52A8\uFF0C\u53D6\u6D88\u6807\u8BB0\u4F1A\u628A\u8BE5\u8868\u5355\u91CD\u7F6E\u3002",
-    "mangaTools.manga.confirmCancel": "\u53D6\u6D88",
-    "mangaTools.manga.confirmOk": "\u53D6\u6D88\u6807\u8BB0",
-    "mangaTools.panel.heading": "\u6F2B\u753B\u4FE1\u606F",
-    "mangaTools.censorship.heading": "\u4FEE\u6B63",
-    "mangaTools.censorship.censored": "\u6709\u4FEE\u6B63",
-    "mangaTools.censorship.uncensored": "\u65E0\u4FEE\u6B63",
-    "mangaTools.censorship.unset": "\u672A\u6807\u6CE8",
-    "mangaTools.translationGroup.heading": "\u7FFB\u8BD1\u7EC4",
-    "mangaTools.translationGroup.create": "\u521B\u5EFA",
-    "mangaTools.translationGroup.placeholder": "\u586B\u5199\u7FFB\u8BD1\u7EC4\u2026",
-    "mangaTools.translationGroup.fill": "\u586B\u5165",
-    "mangaTools.translationGroup.original": "\u751F\u8089",
-    "mangaTools.translationGroup.originalOn": "\u6807\u4E3A\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6CA1\u6709\u7FFB\u8BD1\u7EC4",
-    "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0",
-    "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0\uFF0C\u5E76\u6062\u590D\u539F\u6765\u7684\u7FFB\u8BD1\u7EC4",
-    "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
-    "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
-    "mangaTools.bulk.remove": "\u79FB\u9664",
-    "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E2D\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u6F2B\u753B\u3001\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5B57\u6BB5\u3002"
-  };
-
-  // src/messages/zh-Hant.json
-  var zh_Hant_default = {
-    "mangaTools.select.placeholder": "\u9078\u64C7\u8A9E\u8A00\u2026",
-    "mangaTools.settings.enabledLanguages.heading": "\u555F\u7528\u7684\u8A9E\u8A00",
-    "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u9019\u4E9B\u8A9E\u8A00\u6703\u51FA\u73FE\u5728\u7DE8\u8F2F\u9801\u7684\u4E0B\u62C9\u9078\u55AE\u88E1\u3002\u986F\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8A73\u7D30\u9801\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u97FF\u3002\u7559\u7A7A\u8868\u793A\u986F\u793A\u5168\u90E8\u8A9E\u8A00\u3002",
-    "mangaTools.settings.enabledLanguages.placeholder": "\u5168\u90E8\u8A9E\u8A00",
-    "mangaTools.settings.showFlags.heading": "\u986F\u793A\u570B\u65D7",
-    "mangaTools.settings.showFlags.description": "\u5728\u8A9E\u8A00\u540D\u7A31\u65C1\u756B\u51FA\u570B\u65D7\u3002\u95DC\u6389\u5F8C\u53EA\u986F\u793A\u540D\u7A31\u3002",
-    "mangaTools.settings.showCoverBadge.heading": "\u5728\u5C01\u9762\u986F\u793A\u8A9E\u8A00",
-    "mangaTools.settings.showCoverBadge.description": "\u756B\u5ECA\u5C01\u9762\u53F3\u4E0B\u89D2\u7684\u5FBD\u7AE0\u3002\u95DC\u6389\u570B\u65D7\u6642\u986F\u793A\u8A9E\u8A00\u540D\u7A31\u800C\u4E0D\u662F\u570B\u65D7\u3002",
-    "mangaTools.settings.openDetailsBlock.heading": "\u7C21\u4ECB\u7684\u6F2B\u756B\u8CC7\u8A0A\u9810\u8A2D\u5C55\u958B",
-    "mangaTools.settings.openDetailsBlock.description": "\u756B\u5ECA\u7C21\u4ECB\u9801\u88E1\u7684\u90A3\u4E00\u7BC0\u3002\u6536\u8D77\u6642\uFF0C\u90A3\u4E00\u884C\u6A19\u984C\u5C31\u662F\u300C\u9019\u88E1\u6709\u4E00\u7BC0\u300D\u7684\u8AAA\u660E\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B\u3002",
-    "mangaTools.settings.openEditBlock.heading": "\u7DE8\u8F2F\u9801\u7684\u6F2B\u756B\u8CC7\u8A0A\u9810\u8A2D\u5C55\u958B",
-    "mangaTools.settings.openEditBlock.description": "\u756B\u5ECA\u7DE8\u8F2F\u8868\u55AE\u88E1\u7684\u90A3\u4E00\u584A\uFF0C\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u5728\u90A3\u88E1\u8A2D\u5B9A\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B.",
-    "mangaTools.settings.hidePerformers.heading": "\u5728\u6F2B\u756B\u7684\u7DE8\u8F2F\u9801\u96B1\u85CF\u300C\u6F14\u54E1\u300D",
-    "mangaTools.settings.hidePerformers.description": "\u6F2B\u756B\u4E00\u822C\u6C92\u6709\u6F14\u54E1\uFF0C\u6240\u4EE5\u7DE8\u8F2F\u9801\u4E0D\u986F\u793A\u9019\u4E00\u6B04\u3002\u53EA\u662F\u96B1\u85CF\uFF1A\u756B\u5ECA\u5DF2\u6709\u7684\u6F14\u54E1\u4ECD\u7136\u7559\u5728\u756B\u5ECA\u4E0A\uFF0C\u5132\u5B58\u6642\u4E5F\u4E0D\u6703\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7DE8\u8F2F\u5C0D\u8A71\u6846\u548C\u7C21\u4ECB\u9801\u4E0D\u53D7\u5F71\u97FF\u3002",
-    "mangaTools.manga.mark": "\u6A19\u8A18\u70BA\u6F2B\u756B",
-    "mangaTools.manga.marked": "\u6F2B\u756B",
-    "mangaTools.manga.isManga": "\u662F\u5426\u70BA\u6F2B\u756B",
-    "mangaTools.filter.manga.marked": "\u5DF2\u6A19\u8A18",
-    "mangaTools.filter.manga.unmarked": "\u672A\u6A19\u8A18",
-    "mangaTools.manga.confirm": "\u78BA\u5B9A\u4E0D\u518D\u628A\u9019\u500B\u756B\u5ECA\u4F5C\u70BA\u6F2B\u756B\u7BA1\u7406\u55CE\uFF1F\u5B83\u7684\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u7684\u503C\u6703\u88AB\u522A\u9664\u3002",
-    "mangaTools.manga.confirmResetsForm": "\u7DE8\u8F2F\u9801\u6709\u672A\u5132\u5B58\u7684\u6539\u52D5\uFF0C\u53D6\u6D88\u6A19\u8A18\u6703\u628A\u8A72\u8868\u55AE\u91CD\u7F6E\u3002",
-    "mangaTools.manga.confirmCancel": "\u53D6\u6D88",
-    "mangaTools.manga.confirmOk": "\u53D6\u6D88\u6A19\u8A18",
-    "mangaTools.panel.heading": "\u6F2B\u756B\u8CC7\u8A0A",
-    "mangaTools.censorship.heading": "\u4FEE\u6B63",
-    "mangaTools.censorship.censored": "\u6709\u4FEE\u6B63",
-    "mangaTools.censorship.uncensored": "\u7121\u4FEE\u6B63",
-    "mangaTools.censorship.unset": "\u672A\u6A19\u8A3B",
-    "mangaTools.translationGroup.heading": "\u7FFB\u8B6F\u7D44",
-    "mangaTools.translationGroup.create": "\u5EFA\u7ACB",
-    "mangaTools.translationGroup.placeholder": "\u586B\u5BEB\u7FFB\u8B6F\u7D44\u2026",
-    "mangaTools.translationGroup.fill": "\u586B\u5165",
-    "mangaTools.translationGroup.original": "\u751F\u8089",
-    "mangaTools.translationGroup.originalOn": "\u6A19\u70BA\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6C92\u6709\u7FFB\u8B6F\u7D44",
-    "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18",
-    "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18\uFF0C\u4E26\u9084\u539F\u539F\u672C\u7684\u7FFB\u8B6F\u7D44",
-    "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u7121\u7FFB\u8B6F\u7D44\uFF09",
-    "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
-    "mangaTools.bulk.remove": "\u79FB\u9664",
-    "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E2D\u79FB\u9664\u672C\u5916\u639B\u7684\u6F2B\u756B\u3001\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u6B04\u4F4D\u3002"
-  };
-
-  // src/i18n.ts
-  var CATALOGS = {
-    en: en_default,
-    "zh-Hans": zh_Hans_default,
-    "zh-Hant": zh_Hant_default
-  };
-  var ALIASES = { zh: "zh-Hans" };
-  function catalogs() {
-    return CATALOGS;
-  }
-  function catalogFor(locale) {
-    const parts = String(locale || "").replace("_", "-").split("-");
-    while (parts.length > 0) {
-      const tag = parts.join("-");
-      const catalog = CATALOGS[ALIASES[tag] || tag];
-      if (catalog) return catalog;
-      parts.pop();
-    }
-    return CATALOGS.en;
-  }
-  function t(intl, id) {
-    var _a, _b;
-    return (_b = (_a = catalogFor(intl.locale)[id]) != null ? _a : CATALOGS.en[id]) != null ? _b : id;
-  }
-  NS.t = t;
-  NS.catalogFor = catalogFor;
-  NS.catalogs = catalogs;
-
-  // src/plugin-api.ts
-  function requirePluginApi() {
-    const api = window.PluginApi;
-    if (!api) {
-      throw new Error(
-        "[mangaTools] window.PluginApi is missing \u2014 the plugin cannot load"
-      );
-    }
-    return api;
-  }
-
-  // src/censorship.tsx
+  // src/tools/censorship.tsx
   var PluginApi = requirePluginApi();
   var React = PluginApi.React;
   NS.CENSORSHIP_VALUES = ["censored", "uncensored"];
@@ -453,7 +1322,7 @@
     return /* @__PURE__ */ React.createElement("span", { className: "manga-tools-option" }, /* @__PURE__ */ React.createElement(CensorshipIcon, { value: option.value }), option.label);
   }
 
-  // src/filter-model.ts
+  // src/tools/filter-model.ts
   var CUSTOM_FIELDS_TYPE = "custom_fields";
   var LANGUAGE_TYPE = "language";
   var EMPTY_SELECTION = {
@@ -462,8 +1331,8 @@
     excluded: []
   };
   function registerLanguageCriterionOption(filter) {
-    var _a;
-    const options = (_a = filter == null ? void 0 : filter.options) == null ? void 0 : _a.criterionOptions;
+    var _a2;
+    const options = (_a2 = filter == null ? void 0 : filter.options) == null ? void 0 : _a2.criterionOptions;
     if (!options) return;
     let found = null;
     for (let i = 0; i < options.length; i++) {
@@ -488,10 +1357,10 @@
     options.push(option);
   }
   function customFieldsCriterion(filter) {
-    var _a;
+    var _a2;
     const criteria = (filter == null ? void 0 : filter.criteria) || [];
     for (let i = 0; i < criteria.length; i++) {
-      const option = (_a = criteria[i]) == null ? void 0 : _a.criterionOption;
+      const option = (_a2 = criteria[i]) == null ? void 0 : _a2.criterionOption;
       if (!option) continue;
       if (option.type === CUSTOM_FIELDS_TYPE || option.type === LANGUAGE_TYPE) {
         return criteria[i];
@@ -519,13 +1388,13 @@
     return criterion && isLanguageCriterion(criterion) ? criterion : null;
   }
   function adoptLanguageCriterion(filter) {
-    var _a;
+    var _a2;
     const criterion = languageCriterionOf(filter);
     if (!criterion) return;
     if (criterion.criterionOption && criterion.criterionOption.type === LANGUAGE_TYPE) {
       return;
     }
-    const options = ((_a = filter.options) == null ? void 0 : _a.criterionOptions) || [];
+    const options = ((_a2 = filter.options) == null ? void 0 : _a2.criterionOptions) || [];
     let option = null;
     for (let i = 0; i < options.length; i++) {
       if (options[i].type === LANGUAGE_TYPE) option = options[i];
@@ -706,9 +1575,9 @@
     return conditions;
   }
   function languageFilterQuery(filter, selection) {
-    var _a;
+    var _a2;
     if (!filter || typeof filter.clone !== "function") return null;
-    const options = ((_a = filter.options) == null ? void 0 : _a.criterionOptions) || [];
+    const options = ((_a2 = filter.options) == null ? void 0 : _a2.criterionOptions) || [];
     let option = null;
     for (let i = 0; i < options.length; i++) {
       if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
@@ -795,9 +1664,9 @@
     return conditions;
   }
   function censorshipFilterQuery(filter, selection) {
-    var _a;
+    var _a2;
     if (!filter || typeof filter.clone !== "function") return null;
-    const options = ((_a = filter.options) == null ? void 0 : _a.criterionOptions) || [];
+    const options = ((_a2 = filter.options) == null ? void 0 : _a2.criterionOptions) || [];
     let option = null;
     for (let i = 0; i < options.length; i++) {
       if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
@@ -859,9 +1728,9 @@
     return [];
   }
   function mangaFilterQuery(filter, state) {
-    var _a;
+    var _a2;
     if (!filter || typeof filter.clone !== "function") return null;
-    const options = ((_a = filter.options) == null ? void 0 : _a.criterionOptions) || [];
+    const options = ((_a2 = filter.options) == null ? void 0 : _a2.criterionOptions) || [];
     let option = null;
     for (let i = 0; i < options.length; i++) {
       if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
@@ -928,7 +1797,7 @@
   NS.registerLanguageCriterionOption = registerLanguageCriterionOption;
   NS.adoptLanguageCriterion = adoptLanguageCriterion;
 
-  // src/filter-ui.tsx
+  // src/tools/filter-ui.tsx
   var PluginApi2 = requirePluginApi();
   var React2 = PluginApi2.React;
   function visibleOptions(intl, selection) {
@@ -1032,7 +1901,7 @@
     return tag.firstChild;
   }
 
-  // src/dialog-filter.tsx
+  // src/tools/dialog-filter.tsx
   var PluginApi3 = requirePluginApi();
   var React3 = PluginApi3.React;
   var OWN_TAG_MARK = "data-manga-tools-own-tag";
@@ -1368,7 +2237,7 @@
   NS.ownTagLabels = ownTagLabels;
   NS.clickedTagRemove = clickedTagRemove;
 
-  // src/sidebar-filter.tsx
+  // src/tools/sidebar-filter.tsx
   var PluginApi4 = requirePluginApi();
   var React4 = PluginApi4.React;
   var SECTION_STATE_KEY = "mangaToolsLanguageOpen";
@@ -1850,7 +2719,7 @@
   NS.relabelCensorshipTags = relabelCensorshipTags;
   NS.relabelMangaTags = relabelMangaTags;
 
-  // src/mangaTools.tsx
+  // src/tools/index.tsx
   var PluginApi5 = requirePluginApi();
   var React5 = PluginApi5.React;
   var FIELD_NAME = NS.FIELD_NAME;
@@ -1950,16 +2819,6 @@
       NS.pickField(customFields, CENSORSHIP_FIELD_NAME)
     );
   }
-  function gqlDoc(text, what) {
-    var _a;
-    const Apollo = PluginApi5.libraries.Apollo;
-    const gql = (Apollo == null ? void 0 : Apollo.gql) || ((_a = PluginApi5.GQL) == null ? void 0 : _a.gql);
-    if (!gql) {
-      console.error("[mangaTools] gql not available, cannot " + what);
-      return null;
-    }
-    return gql(text);
-  }
   function stashClient() {
     try {
       return PluginApi5.utils.StashService.getClient();
@@ -2052,9 +2911,9 @@
     const client = stashClient();
     if (!client) return;
     client.query({ query, fetchPolicy: "no-cache" }).then((res) => {
-      var _a;
+      var _a2;
       const data = res == null ? void 0 : res.data;
-      const plugins = (_a = data == null ? void 0 : data.configuration) == null ? void 0 : _a.plugins;
+      const plugins = (_a2 = data == null ? void 0 : data.configuration) == null ? void 0 : _a2.plugins;
       const pluginCfg = plugins == null ? void 0 : plugins[PLUGIN_ID];
       NS.enabledLanguages = NS.parseEnabledLanguages(
         pluginCfg ? pluginCfg.enabledLanguages : null
@@ -2106,7 +2965,7 @@
   }
   var assetBase = "";
   function start() {
-    var _a;
+    var _a2;
     if (started) return;
     started = true;
     assetBase = ownBaseUrl();
@@ -2120,11 +2979,11 @@
     window.setInterval(() => {
       if (document.visibilityState === "visible") refresh();
     }, REFRESH_MS);
-    if ((_a = PluginApi5.Event) == null ? void 0 : _a.addEventListener) {
+    if ((_a2 = PluginApi5.Event) == null ? void 0 : _a2.addEventListener) {
       PluginApi5.Event.addEventListener("stash:location", (e) => {
-        var _a2, _b;
+        var _a3, _b2;
         const ev = e;
-        const loc = (_b = (_a2 = ev == null ? void 0 : ev.detail) == null ? void 0 : _a2.data) == null ? void 0 : _b.location;
+        const loc = (_b2 = (_a3 = ev == null ? void 0 : ev.detail) == null ? void 0 : _a3.data) == null ? void 0 : _b2.location;
         currentPath = (loc == null ? void 0 : loc.pathname) || window.location.pathname || "";
         refresh();
         refreshSettings();
@@ -2184,9 +3043,9 @@
   function hasClass(el, name) {
     return !!el && (el.className || "").split(/\s+/).indexOf(name) >= 0;
   }
-  function ensurePopoverSlot(galleryId) {
+  function ensurePopoverSlot(galleryId2) {
     const anchor = document.querySelector(
-      '[data-gallery="' + galleryId + '"]'
+      '[data-gallery="' + galleryId2 + '"]'
     );
     if (!(anchor == null ? void 0 : anchor.parentNode)) return null;
     const previous = anchor.previousElementSibling;
@@ -2235,7 +3094,8 @@
     ) : null);
   }
   var TOOLBAR_HOST_CLASS = "manga-tools-toolbar-host";
-  var CAN_WRITE = typeof PluginApi5.utils.StashService.getClient === "function";
+  var _a, _b;
+  var CAN_WRITE = typeof ((_b = (_a = PluginApi5.utils) == null ? void 0 : _a.StashService) == null ? void 0 : _b.getClient) === "function";
   if (!CAN_WRITE) {
     console.error(
       "[mangaTools] this Stash has no Apollo client, so the toolbar switch cannot be shown. The rest of the plugin is unaffected."
@@ -2280,9 +3140,9 @@
     });
     return Object.keys(seen).sort();
   }
-  function storedIsManga(galleryId) {
-    var _a;
-    return (_a = store == null ? void 0 : store.has(String(galleryId))) != null ? _a : false;
+  function storedIsManga(galleryId2) {
+    var _a2;
+    return (_a2 = store == null ? void 0 : store.has(String(galleryId2))) != null ? _a2 : false;
   }
   function ConfirmUnmark(props) {
     const intl = PluginApi5.libraries.Intl.useIntl();
@@ -2293,13 +3153,13 @@
     return /* @__PURE__ */ React5.createElement(Modal, { show: true, size: "sm", onHide: props.onCancel }, /* @__PURE__ */ React5.createElement(Modal.Body, null, /* @__PURE__ */ React5.createElement("div", null, t(intl, "mangaTools.manga.confirm")), props.resetsForm ? /* @__PURE__ */ React5.createElement("div", null, t(intl, "mangaTools.manga.confirmResetsForm")) : null), /* @__PURE__ */ React5.createElement(Modal.Footer, null, /* @__PURE__ */ React5.createElement(Button, { variant: "secondary", onClick: props.onCancel }, t(intl, "mangaTools.manga.confirmCancel")), /* @__PURE__ */ React5.createElement(Button, { variant: "danger", onClick: props.onConfirm }, t(intl, "mangaTools.manga.confirmOk"))));
   }
   var editForm = null;
-  function editFormFor(galleryId) {
-    return editForm && editForm.galleryId === galleryId ? editForm : null;
+  function editFormFor(galleryId2) {
+    return editForm && editForm.galleryId === galleryId2 ? editForm : null;
   }
   var originalGroupTaken = null;
-  function isMarkedNow(galleryId, values) {
-    if (store === null || !galleryId) return NS.isManga(values);
-    return storedIsManga(galleryId);
+  function isMarkedNow(galleryId2, values) {
+    if (store === null || !galleryId2) return NS.isManga(values);
+    return storedIsManga(galleryId2);
   }
   function editFormIsDirty() {
     const save = document.querySelector(".edit-buttons-container .edit-button");
@@ -2318,7 +3178,7 @@
     markUpdate = gqlDoc(MARK_QUERY_TEXT, "build the mutation");
     return markUpdate;
   }
-  function writeQuietly(galleryId, fields) {
+  function writeQuietly(galleryId2, fields) {
     const mutation = getMarkUpdate();
     if (!mutation) {
       return Promise.reject(
@@ -2333,7 +3193,7 @@
     }
     return client.mutate({
       mutation,
-      variables: { input: { id: galleryId, custom_fields: fields } }
+      variables: { input: { id: galleryId2, custom_fields: fields } }
     });
   }
   function GalleryToolbar(props) {
@@ -2379,7 +3239,7 @@
       setConfirming(true);
     };
     const mark = () => {
-      var _a;
+      var _a2;
       const form = editFormFor(props.galleryId);
       if (form) {
         form.onChange(NS.setField(form.values, MANGA_FIELD_NAME, NS.MANGA_VALUE));
@@ -2387,7 +3247,7 @@
       store == null ? void 0 : store.set(
         props.galleryId,
         NS.setField(
-          (_a = store == null ? void 0 : store.get(props.galleryId)) != null ? _a : props.values,
+          (_a2 = store == null ? void 0 : store.get(props.galleryId)) != null ? _a2 : props.values,
           MANGA_FIELD_NAME,
           NS.MANGA_VALUE
         )
@@ -2478,7 +3338,7 @@
     };
   }
   function MangaFieldBlock(props) {
-    var _a;
+    var _a2;
     useGlobalVersion();
     const intl = PluginApi5.libraries.Intl.useIntl();
     const Select = resolveSelect();
@@ -2487,7 +3347,7 @@
     const setOpen = state[1];
     const Solid = PluginApi5.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi5.components.Icon;
-    const Button = (_a = PluginApi5.libraries.Bootstrap) == null ? void 0 : _a.Button;
+    const Button = (_a2 = PluginApi5.libraries.Bootstrap) == null ? void 0 : _a2.Button;
     const host = isGalleryContext() ? ensureFieldHost() : null;
     if (host) {
       host.classList.toggle("hide-performers", NS.hidePerformers);
@@ -2511,40 +3371,40 @@
     };
     const isOriginal = NS.isOriginal(props.values);
     const toggleOriginal = () => {
-      const galleryId = currentGalleryId();
+      const galleryId2 = currentGalleryId();
       let next = props.values;
       if (isOriginal) {
         const taken = originalGroupTaken;
         originalGroupTaken = null;
         next = NS.setField(next, ORIGINAL_FIELD_NAME, "");
-        if (taken && taken.galleryId === galleryId && taken.group) {
+        if (taken && taken.galleryId === galleryId2 && taken.group) {
           next = NS.setField(next, TRANSLATION_GROUP_FIELD_NAME, taken.group);
         }
       } else {
         const group = NS.translationGroupOf(props.values);
-        originalGroupTaken = group ? { galleryId, group } : null;
+        originalGroupTaken = group ? { galleryId: galleryId2, group } : null;
         next = NS.setField(next, ORIGINAL_FIELD_NAME, NS.ORIGINAL_VALUE);
         next = NS.setField(next, TRANSLATION_GROUP_FIELD_NAME, "");
       }
       if (props.onChange) props.onChange(next);
     };
     const restoresGroup = !!originalGroupTaken && originalGroupTaken.galleryId === currentGalleryId() && !!originalGroupTaken.group;
-    const current = NS.describe(pickLanguage(props.values), intl.locale);
+    const current2 = NS.describe(pickLanguage(props.values), intl.locale);
     let options = NS.languageOptions(intl.locale).filter(
       (o) => {
         return !NS.enabledLanguages || NS.enabledLanguages.has(o.value);
       }
     );
-    if (current && !current.known) {
+    if (current2 && !current2.known) {
       options = [
-        { value: current.code, label: current.name, flag: null },
+        { value: current2.code, label: current2.name, flag: null },
         ...options
       ];
     }
-    const selected = current ? { value: current.code, label: current.name, flag: current.flag } : null;
+    const selected = current2 ? { value: current2.code, label: current2.name, flag: current2.flag } : null;
     const usualLanguages = NS.usualLanguagesOf(store);
     const usual = usualLanguages[NS.groupKey(NS.translationGroupOf(props.values))];
-    const offered = usual && (!NS.enabledLanguages || NS.enabledLanguages.has(usual.code)) && (!current || current.code !== usual.code) ? usual : null;
+    const offered = usual && (!NS.enabledLanguages || NS.enabledLanguages.has(usual.code)) && (!current2 || current2.code !== usual.code) ? usual : null;
     const offeredInfo = offered ? NS.describe(offered.code, intl.locale) : null;
     const chipIcon = Solid.faWandMagicSparkles || Solid.faMagic || Solid.faLanguage || null;
     const chipTitle = offered && offeredInfo ? t(intl, "mangaTools.translationGroup.fill") + " " + offeredInfo.name + " \u2014 " + t(intl, "mangaTools.translationGroup.suggestedLanguage") + " (" + offered.count + ")" : "";
@@ -2628,7 +3488,7 @@
     const usualOf = (name) => usualLanguages[NS.groupKey(name)];
     const matchesNow = (name) => {
       const usualHere = usualOf(name);
-      return !!current && !!usualHere && usualHere.code === current.code;
+      return !!current2 && !!usualHere && usualHere.code === current2.code;
     };
     const ordered = known.filter(matchesNow).concat(known.filter((name) => !matchesNow(name)));
     const groupOptions = [
@@ -2892,12 +3752,12 @@
   }
   var bulkLinkInstalled = false;
   function isGalleryBulkUpdate(query) {
-    var _a;
+    var _a2;
     const defs = query ? query.definitions : null;
     if (!(defs == null ? void 0 : defs.length)) return false;
     const op = defs[0];
     if ((op == null ? void 0 : op.kind) !== "OperationDefinition") return false;
-    const selections = (_a = op.selectionSet) == null ? void 0 : _a.selections;
+    const selections = (_a2 = op.selectionSet) == null ? void 0 : _a2.selections;
     if (!(selections == null ? void 0 : selections.length)) return false;
     const first = selections[0];
     return !!((first == null ? void 0 : first.name) && first.name.value === "bulkGalleryUpdate");
@@ -3042,15 +3902,15 @@
       (o) => !NS.enabledLanguages || NS.enabledLanguages.has(o.value)
     );
     const langShown = (bulkLanguage == null ? void 0 : bulkLanguage.kind) === "set" ? bulkLanguage.value : (bulkLanguage == null ? void 0 : bulkLanguage.kind) === "remove" ? BULK_REMOVE_VALUE : selectedLanguageAggregate() || "";
-    const current = langShown && langShown !== BULK_REMOVE_VALUE ? NS.describe(langShown, intl.locale) : null;
-    const currentCode = current ? current.code : "";
-    if (current && !options.some((o) => o.value === currentCode)) {
+    const current2 = langShown && langShown !== BULK_REMOVE_VALUE ? NS.describe(langShown, intl.locale) : null;
+    const currentCode = current2 ? current2.code : "";
+    if (current2 && !options.some((o) => o.value === currentCode)) {
       options = [
-        { value: current.code, label: current.name, flag: current.flag },
+        { value: current2.code, label: current2.name, flag: current2.flag },
         ...options
       ];
     }
-    const selected = langShown === BULK_REMOVE_VALUE ? removeOption : current ? { value: current.code, label: current.name, flag: current.flag } : null;
+    const selected = langShown === BULK_REMOVE_VALUE ? removeOption : current2 ? { value: current2.code, label: current2.name, flag: current2.flag } : null;
     const languageRow = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_language" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_language" }, fieldLabel2(intl)), /* @__PURE__ */ React5.createElement("div", { className: cls.control }, /* @__PURE__ */ React5.createElement(
       Select,
       {
@@ -3120,24 +3980,29 @@
       host
     );
   }
-  var GuardedBlock = class extends React5.Component {
-    constructor() {
-      super(...arguments);
-      __publicField(this, "state", { failed: false });
-    }
-    static getDerivedStateFromError() {
-      return { failed: true };
-    }
-    componentDidCatch(error) {
-      console.error(
-        "[mangaTools] the " + this.props.name + " threw while rendering, so it is not on the page. Everything else the plugin does is unaffected.",
-        error
-      );
-    }
-    render() {
-      return this.state.failed ? null : this.props.children;
-    }
-  };
+  var guardedBlockClass = null;
+  function guardedBlock() {
+    if (guardedBlockClass) return guardedBlockClass;
+    guardedBlockClass = class extends React5.Component {
+      constructor() {
+        super(...arguments);
+        __publicField(this, "state", { failed: false });
+      }
+      static getDerivedStateFromError() {
+        return { failed: true };
+      }
+      componentDidCatch(error) {
+        console.error(
+          "[mangaTools] the " + this.props.name + " threw while rendering, so it is not on the page. Everything else the plugin does is unaffected.",
+          error
+        );
+      }
+      render() {
+        return this.state.failed ? null : this.props.children;
+      }
+    };
+    return guardedBlockClass;
+  }
   var DETAILS_OPEN_BY_DEFAULT = false;
   var EDIT_OPEN_BY_DEFAULT = true;
   var HIDE_PERFORMERS_BY_DEFAULT = true;
@@ -3145,25 +4010,25 @@
   NS.openEditBlock = EDIT_OPEN_BY_DEFAULT;
   NS.hidePerformers = HIDE_PERFORMERS_BY_DEFAULT;
   function MangaDetailsPanel(props) {
-    var _a, _b;
+    var _a2, _b2;
     useGlobalVersion();
     const intl = PluginApi5.libraries.Intl.useIntl();
     const state = React5.useState(NS.openDetailsBlock);
     const open = state[0];
     const setOpen = state[1];
-    const language = NS.describe(pickLanguage(props.values), intl.locale);
+    const language2 = NS.describe(pickLanguage(props.values), intl.locale);
     const mark = censorshipOf(props.values);
     const group = NS.translationGroupOf(props.values);
     const original = NS.isOriginal(props.values);
     const Solid = PluginApi5.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi5.components.Icon;
-    const Button = (_a = PluginApi5.libraries.Bootstrap) == null ? void 0 : _a.Button;
-    const Collapse = (_b = PluginApi5.libraries.Bootstrap) == null ? void 0 : _b.Collapse;
-    if (!language && !mark && !group && !original) return null;
+    const Button = (_a2 = PluginApi5.libraries.Bootstrap) == null ? void 0 : _a2.Button;
+    const Collapse = (_b2 = PluginApi5.libraries.Bootstrap) == null ? void 0 : _b2.Collapse;
+    if (!language2 && !mark && !group && !original) return null;
     const host = ensureDetailHost();
     if (!host) return null;
-    const showFlag = NS.showFlags && !!(language == null ? void 0 : language.flag);
-    const body = /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React5.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, fieldLabel2(intl) + ": ", showFlag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: language.flag, className: "manga-tools-flag" }) : null, showFlag ? " " : null, language.name) : null, group ? (
+    const showFlag = NS.showFlags && !!(language2 == null ? void 0 : language2.flag);
+    const body = /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React5.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language2 ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, fieldLabel2(intl) + ": ", showFlag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: language2.flag, className: "manga-tools-flag" }) : null, showFlag ? " " : null, language2.name) : null, group ? (
       // No icon and no flag: a group's name is its own, and there is nothing
       // here to draw beside it. Drawn last, because it is the one row that is
       // the same shape on every gallery rather than picked from a list.
@@ -3196,21 +4061,21 @@
     );
   }
   registerPatch("after", "GalleryCard.Overlays", (...args) => {
-    var _a;
+    var _a2;
     const props = args[0];
     const result = resultFrom(args);
     noteFired("GalleryCard.Overlays");
-    const id = (_a = props.gallery) == null ? void 0 : _a.id;
+    const id = (_a2 = props.gallery) == null ? void 0 : _a2.id;
     const value = id ? pickLanguage(store == null ? void 0 : store.get(String(id))) : "";
     if (!value || !NS.showCoverBadge) return result;
     return /* @__PURE__ */ React5.createElement(React5.Fragment, null, result, /* @__PURE__ */ React5.createElement(LanguageBadge, { galleryId: id }));
   });
   registerPatch("after", "GalleryCard.Popovers", (...args) => {
-    var _a;
+    var _a2;
     const props = args[0];
     const result = resultFrom(args);
     noteFired("GalleryCard.Popovers");
-    const id = (_a = props.gallery) == null ? void 0 : _a.id;
+    const id = (_a2 = props.gallery) == null ? void 0 : _a2.id;
     if (!id || !storedIsManga(String(id))) return result;
     return /* @__PURE__ */ React5.createElement(React5.Fragment, null, result, /* @__PURE__ */ React5.createElement(MangaPopoverMark, { galleryId: String(id) }));
   });
@@ -3220,12 +4085,12 @@
     noteFired("CustomFieldsInput");
     useGlobalVersion();
     React5.useEffect(() => {
-      var _a;
-      const galleryId = currentGalleryId();
-      if (props.onChange && galleryId) {
+      var _a2;
+      const galleryId2 = currentGalleryId();
+      if (props.onChange && galleryId2) {
         editForm = {
-          galleryId,
-          values: (_a = props.values) != null ? _a : {},
+          galleryId: galleryId2,
+          values: (_a2 = props.values) != null ? _a2 : {},
           onChange: props.onChange
         };
       }
@@ -3320,14 +4185,15 @@
       lifted = true;
       delete rest[k];
     });
-    const galleryId = currentGalleryId();
-    if (!lifted && !galleryId) return /* @__PURE__ */ React5.createElement(Original, { ...props });
+    const galleryId2 = currentGalleryId();
+    const Guard = guardedBlock();
+    if (!lifted && !galleryId2) return /* @__PURE__ */ React5.createElement(Original, { ...props });
     return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(
       Original,
       {
         ...lifted ? Object.assign({}, props, { values: rest }) : props
       }
-    ), galleryId && isMarkedNow(galleryId, values) ? /* @__PURE__ */ React5.createElement(GuardedBlock, { name: "manga panel" }, /* @__PURE__ */ React5.createElement(MangaDetailsPanel, { values })) : null, galleryId && CAN_WRITE ? /* @__PURE__ */ React5.createElement(GalleryToolbar, { galleryId, values }) : null);
+    ), galleryId2 && isMarkedNow(galleryId2, values) ? /* @__PURE__ */ React5.createElement(Guard, { name: "manga panel" }, /* @__PURE__ */ React5.createElement(MangaDetailsPanel, { values })) : null, galleryId2 && CAN_WRITE ? /* @__PURE__ */ React5.createElement(GalleryToolbar, { galleryId: galleryId2, values }) : null);
   });
   registerPatch("instead", "PluginSettings", (...args) => {
     const props = args[0];
@@ -3374,5 +4240,22 @@
     noteFired("RatingSystem");
     return /* @__PURE__ */ React5.createElement(React5.Fragment, null, resultFrom(args), /* @__PURE__ */ React5.createElement(BulkFieldsRow, null));
   });
-  start();
+  function install2() {
+    start();
+  }
+
+  // src/mangaTools.tsx
+  requirePluginApi();
+  function isolate(half, install3) {
+    try {
+      install3();
+    } catch (e) {
+      console.error(
+        `[mangaTools] the ${half} could not be started, so it is not on the page. The other half is unaffected.`,
+        e
+      );
+    }
+  }
+  isolate("tools half", install2);
+  isolate("reader half", install);
 })();
