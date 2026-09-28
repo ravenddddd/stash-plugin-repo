@@ -796,6 +796,7 @@
       forgetChaptersTab();
       return;
     }
+    if (NS.markedInStore(id) !== true) return;
     const panel = findPanel();
     if (!panel) return;
     if (!bridged()) return;
@@ -1072,6 +1073,7 @@
   var logged = false;
   var clickRoot = null;
   var pending = null;
+  var handedFor = null;
   var errand = null;
   var PRESS_RETRY_MS = 120;
   var MAX_ATTEMPTS = 3;
@@ -1090,20 +1092,34 @@
       shownAt = -1;
       reinsers = 0;
       logged = false;
+      handedFor = null;
     }
-    injectSwitch(lightbox);
-    if (!wanted()) return;
     const wantedId = galleryIdFromPath(window.location.pathname);
     if (!wantedId) return;
+    const marked = NS.markedInStore(wantedId);
+    if (marked !== true) {
+      if (marked === false) leaveUnmarked(lightbox);
+      return;
+    }
+    injectSwitch(lightbox);
     if (galleryId !== wantedId || !loaded.has(wantedId)) {
       loadGallery(wantedId);
       return;
     }
+    const gallery = current();
+    if (gallery) handOverChapters(lightbox, gallery);
+    if (!wanted()) return;
     sync(lightbox);
     arrived(lightbox);
   }
   function wanted() {
-    return settings.doublePage && root !== null && galleryIdFromPath(window.location.pathname) !== null;
+    const id = galleryIdFromPath(window.location.pathname);
+    return settings.doublePage && root !== null && id !== null && NS.markedInStore(id) === true;
+  }
+  function leaveUnmarked(lightbox) {
+    if (container || root !== lightbox) deactivate();
+    const group = lightbox.querySelector("." + CLASS_OPTIONS);
+    if (group) group.remove();
   }
   function current() {
     return galleryId ? loaded.get(galleryId) || null : null;
@@ -1131,11 +1147,11 @@
       const gallery = {
         id,
         pages: answer.pages,
+        images: answer.images,
         screens: layout(answer.pages, { ...settings, offset }),
         chapters: placeChapters(chaptersOf2(answer), answer.pages)
       };
       remember(id, gallery);
-      handOverChapters(forLightbox, gallery, answer);
       language = answer.language;
       galleryId = id;
       shownAt = -1;
@@ -1150,23 +1166,23 @@
     });
   }
   async function loadPages(id, order, lightbox) {
-    var _a2, _b2, _c, _d;
     const answer = await fetchGallery(id, order);
     const shown = carouselImage(lightbox);
-    if (!shown || ((_a2 = answer.pages[shown.at]) == null ? void 0 : _a2.id) === shown.id) return answer;
-    if (order.sort === "path") {
+    if (!shown) return answer;
+    if (!answer.pages.some((page) => page.id === shown.id)) {
       throw new Error(
-        "[mangaReader] the lightbox is showing image " + shown.id + " where a path-ordered list has " + ((_c = (_b2 = answer.pages[shown.at]) == null ? void 0 : _b2.id) != null ? _c : "nothing") + " \u2014 the list behind it is filtered, so its pages cannot be paired"
+        "[mangaReader] the lightbox is showing image " + shown.id + ", which is not among the pages this plugin read \u2014 the list behind it is filtered, so its pages cannot be paired"
       );
     }
-    const fallback = await fetchGallery(id, { sort: "path", direction: "ASC" });
-    const still = carouselImage(lightbox);
-    if (still && ((_d = fallback.pages[still.at]) == null ? void 0 : _d.id) !== still.id) {
-      throw new Error(
-        "[mangaReader] the pages could not be matched to the lightbox in either order, so the spread view would pair the wrong ones"
-      );
+    return answer;
+  }
+  function placeOf(gallery, lightbox) {
+    const shown = carouselImage(lightbox);
+    if (!shown) return -1;
+    for (let i = 0; i < gallery.pages.length; i++) {
+      if (gallery.pages[i].id === shown.id) return i;
     }
-    return fallback;
+    return -1;
   }
   function chaptersOf2(answer) {
     const own = parseChapters(
@@ -1198,10 +1214,11 @@
       deactivate();
       return;
     }
-    const at = screenAt(gallery.screens, position.current - 1);
+    const place = placeOf(gallery, lightbox);
+    const at = place < 0 ? -1 : screenAt(gallery.screens, place);
     if (at < 0) {
       console.error(
-        "[mangaReader] the lightbox is at page " + position.current + ", which is not among the pages this plugin read \u2014 turning the spread view off"
+        "[mangaReader] the lightbox is showing an image this plugin did not read, so the spread view cannot follow it \u2014 turning itself off"
       );
       deactivate();
       return;
@@ -1403,6 +1420,7 @@
     shownAt = -1;
   }
   function closeLightbox() {
+    handedFor = null;
     if (clickRoot) {
       clickRoot.removeEventListener("click", onNavClick, true);
       clickRoot = null;
@@ -1412,14 +1430,15 @@
     galleryId = null;
     logged = false;
   }
-  function handOverChapters(lightbox, gallery, answer) {
+  function handOverChapters(lightbox, gallery) {
     if (!bridged()) return;
-    const position = readPosition(lightbox);
-    if (!position || position.total !== answer.images.length) return;
+    if ((handedFor == null ? void 0 : handedFor.lightbox) === lightbox && handedFor.gallery === gallery.id)
+      return;
+    handedFor = { lightbox, gallery: gallery.id };
     takeOver({
-      images: answer.images,
+      images: gallery.images,
       chapters: gallery.chapters,
-      totalCount: answer.images.length
+      totalCount: gallery.images.length
     });
   }
   function injectSwitch(lightbox) {
@@ -1662,6 +1681,7 @@
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("keydown", onKeyDown, true);
     installBridge();
+    NS.watchStore(() => step());
     step();
   }
 
@@ -3556,6 +3576,8 @@
     if (store === null || !galleryId2) return NS.isManga(values);
     return storedIsManga(galleryId2);
   }
+  NS.markedInStore = (galleryId2) => store === null || !galleryId2 ? null : storedIsManga(galleryId2);
+  NS.watchStore = (fn) => subscribe(fn);
   function editFormIsDirty() {
     const save = document.querySelector(".edit-buttons-container .edit-button");
     return !!save && save.disabled !== true;
