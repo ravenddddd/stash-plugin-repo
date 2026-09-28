@@ -186,6 +186,7 @@
     "mangaTools.translationGroup.originalOff": "No longer raw \u2014 clear the mark",
     "mangaTools.translationGroup.originalOffRestore": "No longer raw \u2014 clear the mark and put the translation group back",
     "mangaTools.translationGroup.originalDetail": "raw (no translation group)",
+    "mangaTools.translationGroup.originalInline": " (raw)",
     "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
     "mangaTools.bulk.remove": "Remove",
     "mangaTools.bulk.unmarkWarning": "Unmarking removes this plugin's manga, language, censorship and translation group fields from the selected galleries."
@@ -233,6 +234,7 @@
     "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0",
     "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0\uFF0C\u5E76\u6062\u590D\u539F\u6765\u7684\u7FFB\u8BD1\u7EC4",
     "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
+    "mangaTools.translationGroup.originalInline": "\uFF08\u751F\u8089\uFF09",
     "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E2D\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u6F2B\u753B\u3001\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5B57\u6BB5\u3002"
@@ -280,6 +282,7 @@
     "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18",
     "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18\uFF0C\u4E26\u9084\u539F\u539F\u672C\u7684\u7FFB\u8B6F\u7D44",
     "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u7121\u7FFB\u8B6F\u7D44\uFF09",
+    "mangaTools.translationGroup.originalInline": "\uFF08\u751F\u8089\uFF09",
     "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E2D\u79FB\u9664\u672C\u5916\u639B\u7684\u6F2B\u756B\u3001\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u6B04\u4F4D\u3002"
@@ -4028,17 +4031,17 @@
     const host = ensureDetailHost();
     if (!host) return null;
     const showFlag = NS.showFlags && !!(language2 == null ? void 0 : language2.flag);
-    const body = /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React5.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language2 ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, fieldLabel2(intl) + ": ", showFlag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: language2.flag, className: "manga-tools-flag" }) : null, showFlag ? " " : null, language2.name) : null, group ? (
+    const body = /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React5.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language2 ? /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, fieldLabel2(intl) + ": ", showFlag ? /* @__PURE__ */ React5.createElement(Flag2, { flag: language2.flag, className: "manga-tools-flag" }) : null, showFlag ? " " : null, language2.name, original ? t(intl, "mangaTools.translationGroup.originalInline") : null) : null, group ? (
       // No icon and no flag: a group's name is its own, and there is nothing
       // here to draw beside it. Drawn last, because it is the one row that is
       // the same shape on every gallery rather than picked from a list.
       /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.heading") + ": ", group)
-    ) : null, original ? (
-      // Under the same label as the group, because it answers the same question:
-      // this gallery was not translated. The wording carries that — a bare "原文"
-      // under "Translation group:" would read like a group called that, which is
-      // the reading this field exists to avoid.
-      /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.heading") + ": ", t(intl, "mangaTools.translationGroup.originalDetail"))
+    ) : null, original && !language2 ? (
+      // Raw with no language to carry the mark, so it stands on its own — and
+      // without the group's label, for the reason above. The wording carries the
+      // rest: a bare "原文" under that label would read like a group called that,
+      // which is why the string says what it does.
+      /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.originalDetail"))
     ) : null);
     return PluginApi5.ReactDOM.createPortal(
       /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React5.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React5.createElement(
