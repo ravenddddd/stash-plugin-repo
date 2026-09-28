@@ -815,12 +815,15 @@
     "  ) {",
     "    images {",
     "      id",
+    "      title",
     "      visual_files {",
     "        __typename",
     "        ... on VideoFile {",
+    "          path",
     "          video_codec",
     "        }",
     "        ... on ImageFile {",
+    "          path",
     "          width",
     "          height",
     "        }",
@@ -892,21 +895,26 @@
       };
     });
     const images = (((_b2 = data == null ? void 0 : data.pages) == null ? void 0 : _b2.images) || []).map((image) => {
-      var _a3;
+      var _a3, _b3, _c2, _d2, _e2;
       const files = image.visual_files || [];
       const sized = files.find(
         (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
       );
+      const file = files[0];
       return {
         id: String(image.id),
-        // Stash shows this nowhere this plugin can see, but the shape is Stash's and
-        // an image without a title is the ordinary case rather than a missing field.
-        title: "",
-        paths: { image: ((_a3 = image.paths) == null ? void 0 : _a3.image) || "" },
+        // Passed through as it came: Stash's lightbox shows a title when there is one
+        // and the file's name when there is not, and telling it which is which is the
+        // whole of this plugin's part in that.
+        title: String((_a3 = image.title) != null ? _a3 : ""),
+        paths: { image: ((_b3 = image.paths) == null ? void 0 : _b3.image) || "" },
         visual_files: [
           {
-            __typename: String((sized == null ? void 0 : sized.__typename) || "ImageFile"),
-            video_codec: sized == null ? void 0 : sized.video_codec,
+            __typename: String(
+              (sized == null ? void 0 : sized.__typename) || (file == null ? void 0 : file.__typename) || "ImageFile"
+            ),
+            path: String((_d2 = (_c2 = sized == null ? void 0 : sized.path) != null ? _c2 : file == null ? void 0 : file.path) != null ? _d2 : ""),
+            video_codec: (_e2 = sized == null ? void 0 : sized.video_codec) != null ? _e2 : file == null ? void 0 : file.video_codec,
             width: (sized == null ? void 0 : sized.width) || 0,
             height: (sized == null ? void 0 : sized.height) || 0
           }
