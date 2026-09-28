@@ -14,7 +14,7 @@
     }
     return api;
   }
-  function gqlDoc(text, what) {
+  function gqlDoc(text2, what) {
     var _a2, _b2;
     const api = requirePluginApi();
     const gql = ((_a2 = api.libraries.Apollo) == null ? void 0 : _a2.gql) || ((_b2 = api.GQL) == null ? void 0 : _b2.gql);
@@ -22,7 +22,7 @@
       console.error("[mangaTools] gql not available, cannot " + what);
       return null;
     }
-    return gql(text);
+    return gql(text2);
   }
 
   // src/languages.ts
@@ -143,6 +143,175 @@
     if (s === "true" || s === "1" || s === "yes" || s === "on") return true;
     return fallback;
   };
+
+  // src/tools/fields.ts
+  NS.FIELD_NAME = "plugin.mangaTools.language";
+  NS.CENSORSHIP_FIELD_NAME = "plugin.mangaTools.censorship";
+  NS.MANGA_FIELD_NAME = "plugin.mangaTools.manga";
+  NS.TRANSLATION_GROUP_FIELD_NAME = "plugin.mangaTools.translationGroup";
+  NS.translationGroupOf = (customFields) => NS.pickField(customFields, NS.TRANSLATION_GROUP_FIELD_NAME).trim();
+  NS.groupKey = (name) => String(name != null ? name : "").trim().toLowerCase();
+  NS.sameTranslationGroup = (a, b) => NS.groupKey(a) === NS.groupKey(b);
+  NS.usualLanguageFor = (galleries, group) => {
+    const key = NS.groupKey(group);
+    return key ? NS.usualLanguagesOf(galleries)[key] || null : null;
+  };
+  NS.usualLanguagesOf = (galleries) => {
+    const out = {};
+    if (!galleries) return out;
+    const counts = {};
+    galleries.forEach((fields) => {
+      const key = NS.groupKey(NS.translationGroupOf(fields));
+      if (!key) return;
+      const code = NS.findCanonical(
+        NS.normalize(NS.pickField(fields, NS.FIELD_NAME))
+      );
+      if (!code) return;
+      if (!counts[key]) counts[key] = {};
+      const byLanguage = counts[key];
+      byLanguage[code] = (byLanguage[code] || 0) + 1;
+    });
+    for (const key of Object.keys(counts)) {
+      const usual = majorityOf(counts[key]);
+      if (usual) out[key] = usual;
+    }
+    return out;
+  };
+  function majorityOf(counts) {
+    let best = "";
+    let count = 0;
+    let tied = false;
+    for (const code of Object.keys(counts)) {
+      if (counts[code] > count) {
+        best = code;
+        count = counts[code];
+        tied = false;
+      } else if (counts[code] === count) {
+        tied = true;
+      }
+    }
+    return best && !tied ? { code: best, count } : null;
+  }
+  NS.MANGA_VALUE = "true";
+  NS.isManga = (customFields) => NS.pickField(customFields, NS.MANGA_FIELD_NAME) !== "";
+  NS.ORIGINAL_FIELD_NAME = "plugin.mangaTools.original";
+  NS.ORIGINAL_VALUE = NS.MANGA_VALUE;
+  NS.isOriginal = (customFields) => NS.pickField(customFields, NS.ORIGINAL_FIELD_NAME) !== "";
+  NS.CHAPTER_FIELD_NAME = "plugin.mangaTools.chapters";
+  NS.ownField = (key) => {
+    const k = String(key != null ? key : "").trim().toLowerCase();
+    if (k === "") return "";
+    const names = [
+      NS.FIELD_NAME,
+      NS.CENSORSHIP_FIELD_NAME,
+      NS.MANGA_FIELD_NAME,
+      NS.TRANSLATION_GROUP_FIELD_NAME,
+      NS.ORIGINAL_FIELD_NAME,
+      // Recognised but never drawn: no row, no sidebar section, no bulk entry.
+      // What it means is the reader half's business — a key of this plugin's must
+      // not be left behind in Stash's own custom-field rows either way.
+      NS.CHAPTER_FIELD_NAME
+    ];
+    for (let i = 0; i < names.length; i++) {
+      if (names[i].toLowerCase() === k) return names[i];
+    }
+    return "";
+  };
+  NS.isOwnField = (key) => NS.ownField(key) !== "";
+  NS.fieldsToClear = (customFields) => {
+    const map = customFields || {};
+    if (!map || typeof map !== "object") return [NS.MANGA_FIELD_NAME];
+    const keys = Object.keys(map).filter((key) => NS.isOwnField(key));
+    return keys.length ? keys : [NS.MANGA_FIELD_NAME];
+  };
+  NS.clearFields = (customFields) => {
+    let next = customFields || {};
+    if (!next || typeof next !== "object") next = {};
+    NS.fieldsToClear(next).forEach((name) => {
+      next = NS.setField(next, name, "");
+    });
+    return next;
+  };
+  NS.pickField = (customFields, name) => {
+    if (!customFields || typeof customFields !== "object") return "";
+    const map = customFields;
+    const key = name.toLowerCase();
+    const keys = Object.keys(map);
+    for (let i = 0; i < keys.length; i++) {
+      if (keys[i].toLowerCase() === key) {
+        const v = map[keys[i]];
+        if (v === null || v === void 0) return "";
+        return String(v);
+      }
+    }
+    return "";
+  };
+  NS.setField = (customFields, name, value) => {
+    const next = Object.assign({}, customFields || {});
+    const key = name.toLowerCase();
+    Object.keys(next).forEach((k) => {
+      if (k.toLowerCase() === key) delete next[k];
+    });
+    if (value) next[name] = value;
+    return next;
+  };
+
+  // src/reader/bridge.ts
+  var handles = [];
+  function bridged() {
+    return handles.length > 0;
+  }
+  function takeOver(request) {
+    var _a2;
+    (_a2 = handles[handles.length - 1]) == null ? void 0 : _a2.takeOver(request);
+  }
+  function LightboxBridge() {
+    const api = requirePluginApi();
+    const React6 = api.React;
+    const show = api.hooks.useLightbox();
+    React6.useEffect(() => {
+      const mine = {
+        takeOver(request) {
+          show({
+            images: request.images,
+            // One page of everything, so the lightbox never asks for another: this list
+            // is the whole gallery, and a page callback would be a second way of saying
+            // which images it holds.
+            pages: 1,
+            pageSize: request.images.length,
+            totalCount: request.totalCount,
+            // Only read when the lightbox mounts, which is how a chapter clicked on the
+            // gallery's own page opens one — see the chapters tab.
+            initialIndex: request.at
+          });
+        }
+      };
+      handles.push(mine);
+      return () => {
+        const at = handles.indexOf(mine);
+        if (at !== -1) handles.splice(at, 1);
+      };
+    }, [show, api]);
+    return null;
+  }
+  function installBridge() {
+    const api = requirePluginApi();
+    const React6 = api.React;
+    for (const target of ["ImageList", "HeaderImage"]) {
+      installAgainst(api, React6, target);
+    }
+  }
+  function installAgainst(api, React6, target) {
+    api.patch.after(target, (...args) => {
+      const result = args[args.length - 1];
+      return React6.createElement(
+        React6.Fragment,
+        null,
+        result,
+        React6.createElement(LightboxBridge)
+      );
+    });
+  }
 
   // src/messages/en.json
   var en_default = {
@@ -329,192 +498,334 @@
   NS.catalogFor = catalogFor;
   NS.catalogs = catalogs;
 
-  // src/tools/fields.ts
-  NS.FIELD_NAME = "plugin.mangaTools.language";
-  NS.CENSORSHIP_FIELD_NAME = "plugin.mangaTools.censorship";
-  NS.MANGA_FIELD_NAME = "plugin.mangaTools.manga";
-  NS.TRANSLATION_GROUP_FIELD_NAME = "plugin.mangaTools.translationGroup";
-  NS.translationGroupOf = (customFields) => NS.pickField(customFields, NS.TRANSLATION_GROUP_FIELD_NAME).trim();
-  NS.groupKey = (name) => String(name != null ? name : "").trim().toLowerCase();
-  NS.sameTranslationGroup = (a, b) => NS.groupKey(a) === NS.groupKey(b);
-  NS.usualLanguageFor = (galleries, group) => {
-    const key = NS.groupKey(group);
-    return key ? NS.usualLanguagesOf(galleries)[key] || null : null;
-  };
-  NS.usualLanguagesOf = (galleries) => {
-    const out = {};
-    if (!galleries) return out;
-    const counts = {};
-    galleries.forEach((fields) => {
-      const key = NS.groupKey(NS.translationGroupOf(fields));
-      if (!key) return;
-      const code = NS.findCanonical(
-        NS.normalize(NS.pickField(fields, NS.FIELD_NAME))
-      );
-      if (!code) return;
-      if (!counts[key]) counts[key] = {};
-      const byLanguage = counts[key];
-      byLanguage[code] = (byLanguage[code] || 0) + 1;
-    });
-    for (const key of Object.keys(counts)) {
-      const usual = majorityOf(counts[key]);
-      if (usual) out[key] = usual;
-    }
-    return out;
-  };
-  function majorityOf(counts) {
-    let best = "";
-    let count = 0;
-    let tied = false;
-    for (const code of Object.keys(counts)) {
-      if (counts[code] > count) {
-        best = code;
-        count = counts[code];
-        tied = false;
-      } else if (counts[code] === count) {
-        tied = true;
-      }
-    }
-    return best && !tied ? { code: best, count } : null;
-  }
-  NS.MANGA_VALUE = "true";
-  NS.isManga = (customFields) => NS.pickField(customFields, NS.MANGA_FIELD_NAME) !== "";
-  NS.ORIGINAL_FIELD_NAME = "plugin.mangaTools.original";
-  NS.ORIGINAL_VALUE = NS.MANGA_VALUE;
-  NS.isOriginal = (customFields) => NS.pickField(customFields, NS.ORIGINAL_FIELD_NAME) !== "";
-  NS.CHAPTER_FIELD_NAME = "plugin.mangaTools.chapters";
-  NS.ownField = (key) => {
-    const k = String(key != null ? key : "").trim().toLowerCase();
-    if (k === "") return "";
-    const names = [
-      NS.FIELD_NAME,
-      NS.CENSORSHIP_FIELD_NAME,
-      NS.MANGA_FIELD_NAME,
-      NS.TRANSLATION_GROUP_FIELD_NAME,
-      NS.ORIGINAL_FIELD_NAME,
-      // Recognised but never drawn: no row, no sidebar section, no bulk entry.
-      // What it means is the reader half's business — a key of this plugin's must
-      // not be left behind in Stash's own custom-field rows either way.
-      NS.CHAPTER_FIELD_NAME
-    ];
-    for (let i = 0; i < names.length; i++) {
-      if (names[i].toLowerCase() === k) return names[i];
-    }
-    return "";
-  };
-  NS.isOwnField = (key) => NS.ownField(key) !== "";
-  NS.fieldsToClear = (customFields) => {
-    const map = customFields || {};
-    if (!map || typeof map !== "object") return [NS.MANGA_FIELD_NAME];
-    const keys = Object.keys(map).filter((key) => NS.isOwnField(key));
-    return keys.length ? keys : [NS.MANGA_FIELD_NAME];
-  };
-  NS.clearFields = (customFields) => {
-    let next = customFields || {};
-    if (!next || typeof next !== "object") next = {};
-    NS.fieldsToClear(next).forEach((name) => {
-      next = NS.setField(next, name, "");
-    });
-    return next;
-  };
-  NS.pickField = (customFields, name) => {
-    if (!customFields || typeof customFields !== "object") return "";
-    const map = customFields;
-    const key = name.toLowerCase();
-    const keys = Object.keys(map);
-    for (let i = 0; i < keys.length; i++) {
-      if (keys[i].toLowerCase() === key) {
-        const v = map[keys[i]];
-        if (v === null || v === void 0) return "";
-        return String(v);
-      }
-    }
-    return "";
-  };
-  NS.setField = (customFields, name, value) => {
-    const next = Object.assign({}, customFields || {});
-    const key = name.toLowerCase();
-    Object.keys(next).forEach((k) => {
-      if (k.toLowerCase() === key) delete next[k];
-    });
-    if (value) next[name] = value;
-    return next;
-  };
-
-  // src/reader/bridge.ts
-  var handles = [];
-  function bridged() {
-    return handles.length > 0;
-  }
-  function takeOver(request) {
-    var _a2;
-    (_a2 = handles[handles.length - 1]) == null ? void 0 : _a2.takeOver(request);
-  }
-  function LightboxBridge() {
-    const api = requirePluginApi();
-    const React6 = api.React;
-    const entries = React6.useRef([]).current;
-    const show = api.hooks.useLightbox({}, entries);
-    React6.useEffect(() => {
-      const mine = {
-        takeOver(request) {
-          entries.splice(0, entries.length, ...entriesFor(request));
-          show({
-            images: request.images,
-            // One page of everything, so the lightbox never asks for another: this
-            // list is the whole gallery, and a page callback would be a second way of
-            // saying which images it holds.
-            pages: 1,
-            pageSize: request.images.length,
-            totalCount: request.totalCount,
-            // Only read when the lightbox mounts, which is how a chapter clicked on
-            // the gallery page opens one — see the chapters tab.
-            initialIndex: request.at
-          });
-        }
-      };
-      handles.push(mine);
-      return () => {
-        const at = handles.indexOf(mine);
-        if (at !== -1) handles.splice(at, 1);
-      };
-    }, [entries, show, api]);
-    return null;
-  }
-  function entriesFor(request) {
-    const entries = [];
-    for (let i = 0; i < request.chapters.length; i++) {
-      const chapter = request.chapters[i];
-      entries.push({
-        id: "plugin.mangaTools.chapter." + i,
-        title: chapter.title,
-        image_index: chapter.at + 1
-      });
-    }
-    return entries;
-  }
-  function installBridge() {
-    const api = requirePluginApi();
-    const React6 = api.React;
-    for (const target of ["ImageList", "HeaderImage"]) {
-      installAgainst(api, React6, target);
-    }
-  }
-  function installAgainst(api, React6, target) {
-    api.patch.after(target, (...args) => {
-      const result = args[args.length - 1];
-      return React6.createElement(
-        React6.Fragment,
-        null,
-        result,
-        React6.createElement(LightboxBridge)
-      );
-    });
-  }
-
   // src/reader/namespace.ts
   window.MangaReader = window.MangaReader || {};
   var NR = window.MangaReader;
+
+  // src/reader/settings.ts
+  var STORAGE_KEY = "plugin.mangaTools.settings";
+  var LEGACY_STORAGE_KEY = "mangaReader.settings";
+  function storedValue(key, legacyKey) {
+    const current2 = window.localStorage.getItem(key);
+    if (current2 !== null) return current2;
+    const legacy = window.localStorage.getItem(legacyKey);
+    if (legacy !== null) window.localStorage.setItem(key, legacy);
+    return legacy;
+  }
+  var FADE_MAX_MS = 1e3;
+  var DEFAULT_SETTINGS = {
+    doublePage: false,
+    coverAlone: true,
+    detectSpreads: true,
+    fadeMs: 140
+  };
+  function parseSettings(raw) {
+    const stored = (() => {
+      if (!raw) return {};
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    })();
+    const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
+    const duration = (key) => {
+      const value = stored[key];
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        return DEFAULT_SETTINGS[key];
+      }
+      return Math.min(FADE_MAX_MS, Math.max(0, Math.round(value)));
+    };
+    return {
+      doublePage: flag("doublePage"),
+      coverAlone: flag("coverAlone"),
+      detectSpreads: flag("detectSpreads"),
+      fadeMs: duration("fadeMs")
+    };
+  }
+  function readSettings() {
+    try {
+      return parseSettings(storedValue(STORAGE_KEY, LEGACY_STORAGE_KEY));
+    } catch (e) {
+      console.error(
+        "[mangaReader] settings are not readable, using defaults:",
+        e
+      );
+      return { ...DEFAULT_SETTINGS };
+    }
+  }
+  function writeSettings(next) {
+    const merged = { ...readSettings(), ...next };
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    } catch (e) {
+      console.error("[mangaReader] settings are not writable:", e);
+    }
+    return merged;
+  }
+  var OFFSET_KEY = "plugin.mangaTools.offsets";
+  var LEGACY_OFFSET_KEY = "mangaReader.offsets";
+  function parseOffsets(raw) {
+    const stored = (() => {
+      if (!raw) return {};
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    })();
+    const offsets = {};
+    for (const [id, value] of Object.entries(stored)) {
+      if (value === 1) offsets[id] = 1;
+    }
+    return offsets;
+  }
+  function readOffset(galleryId2) {
+    try {
+      return parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY))[galleryId2] || 0;
+    } catch (e) {
+      console.error("[mangaReader] offsets are not readable:", e);
+      return 0;
+    }
+  }
+  function writeOffset(galleryId2, offset2) {
+    try {
+      const offsets = parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY));
+      if (offset2 === 1) offsets[galleryId2] = 1;
+      else delete offsets[galleryId2];
+      window.localStorage.setItem(OFFSET_KEY, JSON.stringify(offsets));
+    } catch (e) {
+      console.error("[mangaReader] offsets are not writable:", e);
+    }
+  }
+  NR.parseSettings = parseSettings;
+  NR.parseOffsets = parseOffsets;
+  NR.readSettings = readSettings;
+  NR.readOffset = readOffset;
+  NR.FADE_MAX_MS = FADE_MAX_MS;
+
+  // src/reader/chrome.ts
+  var CLASS_CHROME = "manga-reader-chrome";
+  var CLASS_TITLE = "manga-reader-title";
+  var CLASS_COUNTER = "manga-reader-counter";
+  var CLASS_MENU_BUTTON = "manga-reader-menu-button";
+  var CLASS_MENU_PANEL = "manga-reader-menu-panel";
+  var CLASS_MENU_ITEM = "manga-reader-menu-item";
+  var CLASS_SETTINGS = "manga-reader-settings";
+  var CLASS_MENU_CHAPTERS = "manga-reader-menu-chapters";
+  var CLASS_MENU_SETTINGS = "manga-reader-menu-settings";
+  function ensureChrome(lightbox, state) {
+    latest = state;
+    let chrome = lightbox.querySelector("." + CLASS_CHROME);
+    if (!chrome) {
+      chrome = document.createElement("div");
+      chrome.className = CLASS_CHROME;
+      lightbox.appendChild(chrome);
+      chrome.appendChild(menuButton("chapters", "\u2630"));
+      chrome.appendChild(text(CLASS_TITLE));
+      chrome.appendChild(text(CLASS_COUNTER));
+      chrome.appendChild(menuButton("settings", "\u2699"));
+      chrome.appendChild(panel("chapters"));
+      chrome.appendChild(panel("settings"));
+      chrome.appendChild(closeButton());
+    }
+    update(chrome, state);
+    return chrome;
+  }
+  function removeChrome(lightbox) {
+    const chrome = lightbox.querySelector("." + CLASS_CHROME);
+    if (chrome) chrome.remove();
+  }
+  var latest = null;
+  var labels = {};
+  var openMenu = null;
+  function update(chrome, state) {
+    const title = chrome.querySelector("." + CLASS_TITLE);
+    const counter = chrome.querySelector("." + CLASS_COUNTER);
+    const name = imageName(state.image);
+    if (title.textContent !== name) title.textContent = name;
+    const count = state.number + " / " + state.total;
+    if (counter.textContent !== count) counter.textContent = count;
+    const chapterPanel = chrome.querySelector(
+      "." + CLASS_MENU_CHAPTERS
+    );
+    const settingsPanel = chrome.querySelector(
+      "." + CLASS_MENU_SETTINGS
+    );
+    if (!chapterPanel || !settingsPanel) return;
+    for (const button of chrome.querySelectorAll("." + CLASS_MENU_BUTTON)) {
+      const which = button.getAttribute("data-opens");
+      button.setAttribute("aria-expanded", which === openMenu ? "true" : "false");
+    }
+    chapterPanel.classList.toggle("show", openMenu === "chapters");
+    settingsPanel.classList.toggle("show", openMenu === "settings");
+    drawChapters(chapterPanel, state);
+    drawSettings(settingsPanel, state);
+  }
+  function drawChapters(panel2, state) {
+    var _a2, _b2;
+    const key = state.placed.map((c) => c.at + ":" + c.title).join("|");
+    if (panel2.getAttribute("data-drawn") !== key) {
+      panel2.setAttribute("data-drawn", key);
+      panel2.textContent = "";
+      for (const chapter of state.placed) {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = CLASS_MENU_ITEM;
+        item.dataset.at = String(chapter.at);
+        item.textContent = chapter.title || "#" + (state.placed.indexOf(chapter) + 1);
+        item.addEventListener("click", () => {
+          openMenu = null;
+          state.handlers.onChapter(chapter.at);
+        });
+        panel2.appendChild(item);
+      }
+    }
+    for (const item of panel2.querySelectorAll("." + CLASS_MENU_ITEM)) {
+      const mine = item.getAttribute("data-at") === String((_b2 = (_a2 = state.chapter) == null ? void 0 : _a2.at) != null ? _b2 : -1);
+      item.classList.toggle("active", mine);
+    }
+  }
+  function drawSettings(panel2, state) {
+    const label = (id) => stringFor(state.locale, id);
+    if (panel2.getAttribute("data-built") !== "yes") {
+      panel2.setAttribute("data-built", "yes");
+      panel2.classList.add(CLASS_SETTINGS);
+      panel2.textContent = "";
+      const wrap = document.createElement("div");
+      wrap.className = "form-check";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.className = "form-check-input";
+      input.id = DOUBLE_PAGE_ID;
+      input.addEventListener("change", () => {
+        latest == null ? void 0 : latest.handlers.onSetting({ doublePage: input.checked });
+      });
+      const box = document.createElement("label");
+      box.className = "form-check-label";
+      box.htmlFor = DOUBLE_PAGE_ID;
+      labels.doublePage = box;
+      wrap.appendChild(input);
+      wrap.appendChild(box);
+      panel2.appendChild(wrap);
+      const shift = document.createElement("div");
+      shift.className = "form-check";
+      const shiftInput = document.createElement("input");
+      shiftInput.type = "checkbox";
+      shiftInput.className = "form-check-input";
+      shiftInput.id = OFFSET_ID;
+      shiftInput.addEventListener("change", () => {
+        latest == null ? void 0 : latest.handlers.onOffset(shiftInput.checked ? 1 : 0);
+      });
+      const shiftLabel = document.createElement("label");
+      shiftLabel.className = "form-check-label";
+      shiftLabel.htmlFor = OFFSET_ID;
+      labels.offset = shiftLabel;
+      shift.appendChild(shiftInput);
+      shift.appendChild(shiftLabel);
+      panel2.appendChild(shift);
+      const fade = document.createElement("div");
+      fade.className = "form-group";
+      const fadeLabel = document.createElement("label");
+      fadeLabel.htmlFor = FADE_ID;
+      labels.fade = fadeLabel;
+      const range2 = document.createElement("input");
+      range2.type = "range";
+      range2.className = "form-range";
+      range2.id = FADE_ID;
+      range2.min = "0";
+      range2.max = String(FADE_MAX_MS);
+      range2.step = "20";
+      range2.addEventListener("input", () => {
+        latest == null ? void 0 : latest.handlers.onSetting({ fadeMs: Number(range2.value) });
+      });
+      const readout2 = text("manga-reader-readout");
+      fade.appendChild(fadeLabel);
+      fade.appendChild(range2);
+      fade.appendChild(readout2);
+      panel2.appendChild(fade);
+    }
+    const check = panel2.querySelector(
+      "#" + DOUBLE_PAGE_ID
+    );
+    if (check && check.checked !== state.settings.doublePage) {
+      check.checked = state.settings.doublePage;
+    }
+    const doubleName = label("mangaReader.doublePage");
+    if (labels.doublePage && labels.doublePage.textContent !== doubleName) {
+      labels.doublePage.textContent = doubleName;
+    }
+    const offset2 = panel2.querySelector(
+      "#" + OFFSET_ID
+    );
+    if (offset2 && offset2.checked !== (state.offset === 1)) {
+      offset2.checked = state.offset === 1;
+    }
+    const offsetName = label("mangaReader.offset");
+    if (labels.offset && labels.offset.textContent !== offsetName) {
+      labels.offset.textContent = offsetName;
+    }
+    const range = panel2.querySelector("#" + FADE_ID);
+    if (range && range.value !== String(state.settings.fadeMs)) {
+      range.value = String(state.settings.fadeMs);
+    }
+    const readout = panel2.querySelector(".manga-reader-readout");
+    const shown = state.settings.fadeMs + " ms";
+    if (readout && readout.textContent !== shown) readout.textContent = shown;
+    const fadeName = label("mangaReader.fade");
+    if (labels.fade && labels.fade.textContent !== fadeName) {
+      labels.fade.textContent = fadeName;
+    }
+  }
+  var DOUBLE_PAGE_ID = "manga-reader-double-page";
+  var OFFSET_ID = "manga-reader-offset";
+  var FADE_ID = "manga-reader-fade";
+  function imageName(image) {
+    var _a2, _b2;
+    if (!image) return "";
+    const path = ((_b2 = (_a2 = image.visual_files) == null ? void 0 : _a2[0]) == null ? void 0 : _b2.path) || "";
+    return image.title || path.replace(/^.*[\\/]/, "") || "";
+  }
+  function text(className) {
+    const node = document.createElement("span");
+    node.className = className;
+    return node;
+  }
+  function menuButton(opens, glyph) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "minimal " + CLASS_MENU_BUTTON;
+    button.dataset.opens = opens;
+    button.setAttribute("aria-haspopup", "true");
+    button.setAttribute("aria-expanded", "false");
+    button.textContent = glyph;
+    button.addEventListener("click", () => {
+      openMenu = openMenu === opens ? null : opens;
+    });
+    return button;
+  }
+  function panel(opens) {
+    const node = document.createElement("div");
+    node.className = CLASS_MENU_PANEL + " " + (opens === "chapters" ? CLASS_MENU_CHAPTERS : CLASS_MENU_SETTINGS);
+    node.dataset.menu = opens;
+    return node;
+  }
+  function closeButton() {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "minimal manga-reader-close";
+    button.textContent = "\u2715";
+    button.addEventListener("click", () => {
+      openMenu = null;
+      latest == null ? void 0 : latest.handlers.onClose();
+    });
+    return button;
+  }
+  function forgetOpenMenu() {
+    openMenu = null;
+  }
 
   // src/reader/chapters.ts
   var CHAPTERS_VERSION = 1;
@@ -587,7 +898,14 @@
     placed.sort((a, b) => a.at - b.at);
     return placed;
   }
+  function chapterAt(placed, pageId) {
+    for (const chapter of placed) {
+      if (chapter.images.includes(pageId)) return chapter;
+    }
+    return null;
+  }
   NR.CHAPTERS_VERSION = CHAPTERS_VERSION;
+  NR.chapterAt = chapterAt;
   NR.parseChapters = parseChapters;
   NR.chaptersFromStash = chaptersFromStash;
   NR.placeChapters = placeChapters;
@@ -596,35 +914,19 @@
   var SELECTOR_LIGHTBOX = ".Lightbox";
   var SELECTOR_DISPLAY = ".Lightbox-display";
   var SELECTOR_CAROUSEL = ".Lightbox-carousel";
-  var SELECTOR_INDICATOR = ".Lightbox-header-indicator";
-  var SELECTOR_POPOVER_BODY = ".popover .popover-body";
   var CLASS_NAVBUTTON = "Lightbox-navbutton";
-  function parseIndicator(text) {
-    const match = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(text);
+  var CLASS_LOADING = "LoadingIndicator";
+  function parseIndicator(text2) {
+    const match = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(text2);
     if (!match) return null;
     const current2 = Number(match[1]);
     const total = Number(match[2]);
     if (!total || current2 < 1 || current2 > total) return null;
     return { current: current2, total };
   }
-  function readPosition(root2) {
-    const indicator = root2.querySelector(SELECTOR_INDICATOR);
-    const counter = indicator == null ? void 0 : indicator.querySelector("b");
-    if (!counter) return null;
-    return parseIndicator(counter.textContent || "");
-  }
   function galleryIdFromPath(pathname) {
     const match = /^\/galleries\/(\d+)/.exec(pathname);
     return match ? match[1] : null;
-  }
-  function pressArrow(direction) {
-    document.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: direction > 0 ? "ArrowRight" : "ArrowLeft",
-        bubbles: true,
-        cancelable: true
-      })
-    );
   }
   function pressEscape() {
     document.dispatchEvent(
@@ -783,7 +1085,11 @@
   NR.parseIndicator = parseIndicator;
   NR.galleryIdFromPath = galleryIdFromPath;
   NR.lightboxOrder = lightboxOrder;
+  function lightboxIsLoading(lightbox) {
+    return lightbox.querySelector("." + CLASS_LOADING) !== null;
+  }
   NR.carouselImage = carouselImage;
+  NR.lightboxIsLoading = lightboxIsLoading;
 
   // src/reader/chapters-tab.ts
   var SEL_PANEL = ".container";
@@ -797,11 +1103,11 @@
       return;
     }
     if (NS.markedInStore(id) !== true) return;
-    const panel = findPanel();
-    if (!panel) return;
+    const panel2 = findPanel();
+    if (!panel2) return;
     if (!bridged()) return;
     if ((inHand == null ? void 0 : inHand.id) === id) {
-      render(panel, inHand);
+      render(panel2, inHand);
       return;
     }
     if ((inHand == null ? void 0 : inHand.id) !== id) {
@@ -833,26 +1139,26 @@
   function findPanel() {
     const panels = document.querySelectorAll(SEL_PANEL);
     for (let i = 0; i < panels.length; i++) {
-      const panel = panels[i];
-      if (isStashButton(panel.previousElementSibling)) return panel;
+      const panel2 = panels[i];
+      if (isStashButton(panel2.previousElementSibling)) return panel2;
     }
     return null;
   }
   function isStashButton(node) {
     return !!node && node.tagName === "BUTTON" && node.classList.contains("btn") && node.getAttribute(HIDDEN) === null;
   }
-  function render(panel, gallery) {
+  function render(panel2, gallery) {
     const key = [
       gallery.id,
       ...gallery.chapters.map((c) => c.title + "@" + c.at)
     ].join("|");
-    if (key === renderedFor && panel.childElementCount > 0) return;
+    if (key === renderedFor && panel2.childElementCount > 0) return;
     renderedFor = key;
-    const button = panel.previousElementSibling;
+    const button = panel2.previousElementSibling;
     if (button) button.setAttribute(HIDDEN, "");
-    panel.textContent = "";
+    panel2.textContent = "";
     for (const chapter of gallery.chapters) {
-      panel.appendChild(row(gallery, chapter));
+      panel2.appendChild(row(gallery, chapter));
     }
   }
   function row(gallery, chapter) {
@@ -871,7 +1177,6 @@
     button.addEventListener("click", () => {
       takeOver({
         images: gallery.images,
-        chapters: gallery.chapters,
         totalCount: gallery.images.length,
         at: chapter.at
       });
@@ -885,115 +1190,12 @@
     renderedFor = "";
   }
 
-  // src/reader/settings.ts
-  var STORAGE_KEY = "plugin.mangaTools.settings";
-  var LEGACY_STORAGE_KEY = "mangaReader.settings";
-  function storedValue(key, legacyKey) {
-    const current2 = window.localStorage.getItem(key);
-    if (current2 !== null) return current2;
-    const legacy = window.localStorage.getItem(legacyKey);
-    if (legacy !== null) window.localStorage.setItem(key, legacy);
-    return legacy;
-  }
-  var FADE_MAX_MS = 1e3;
-  var DEFAULT_SETTINGS = {
-    doublePage: false,
-    coverAlone: true,
-    detectSpreads: true,
-    fadeMs: 140
-  };
-  function parseSettings(raw) {
-    const stored = (() => {
-      if (!raw) return {};
-      try {
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch {
-        return {};
-      }
-    })();
-    const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
-    const duration = (key) => {
-      const value = stored[key];
-      if (typeof value !== "number" || !Number.isFinite(value)) {
-        return DEFAULT_SETTINGS[key];
-      }
-      return Math.min(FADE_MAX_MS, Math.max(0, Math.round(value)));
-    };
-    return {
-      doublePage: flag("doublePage"),
-      coverAlone: flag("coverAlone"),
-      detectSpreads: flag("detectSpreads"),
-      fadeMs: duration("fadeMs")
-    };
-  }
-  function readSettings() {
-    try {
-      return parseSettings(storedValue(STORAGE_KEY, LEGACY_STORAGE_KEY));
-    } catch (e) {
-      console.error(
-        "[mangaReader] settings are not readable, using defaults:",
-        e
-      );
-      return { ...DEFAULT_SETTINGS };
-    }
-  }
-  function writeSettings(next) {
-    const merged = { ...readSettings(), ...next };
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-    } catch (e) {
-      console.error("[mangaReader] settings are not writable:", e);
-    }
-    return merged;
-  }
-  var OFFSET_KEY = "plugin.mangaTools.offsets";
-  var LEGACY_OFFSET_KEY = "mangaReader.offsets";
-  function parseOffsets(raw) {
-    const stored = (() => {
-      if (!raw) return {};
-      try {
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch {
-        return {};
-      }
-    })();
-    const offsets = {};
-    for (const [id, value] of Object.entries(stored)) {
-      if (value === 1) offsets[id] = 1;
-    }
-    return offsets;
-  }
-  function readOffset(galleryId2) {
-    try {
-      return parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY))[galleryId2] || 0;
-    } catch (e) {
-      console.error("[mangaReader] offsets are not readable:", e);
-      return 0;
-    }
-  }
-  function writeOffset(galleryId2, offset2) {
-    try {
-      const offsets = parseOffsets(storedValue(OFFSET_KEY, LEGACY_OFFSET_KEY));
-      if (offset2 === 1) offsets[galleryId2] = 1;
-      else delete offsets[galleryId2];
-      window.localStorage.setItem(OFFSET_KEY, JSON.stringify(offsets));
-    } catch (e) {
-      console.error("[mangaReader] offsets are not writable:", e);
-    }
-  }
-  NR.parseSettings = parseSettings;
-  NR.parseOffsets = parseOffsets;
-  NR.readSettings = readSettings;
-  NR.readOffset = readOffset;
-  NR.FADE_MAX_MS = FADE_MAX_MS;
-
   // src/reader/spreads.ts
   var DEFAULT_SPREAD_OPTIONS = {
     coverAlone: true,
     offset: 0,
-    detectSpreads: true
+    detectSpreads: true,
+    double: true
   };
   var SPREAD_RATIO = 1;
   function isWideSpreadPage(page) {
@@ -1015,7 +1217,7 @@
     if (opts.coverAlone && i < pages.length) standAlone();
     if (opts.offset === 1 && i < pages.length) standAlone();
     while (i < pages.length) {
-      const next = pages[i + 1];
+      const next = opts.double ? pages[i + 1] : void 0;
       if (next && pairable(pages[i]) && pairable(next)) {
         screens.push({ start: i, pages: [pages[i], next] });
         i += 2;
@@ -1047,15 +1249,11 @@
   NR.stepsToAdjacent = stepsToAdjacent;
 
   // src/reader/takeover.ts
-  var labelFor = (locale, key) => stringFor(locale, `mangaReader.${key}`);
+  var CLASS_SINGLE = "is-single";
   var CLASS_ACTIVE = "manga-reader-active";
   var CLASS_SPREAD = "manga-reader-spread";
   var CLASS_PAGE = "manga-reader-page";
-  var CLASS_SINGLE = "is-single";
-  var SWITCH_ID = "manga-reader-double-page";
-  var FADE_ID = "manga-reader-fade";
-  var OFFSET_ID = "manga-reader-offset";
-  var CLASS_OPTIONS = "manga-reader-options";
+  var CLASS_TAKEOVER = "manga-reader-takeover";
   var MAX_REINSERTS = 8;
   var CACHE_LIMIT = 8;
   var settings = readSettings();
@@ -1074,10 +1272,7 @@
   var clickRoot = null;
   var pending = null;
   var handedFor = null;
-  var errand = null;
-  var PRESS_RETRY_MS = 120;
-  var MAX_ATTEMPTS = 3;
-  var attempts = 0;
+  var place = -1;
   function step() {
     syncChaptersTab();
     const lightbox = document.querySelector(SELECTOR_LIGHTBOX);
@@ -1090,6 +1285,7 @@
       root = lightbox;
       galleryId = null;
       shownAt = -1;
+      place = -1;
       reinsers = 0;
       logged = false;
       handedFor = null;
@@ -1101,7 +1297,6 @@
       if (marked === false) leaveUnmarked(lightbox);
       return;
     }
-    injectSwitch(lightbox);
     if (galleryId !== wantedId || !loaded.has(wantedId)) {
       loadGallery(wantedId);
       return;
@@ -1110,16 +1305,13 @@
     if (gallery) handOverChapters(lightbox, gallery);
     if (!wanted()) return;
     sync(lightbox);
-    arrived(lightbox);
   }
   function wanted() {
     const id = galleryIdFromPath(window.location.pathname);
-    return settings.doublePage && root !== null && id !== null && NS.markedInStore(id) === true;
+    return root !== null && id !== null && NS.markedInStore(id) === true;
   }
   function leaveUnmarked(lightbox) {
     if (container || root !== lightbox) deactivate();
-    const group = lightbox.querySelector("." + CLASS_OPTIONS);
-    if (group) group.remove();
   }
   function current() {
     return galleryId ? loaded.get(galleryId) || null : null;
@@ -1148,13 +1340,19 @@
         id,
         pages: answer.pages,
         images: answer.images,
-        screens: layout(answer.pages, { ...settings, offset }),
+        paired: settings.doublePage,
+        screens: layout(answer.pages, {
+          ...settings,
+          offset,
+          double: settings.doublePage
+        }),
         chapters: placeChapters(chaptersOf2(answer), answer.pages)
       };
       remember(id, gallery);
       language = answer.language;
       galleryId = id;
       shownAt = -1;
+      place = -1;
       step();
     }).catch((e) => {
       if (pending === id) pending = null;
@@ -1205,30 +1403,82 @@
   function sync(lightbox) {
     const gallery = current();
     if (!gallery) return;
-    const position = readPosition(lightbox);
-    if (!position) {
-      if (gallery.pages.length <= 1) return;
-      console.error(
-        "[mangaReader] the lightbox header could not be read, so the spread view cannot follow it \u2014 turning itself off"
-      );
-      deactivate();
-      return;
+    if (lightboxIsLoading(lightbox)) return;
+    if (gallery.paired !== settings.doublePage) {
+      gallery.screens = layout(gallery.pages, {
+        ...settings,
+        offset,
+        double: settings.doublePage
+      });
+      gallery.paired = settings.doublePage;
+      shownAt = -1;
     }
-    const place = placeOf(gallery, lightbox);
-    const at = place < 0 ? -1 : screenAt(gallery.screens, place);
-    if (at < 0) {
-      console.error(
-        "[mangaReader] the lightbox is showing an image this plugin did not read, so the spread view cannot follow it \u2014 turning itself off"
-      );
-      deactivate();
-      return;
+    if (place < 0) {
+      place = placeOf(gallery, lightbox);
+      if (place < 0 && gallery.pages.length > 1) {
+        console.error(
+          "[mangaReader] the lightbox is showing an image this plugin did not read, so the spread view cannot follow it \u2014 turning itself off"
+        );
+        deactivate();
+        return;
+      }
     }
+    ensureChrome(lightbox, chromeState(gallery, lightbox));
+    lightbox.classList.add(CLASS_TAKEOVER);
+    const at = screenNow(gallery);
+    if (at < 0) return;
     if (at === shownAt && container && (container.childElementCount || awaiting === at)) {
       return;
     }
     ensureContainer(lightbox);
     if (!container) return;
     draw(gallery.screens[at], at);
+  }
+  function chromeState(gallery, lightbox) {
+    var _a2;
+    const at = screenNow(gallery);
+    const image = at < 0 ? null : gallery.images[gallery.screens[at].start] || null;
+    const pageId = at < 0 ? "" : ((_a2 = gallery.pages[gallery.screens[at].start]) == null ? void 0 : _a2.id) || "";
+    return {
+      image,
+      number: Math.max(place, 0) + 1,
+      total: gallery.pages.length,
+      chapter: chapterAt(gallery.chapters, pageId),
+      chapters: gallery.chapters,
+      placed: gallery.chapters,
+      settings,
+      offset,
+      locale: language,
+      handlers: {
+        onChapter: (to) => {
+          place = to;
+          step();
+        },
+        onSetting: (next) => {
+          settings = writeSettings(next);
+          if (next.doublePage === void 0) return;
+          if (galleryId && loaded.has(galleryId)) {
+            remember(galleryId, {
+              ...gallery,
+              screens: layout(gallery.pages, {
+                ...settings,
+                offset,
+                double: settings.doublePage
+              }),
+              paired: settings.doublePage
+            });
+            shownAt = -1;
+            sync(lightbox);
+          }
+        },
+        onOffset: (next) => {
+          setOffset(gallery, next);
+          shownAt = -1;
+          sync(lightbox);
+        },
+        onClose: () => pressEscape()
+      }
+    };
   }
   function watchClicks(lightbox) {
     if (clickRoot === lightbox) return;
@@ -1339,79 +1589,21 @@
       }
     }
   }
-  function currentIndex(lightbox) {
-    const position = readPosition(lightbox);
-    return position ? position.current - 1 : null;
-  }
-  function startErrand(lightbox, to) {
-    const from = currentIndex(lightbox);
-    if (from === null || from === to) return;
-    endErrand();
-    attempts = 0;
-    errand = { from, to, retry: null };
-    press(lightbox);
-  }
-  function press(lightbox) {
-    if (!errand) return;
-    const from = currentIndex(lightbox);
-    if (from === null) {
-      endErrand();
-      return;
-    }
-    if (from === errand.to) {
-      endErrand();
-      return;
-    }
-    errand.from = from;
-    attempts += 1;
-    pressArrow(from < errand.to ? 1 : -1);
-    armRetry(lightbox);
-  }
-  function armRetry(lightbox) {
-    if (!errand) return;
-    if (errand.retry !== null) window.clearTimeout(errand.retry);
-    errand.retry = window.setTimeout(() => {
-      if (!errand) return;
-      errand.retry = null;
-      const at = currentIndex(lightbox);
-      if (at === null || at !== errand.from) return;
-      if (attempts >= MAX_ATTEMPTS) {
-        console.error(
-          "[mangaReader] the lightbox did not respond to the arrow keys, so the spread view has stopped moving it \u2014 the page shown is the one it is on"
-        );
-        endErrand();
-        return;
-      }
-      press(lightbox);
-    }, PRESS_RETRY_MS);
-  }
-  function arrived(lightbox) {
-    if (!errand) return;
-    const at = currentIndex(lightbox);
-    if (at === null) {
-      endErrand();
-      return;
-    }
-    if (at === errand.to) {
-      endErrand();
-      return;
-    }
-    if (at !== errand.from) press(lightbox);
-  }
-  function endErrand() {
-    if (errand && errand.retry !== null) window.clearTimeout(errand.retry);
-    errand = null;
-  }
-  function activate() {
-    settings = writeSettings({ doublePage: true });
-    setSwitchChecked(true);
-    step();
+  function screenNow(gallery) {
+    if (place < 0) return -1;
+    return screenAt(gallery.screens, place);
   }
   function deactivate() {
     if (container) {
       container.remove();
       container = null;
     }
+    if (root) {
+      removeChrome(root);
+      root.classList.remove(CLASS_TAKEOVER);
+    }
+    forgetOpenMenu();
+    place = -1;
     if (root) {
       root.classList.remove(CLASS_ACTIVE);
       const display = root.querySelector(SELECTOR_DISPLAY);
@@ -1421,6 +1613,8 @@
   }
   function closeLightbox() {
     handedFor = null;
+    place = -1;
+    forgetOpenMenu();
     if (clickRoot) {
       clickRoot.removeEventListener("click", onNavClick, true);
       clickRoot = null;
@@ -1437,128 +1631,8 @@
     handedFor = { lightbox, gallery: gallery.id };
     takeOver({
       images: gallery.images,
-      chapters: gallery.chapters,
       totalCount: gallery.images.length
     });
-  }
-  function injectSwitch(lightbox) {
-    const body = lightbox.querySelector(SELECTOR_POPOVER_BODY);
-    if (!body) return;
-    const existing = body.querySelector("." + CLASS_OPTIONS);
-    if (existing) {
-      addOffsetSwitch(existing);
-      return;
-    }
-    const group = document.createElement("div");
-    group.className = "form-group " + CLASS_OPTIONS;
-    group.appendChild(
-      checkbox({
-        id: SWITCH_ID,
-        label: labelFor(language, "doublePage"),
-        checked: settings.doublePage,
-        onChange: (checked) => {
-          if (checked) {
-            activate();
-          } else {
-            settings = writeSettings({ doublePage: false });
-            deactivate();
-          }
-        }
-      })
-    );
-    group.appendChild(
-      slider({
-        id: FADE_ID,
-        label: labelFor(language, "fade"),
-        value: settings.fadeMs,
-        max: FADE_MAX_MS,
-        step: 20,
-        unit: " ms",
-        onChange: (value) => {
-          settings = writeSettings({ fadeMs: value });
-        }
-      })
-    );
-    addOffsetSwitch(group);
-    body.appendChild(group);
-  }
-  function slider(option) {
-    const row2 = document.createElement("div");
-    row2.className = "row mb-1";
-    const column = document.createElement("div");
-    column.className = "col";
-    const label = document.createElement("label");
-    label.className = "form-label mb-0";
-    label.htmlFor = option.id;
-    label.textContent = option.label;
-    const readout = document.createElement("span");
-    readout.className = "ml-1";
-    readout.textContent = option.value + option.unit;
-    label.appendChild(readout);
-    const input = document.createElement("input");
-    input.type = "range";
-    input.className = "form-control-range";
-    input.id = option.id;
-    input.min = "0";
-    input.max = String(option.max);
-    input.step = String(option.step);
-    input.value = String(option.value);
-    input.addEventListener("input", () => {
-      const value = Number(input.value);
-      readout.textContent = value + option.unit;
-      option.onChange(value);
-    });
-    column.appendChild(label);
-    column.appendChild(input);
-    row2.appendChild(column);
-    return row2;
-  }
-  function addOffsetSwitch(group) {
-    if (!current() || group.querySelector("#" + OFFSET_ID)) return;
-    group.appendChild(
-      checkbox({
-        id: OFFSET_ID,
-        label: labelFor(language, "offset"),
-        checked: offset === 1,
-        onChange: (checked) => {
-          const gallery = current();
-          if (gallery) setOffset(gallery, checked ? 1 : 0);
-        }
-      })
-    );
-  }
-  function checkbox(option) {
-    const row2 = document.createElement("div");
-    row2.className = "row mb-1";
-    const column = document.createElement("div");
-    column.className = "col";
-    const check = document.createElement("div");
-    check.className = "form-check";
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.className = "form-check-input";
-    input.id = option.id;
-    input.checked = option.checked;
-    const text = document.createElement("label");
-    text.className = "form-check-label";
-    text.htmlFor = option.id;
-    text.textContent = option.label;
-    input.addEventListener("change", () => option.onChange(input.checked));
-    check.appendChild(input);
-    check.appendChild(text);
-    column.appendChild(check);
-    row2.appendChild(column);
-    return row2;
-  }
-  function setSwitchChecked(checked) {
-    setChecked(SWITCH_ID, checked);
-  }
-  function setOffsetSwitchChecked(checked) {
-    setChecked(OFFSET_ID, checked);
-  }
-  function setChecked(id, checked) {
-    const input = document.getElementById(id);
-    if (input) input.checked = checked;
   }
   function arrowsBelongTo(target) {
     if (!target) return false;
@@ -1605,11 +1679,12 @@
   function turnBy(lightbox, direction) {
     const gallery = current();
     if (!gallery) return false;
-    const at = currentIndex(lightbox);
-    if (at === null) return false;
-    const steps = stepsToAdjacent(gallery.screens, at, direction);
+    const at = screenNow(gallery);
+    if (at < 0) return false;
+    const steps = stepsToAdjacent(gallery.screens, place, direction);
     if (steps === 0) return false;
-    startErrand(lightbox, at + steps);
+    place += steps;
+    sync(lightbox);
     return true;
   }
   function navIcon(button) {
@@ -1657,9 +1732,12 @@
     offset = next;
     offsetFor = gallery.id;
     writeOffset(gallery.id, next);
-    gallery.screens = layout(gallery.pages, { ...settings, offset });
+    gallery.screens = layout(gallery.pages, {
+      ...settings,
+      offset,
+      double: settings.doublePage
+    });
     shownAt = -1;
-    setOffsetSwitchChecked(next === 1);
     step();
   }
   function install() {
@@ -1945,25 +2023,25 @@
   }
   function tagLabels(intl, criterion) {
     const conditions = criterion.value || [];
-    const labels = [];
+    const labels2 = [];
     for (let i = 0; i < conditions.length; i++) {
       const label = conditionLabel(intl, conditions[i]);
       if (label === null) return null;
-      labels.push(label);
+      labels2.push(label);
     }
-    return labels.length ? labels : null;
+    return labels2.length ? labels2 : null;
   }
   function fieldTagLabels(intl, filter, fieldName) {
     const criterion = customFieldsCriterion(filter);
     const conditions = (criterion == null ? void 0 : criterion.value) || [];
-    const labels = [];
+    const labels2 = [];
     for (let i = 0; i < conditions.length; i++) {
       if (NS.ownField(conditions[i].field) !== fieldName) continue;
       const label = conditionLabel(intl, conditions[i]);
       if (label === null) return null;
-      labels.push(label);
+      labels2.push(label);
     }
-    return labels.length ? labels : null;
+    return labels2.length ? labels2 : null;
   }
   function selectionConditions(selection) {
     if (selection.modifier === "any") {
@@ -2302,9 +2380,9 @@
   var TAG_SELECTOR = ".filter-tags .tag-item";
   var TAG_MARK = "data-manga-tools-language";
   function isFieldTag(tag, fieldName, mark) {
-    const text = tag.firstChild;
-    if ((text == null ? void 0 : text.nodeType) !== 3) return false;
-    const value = String(text.nodeValue).trim();
+    const text2 = tag.firstChild;
+    if ((text2 == null ? void 0 : text2.nodeType) !== 3) return false;
+    const value = String(text2.nodeValue).trim();
     if (tag.getAttribute(mark) === value) return true;
     const prefix = fieldName.toLowerCase() + " ";
     return value.toLowerCase().indexOf(prefix) === 0;
@@ -2373,21 +2451,21 @@
       dialogTagsFallback.parentNode.removeChild(dialogTagsFallback);
     }
   }
-  function manageDialogTags(labels) {
+  function manageDialogTags(labels2) {
     const tags = dialogLanguageTags();
     for (let i = 0; i < tags.length; i++) {
-      const label = i < labels.length ? labels[i] : null;
-      const text = tagText(tags[i]);
-      if (label !== null && text.nodeValue !== label) {
-        text.nodeValue = label;
+      const label = i < labels2.length ? labels2[i] : null;
+      const text2 = tagText(tags[i]);
+      if (label !== null && text2.nodeValue !== label) {
+        text2.nodeValue = label;
         tags[i].setAttribute(TAG_MARK, label);
       }
       const display = label === null ? "none" : "";
       if (tags[i].style.display !== display) tags[i].style.display = display;
     }
   }
-  function ownTagLabels(labels) {
-    return labels.slice(dialogLanguageTags().length);
+  function ownTagLabels(labels2) {
+    return labels2.slice(dialogLanguageTags().length);
   }
   function clickedTagRemove(target) {
     if (!target || typeof target.closest !== "function") return false;
@@ -2687,20 +2765,20 @@
   function listMangaTags() {
     return listFieldTags(isMangaTag);
   }
-  function writeTagLabels(tags, labels, mark) {
-    for (let i = 0; i < tags.length && i < labels.length; i++) {
-      tagText(tags[i]).nodeValue = labels[i];
-      tags[i].setAttribute(mark, labels[i]);
+  function writeTagLabels(tags, labels2, mark) {
+    for (let i = 0; i < tags.length && i < labels2.length; i++) {
+      tagText(tags[i]).nodeValue = labels2[i];
+      tags[i].setAttribute(mark, labels2[i]);
     }
   }
-  function relabelTags(labels) {
-    writeTagLabels(listLanguageTags(), labels, TAG_MARK);
+  function relabelTags(labels2) {
+    writeTagLabels(listLanguageTags(), labels2, TAG_MARK);
   }
-  function relabelCensorshipTags(labels) {
-    writeTagLabels(listCensorshipTags(), labels, CENSORSHIP_TAG_MARK);
+  function relabelCensorshipTags(labels2) {
+    writeTagLabels(listCensorshipTags(), labels2, CENSORSHIP_TAG_MARK);
   }
-  function relabelMangaTags(labels) {
-    writeTagLabels(listMangaTags(), labels, MANGA_TAG_MARK);
+  function relabelMangaTags(labels2) {
+    writeTagLabels(listMangaTags(), labels2, MANGA_TAG_MARK);
   }
   var sidebarFilter = null;
   function publishSidebarFilter(filter) {
@@ -2786,23 +2864,23 @@
     const Solid = PluginApi4.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi4.components.Icon;
     const Bootstrap = PluginApi4.libraries.Bootstrap;
-    function update(next) {
+    function update2(next) {
       applyLanguage(props.filter, history, next);
       if (!isTouchDevice() && searchRef.current) {
         searchRef.current.focus();
       }
     }
     function toggleInclude(code) {
-      update(toggleIncluded(selection, code));
+      update2(toggleIncluded(selection, code));
     }
     function toggleExclude(code) {
-      update(toggleExcluded(selection, code));
+      update2(toggleExcluded(selection, code));
     }
     function setModifier(modifier) {
-      update(withModifier(selection, modifier));
+      update2(withModifier(selection, modifier));
     }
     function clearModifier() {
-      update(withoutModifier(selection));
+      update2(withoutModifier(selection));
     }
     const options = visibleOptions(intl, selection);
     const selectable = selectableOptions(selection, options);
@@ -2954,20 +3032,20 @@
     });
     const Solid = PluginApi4.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi4.components.Icon;
-    function update(next) {
+    function update2(next) {
       applyCensorship(props.filter, history, next);
     }
     function toggleInclude(value) {
-      update(toggleIncluded(selection, value));
+      update2(toggleIncluded(selection, value));
     }
     function toggleExclude(value) {
-      update(toggleExcluded(selection, value));
+      update2(toggleExcluded(selection, value));
     }
     function setModifier(modifier) {
-      update(withModifier(selection, modifier));
+      update2(withModifier(selection, modifier));
     }
     function clearModifier() {
-      update(withoutModifier(selection));
+      update2(withoutModifier(selection));
     }
     const options = censorshipOptions(intl);
     const chosen = options.filter(
@@ -3960,9 +4038,9 @@
         formatOptionLabel: formatGroupOption,
         components: { IndicatorSeparator: () => null },
         onMenuOpen: () => refreshForSuggestions(),
-        onInputChange: (text, meta) => {
+        onInputChange: (text2, meta) => {
           if ((meta == null ? void 0 : meta.action) !== "input-change") return;
-          writeGroup(text.trim() ? text : "");
+          writeGroup(text2.trim() ? text2 : "");
         },
         onChange: (opt) => {
           writeGroup(opt ? opt.value : "");
@@ -4530,8 +4608,8 @@
   var DETAIL_HOST_CLASS = "manga-tools-detail-host";
   var detailHost = null;
   function ensureDetailHost() {
-    const panel = document.querySelector(".gallery-details");
-    if (!panel) {
+    const panel2 = document.querySelector(".gallery-details");
+    if (!panel2) {
       detailHost = null;
       return null;
     }
@@ -4539,8 +4617,8 @@
       detailHost = document.createElement("div");
       detailHost.className = DETAIL_HOST_CLASS;
     }
-    if (detailHost.parentNode !== panel || panel.lastElementChild !== detailHost) {
-      panel.appendChild(detailHost);
+    if (detailHost.parentNode !== panel2 || panel2.lastElementChild !== detailHost) {
+      panel2.appendChild(detailHost);
     }
     return detailHost;
   }
