@@ -315,6 +315,7 @@
 
   // src/messages/en.json
   var en_default = {
+    "mangaReader.options": "Options",
     "mangaReader.doublePage": "Double page",
     "mangaReader.fade": "Fade in",
     "mangaReader.offset": "Shift the pairing by one page",
@@ -363,6 +364,7 @@
 
   // src/messages/zh-Hans.json
   var zh_Hans_default = {
+    "mangaReader.options": "\u9009\u9879",
     "mangaReader.doublePage": "\u53CC\u9875\u9605\u8BFB",
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.offset": "\u914D\u5BF9\u504F\u79FB\u4E00\u683C",
@@ -411,6 +413,7 @@
 
   // src/messages/zh-Hant.json
   var zh_Hant_default = {
+    "mangaReader.options": "\u9078\u9805",
     "mangaReader.doublePage": "\u96D9\u9801\u95B1\u8B80",
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.offset": "\u914D\u5C0D\u504F\u79FB\u4E00\u683C",
@@ -613,6 +616,7 @@
   var CLASS_OPTIONS_ICON = "Lightbox-header-options-icon";
   var CLASS_OPTIONS_ANCHOR = "manga-reader-options-anchor";
   var CLASS_CLOSE = "manga-reader-close";
+  var CLASS_FULLSCREEN = "manga-reader-fullscreen";
   var CLASS_MENU_BUTTON = "manga-reader-menu-button";
   var CLASS_MENU_PANEL = "manga-reader-menu-panel";
   var CLASS_MENU_ITEM = "manga-reader-menu-item";
@@ -659,6 +663,9 @@
       anchor.appendChild(panel("settings", "popover"));
       options.appendChild(anchor);
       right.appendChild(options);
+      if (document.fullscreenEnabled) {
+        right.appendChild(fullscreenButton(lightbox));
+      }
       right.appendChild(closeButton());
       chrome.appendChild(right);
     }
@@ -735,6 +742,15 @@
       panel2.setAttribute("data-built", "yes");
       panel2.classList.add(CLASS_SETTINGS);
       panel2.textContent = "";
+      const heading2 = document.createElement("div");
+      heading2.className = "popover-header";
+      labels.options = heading2;
+      panel2.appendChild(heading2);
+      const body = document.createElement("div");
+      body.className = "popover-body";
+      panel2.appendChild(body);
+      const pageGroup = document.createElement("div");
+      pageGroup.className = "form-group";
       const wrap = document.createElement("div");
       wrap.className = "form-check";
       const input = document.createElement("input");
@@ -750,7 +766,10 @@
       labels.doublePage = box;
       wrap.appendChild(input);
       wrap.appendChild(box);
-      panel2.appendChild(wrap);
+      pageGroup.appendChild(wrap);
+      body.appendChild(pageGroup);
+      const shiftGroup = document.createElement("div");
+      shiftGroup.className = "form-group";
       const shift = document.createElement("div");
       shift.className = "form-check";
       const shiftInput = document.createElement("input");
@@ -766,7 +785,8 @@
       labels.offset = shiftLabel;
       shift.appendChild(shiftInput);
       shift.appendChild(shiftLabel);
-      panel2.appendChild(shift);
+      shiftGroup.appendChild(shift);
+      body.appendChild(shiftGroup);
       const fade = document.createElement("div");
       fade.className = "form-group";
       const fadeLabel = document.createElement("label");
@@ -786,7 +806,11 @@
       fade.appendChild(fadeLabel);
       fade.appendChild(range2);
       fade.appendChild(readout2);
-      panel2.appendChild(fade);
+      body.appendChild(fade);
+    }
+    const heading = label("mangaReader.options");
+    if (labels.options && labels.options.textContent !== heading) {
+      labels.options.textContent = heading;
     }
     const check = panel2.querySelector(
       "#" + DOUBLE_PAGE_ID
@@ -870,6 +894,19 @@
     const render2 = (_a2 = api.ReactDOM) == null ? void 0 : _a2.render;
     if (!Icon || !icon || !render2) return;
     render2(api.React.createElement(Icon, { icon }), host);
+  }
+  function fullscreenButton(lightbox) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = CLASS_ICON_BUTTON + " " + CLASS_FULLSCREEN;
+    button.title = "Toggle Fullscreen";
+    setIcon(button, "faExpand");
+    button.addEventListener("click", () => {
+      openMenu = null;
+      if (document.fullscreenElement) document.exitFullscreen();
+      else lightbox.requestFullscreen();
+    });
+    return button;
   }
   function closeButton() {
     const button = document.createElement("button");
