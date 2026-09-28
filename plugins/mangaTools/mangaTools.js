@@ -608,8 +608,9 @@
 
   // src/reader/chrome.ts
   var CLASS_CHROME = "manga-reader-chrome";
-  var CLASS_TITLE = "manga-reader-title";
+  var CLASS_CHAPTER = "manga-reader-chapter";
   var CLASS_COUNTER = "manga-reader-counter";
+  var CLASS_OPTIONS_ICON = "Lightbox-header-options-icon";
   var CLASS_MENU_BUTTON = "manga-reader-menu-button";
   var CLASS_MENU_PANEL = "manga-reader-menu-panel";
   var CLASS_MENU_ITEM = "manga-reader-menu-item";
@@ -621,31 +622,58 @@
     let chrome = lightbox.querySelector("." + CLASS_CHROME);
     if (!chrome) {
       chrome = document.createElement("div");
-      chrome.className = CLASS_CHROME;
-      lightbox.appendChild(chrome);
-      chrome.appendChild(menuButton("chapters", "\u2630"));
-      chrome.appendChild(text(CLASS_TITLE));
-      chrome.appendChild(text(CLASS_COUNTER));
-      chrome.appendChild(menuButton("settings", "\u2699"));
-      chrome.appendChild(panel("chapters"));
-      chrome.appendChild(panel("settings"));
+      chrome.className = "Lightbox-header " + CLASS_CHROME;
+      const stash = lightbox.querySelector(
+        ".Lightbox-header:not(." + CLASS_CHROME + ")"
+      );
+      if (stash == null ? void 0 : stash.parentNode) stash.parentNode.insertBefore(chrome, stash);
+      else lightbox.appendChild(chrome);
+      const left = document.createElement("div");
+      left.className = "Lightbox-header-left-spacer";
+      left.appendChild(
+        menuButton("chapters", "faBars", "Lightbox-header-chapter-button")
+      );
+      left.appendChild(
+        panel("chapters", "dropdown-menu Lightbox-header-chapters")
+      );
+      chrome.appendChild(left);
+      const indicator = document.createElement("div");
+      indicator.className = "Lightbox-header-indicator";
+      indicator.appendChild(text(CLASS_CHAPTER));
+      indicator.appendChild(text(CLASS_COUNTER, "b"));
+      chrome.appendChild(indicator);
+      const right = document.createElement("div");
+      right.className = "Lightbox-header-right";
+      const options = document.createElement("div");
+      options.className = "Lightbox-header-options";
+      options.appendChild(menuButton("settings", "faCog", CLASS_OPTIONS_ICON));
+      options.appendChild(panel("settings", "popover"));
+      right.appendChild(options);
+      chrome.appendChild(right);
       chrome.appendChild(closeButton());
     }
+    chromeNode = chrome;
     update(chrome, state);
     return chrome;
   }
   function removeChrome(lightbox) {
     const chrome = lightbox.querySelector("." + CLASS_CHROME);
     if (chrome) chrome.remove();
+    if (chrome === chromeNode) chromeNode = null;
   }
   var latest = null;
+  var chromeNode = null;
+  function redraw() {
+    if (chromeNode && latest) update(chromeNode, latest);
+  }
   var labels = {};
   var openMenu = null;
   function update(chrome, state) {
-    const title = chrome.querySelector("." + CLASS_TITLE);
+    var _a2;
+    const chapter = chrome.querySelector("." + CLASS_CHAPTER);
     const counter = chrome.querySelector("." + CLASS_COUNTER);
-    const name = imageName(state.image);
-    if (title.textContent !== name) title.textContent = name;
+    const name = ((_a2 = state.chapter) == null ? void 0 : _a2.title) || "";
+    if (chapter.textContent !== name) chapter.textContent = name;
     const count = state.number + " / " + state.total;
     if (counter.textContent !== count) counter.textContent = count;
     const chapterPanel = chrome.querySelector(
@@ -673,7 +701,7 @@
       for (const chapter of state.placed) {
         const item = document.createElement("button");
         item.type = "button";
-        item.className = CLASS_MENU_ITEM;
+        item.className = "dropdown-item " + CLASS_MENU_ITEM;
         item.dataset.at = String(chapter.at);
         item.textContent = chapter.title || "#" + (state.placed.indexOf(chapter) + 1);
         item.addEventListener("click", () => {
@@ -782,35 +810,44 @@
   var DOUBLE_PAGE_ID = "manga-reader-double-page";
   var OFFSET_ID = "manga-reader-offset";
   var FADE_ID = "manga-reader-fade";
-  function imageName(image) {
-    var _a2, _b2;
-    if (!image) return "";
-    const path = ((_b2 = (_a2 = image.visual_files) == null ? void 0 : _a2[0]) == null ? void 0 : _b2.path) || "";
-    return image.title || path.replace(/^.*[\\/]/, "") || "";
-  }
-  function text(className) {
-    const node = document.createElement("span");
+  function text(className, tag = "span") {
+    const node = document.createElement(tag);
     node.className = className;
     return node;
   }
-  function menuButton(opens, glyph) {
+  function menuButton(opens, icon, extra) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "minimal " + CLASS_MENU_BUTTON;
+    button.className = "minimal " + extra + " " + CLASS_MENU_BUTTON;
     button.dataset.opens = opens;
     button.setAttribute("aria-haspopup", "true");
     button.setAttribute("aria-expanded", "false");
-    button.textContent = glyph;
+    drawIcon(button, icon);
     button.addEventListener("click", () => {
       openMenu = openMenu === opens ? null : opens;
+      redraw();
     });
     return button;
   }
-  function panel(opens) {
+  function panel(opens, extra) {
     const node = document.createElement("div");
-    node.className = CLASS_MENU_PANEL + " " + (opens === "chapters" ? CLASS_MENU_CHAPTERS : CLASS_MENU_SETTINGS);
+    node.className = [
+      extra,
+      CLASS_MENU_PANEL,
+      opens === "chapters" ? CLASS_MENU_CHAPTERS : CLASS_MENU_SETTINGS
+    ].join(" ");
     node.dataset.menu = opens;
     return node;
+  }
+  function drawIcon(host, name) {
+    var _a2;
+    const api = requirePluginApi();
+    const Solid = api.libraries.FontAwesomeSolid || {};
+    const Icon = api.components.Icon;
+    const icon = Solid[name];
+    const render2 = (_a2 = api.ReactDOM) == null ? void 0 : _a2.render;
+    if (!Icon || !icon || !render2) return;
+    render2(api.React.createElement(Icon, { icon }), host);
   }
   function closeButton() {
     const button = document.createElement("button");
