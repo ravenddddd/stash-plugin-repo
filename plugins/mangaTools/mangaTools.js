@@ -1450,8 +1450,8 @@
     track.appendChild(thumb);
     track.appendChild(label);
     bar.appendChild(track);
-    bar.addEventListener("mousemove", onMoveOverBar);
-    bar.addEventListener("mouseleave", takeBubbleDown);
+    track.addEventListener("mousemove", onMoveOverBar);
+    track.addEventListener("mouseleave", onLeaveTrack);
     track.addEventListener("mousedown", onPress);
     bar.addEventListener("click", (event) => event.stopPropagation());
     place(lightbox);
@@ -1497,7 +1497,7 @@
     }
     const moved = drawn !== null && (drawn.at !== state.at || drawn.total !== state.total);
     drawn = { nodes: key, at: state.at, total: state.total };
-    if (moved) takeBubbleDown();
+    if (moved && !pressed) takeBubbleDown();
     if (moved) wake();
   }
   function drawNodes(state) {
@@ -1536,6 +1536,9 @@
       fraction: Number(((_c = tick.dataset) == null ? void 0 : _c.fraction) || 0)
     });
     redraw2();
+  }
+  function onLeaveTrack() {
+    if (!pressed) takeBubbleDown();
   }
   function setBubble(next) {
     bubble = next;
