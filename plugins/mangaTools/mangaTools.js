@@ -1320,6 +1320,27 @@
     renderedFor = "";
   }
 
+  // src/reader/footer.ts
+  var CLAIMED = "data-manga-reader-link";
+  function syncFooter(lightbox, image) {
+    const link = lightbox.querySelector(".Lightbox-footer-center .image-link");
+    if (!link || !image) return;
+    const name = titleOf(image);
+    if (link.textContent !== name) link.textContent = name;
+    const href = "/images/" + image.id;
+    if (link.getAttribute("href") !== href) link.setAttribute("href", href);
+    if (link.getAttribute(CLAIMED) === null) {
+      link.setAttribute(CLAIMED, "");
+      link.addEventListener("click", (event) => event.stopPropagation(), true);
+    }
+  }
+  function titleOf(image) {
+    var _a2, _b2, _c;
+    if (image.title) return image.title;
+    const path = ((_a2 = image.paths) == null ? void 0 : _a2.image) || ((_c = (_b2 = image.visual_files) == null ? void 0 : _b2[0]) == null ? void 0 : _c.path) || "";
+    return path.split("/").pop() || "";
+  }
+
   // src/reader/spreads.ts
   var DEFAULT_SPREAD_OPTIONS = {
     coverAlone: true,
@@ -1586,6 +1607,10 @@
     ensureChrome(lightbox, chromeState(gallery, lightbox));
     lightbox.classList.add(CLASS_TAKEOVER);
     const at = screenNow(gallery);
+    syncFooter(
+      lightbox,
+      at < 0 ? null : gallery.images[gallery.screens[at].start] || null
+    );
     if (at < 0) return;
     if (at === shownAt && container && (container.childElementCount || awaiting === at)) {
       return;
