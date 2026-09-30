@@ -617,6 +617,9 @@
   var CLASS_OPTIONS_ANCHOR = "manga-reader-options-anchor";
   var CLASS_CLOSE = "manga-reader-close";
   var CLASS_FULLSCREEN = "manga-reader-fullscreen";
+  var CLASS_ZOOM = "manga-reader-zoom";
+  var CLASS_CHAPTER_MENU = "manga-reader-chapter-menu";
+  var HIDDEN = "data-manga-reader-hidden";
   var CLASS_MENU_BUTTON = "manga-reader-menu-button";
   var CLASS_MENU_PANEL = "manga-reader-menu-panel";
   var CLASS_MENU_ITEM = "manga-reader-menu-item";
@@ -639,7 +642,7 @@
       const left = document.createElement("div");
       left.className = "Lightbox-header-left-spacer";
       const chapters = document.createElement("div");
-      chapters.className = "dropdown";
+      chapters.className = "dropdown " + CLASS_CHAPTER_MENU;
       chapters.appendChild(
         menuButton("chapters", CLASS_CHAPTER_TOGGLE, "faBars")
       );
@@ -663,6 +666,7 @@
       anchor.appendChild(panel("settings", "popover"));
       options.appendChild(anchor);
       right.appendChild(options);
+      right.appendChild(zoomButton());
       if (document.fullscreenEnabled) {
         right.appendChild(fullscreenButton(lightbox));
       }
@@ -709,6 +713,11 @@
     }
     chapterPanel.classList.toggle("show", openMenu === "chapters");
     settingsPanel.classList.toggle("show", openMenu === "settings");
+    showWhen(chrome.querySelector("." + CLASS_ZOOM), state.zoomed);
+    showWhen(
+      chrome.querySelector("." + CLASS_CHAPTER_MENU),
+      state.placed.length > 0
+    );
     drawChapters(chapterPanel, state);
     drawSettings(settingsPanel, state);
   }
@@ -866,6 +875,13 @@
     });
     return button;
   }
+  function showWhen(node, shown) {
+    if (!node) return;
+    if (node.getAttribute(HIDDEN) !== null === shown) {
+      if (shown) node.removeAttribute(HIDDEN);
+      else node.setAttribute(HIDDEN, "");
+    }
+  }
   function iconFor(opens, open) {
     if (opens !== "chapters") return "faCog";
     return open ? "faTimes" : "faBars";
@@ -894,6 +910,19 @@
     const render2 = (_a2 = api.ReactDOM) == null ? void 0 : _a2.render;
     if (!Icon || !icon || !render2) return;
     render2(api.React.createElement(Icon, { icon }), host);
+  }
+  function zoomButton() {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = CLASS_ICON_BUTTON + " " + CLASS_ZOOM;
+    button.title = "Reset zoom";
+    button.setAttribute(HIDDEN, "");
+    setIcon(button, "faSearchMinus");
+    button.addEventListener("click", () => {
+      openMenu = null;
+      latest == null ? void 0 : latest.handlers.onResetZoom();
+    });
+    return button;
   }
   function fullscreenButton(lightbox) {
     const button = document.createElement("button");
@@ -1024,6 +1053,10 @@
   function galleryIdFromPath(pathname) {
     const match = /^\/galleries\/(\d+)/.exec(pathname);
     return match ? match[1] : null;
+  }
+  function inFullscreen(lightbox) {
+    const element = document.fullscreenElement;
+    return element ? lightbox.contains(element) : false;
   }
   function pressEscape() {
     document.dispatchEvent(
@@ -1190,7 +1223,7 @@
 
   // src/reader/chapters-tab.ts
   var SEL_PANEL = ".container";
-  var HIDDEN = "data-manga-reader-hidden";
+  var HIDDEN2 = "data-manga-reader-hidden";
   var renderedFor = "";
   var inHand = null;
   function syncChaptersTab() {
@@ -1242,7 +1275,7 @@
     return null;
   }
   function isStashButton(node) {
-    return !!node && node.tagName === "BUTTON" && node.classList.contains("btn") && node.getAttribute(HIDDEN) === null;
+    return !!node && node.tagName === "BUTTON" && node.classList.contains("btn") && node.getAttribute(HIDDEN2) === null;
   }
   function render(panel2, gallery) {
     const key = [
@@ -1252,7 +1285,7 @@
     if (key === renderedFor && panel2.childElementCount > 0) return;
     renderedFor = key;
     const button = panel2.previousElementSibling;
-    if (button) button.setAttribute(HIDDEN, "");
+    if (button) button.setAttribute(HIDDEN2, "");
     panel2.textContent = "";
     for (const chapter of gallery.chapters) {
       panel2.appendChild(row(gallery, chapter));
@@ -1345,8 +1378,47 @@
   NR.screenAt = screenAt;
   NR.stepsToAdjacent = stepsToAdjacent;
 
+  // src/reader/zoom.ts
+  var VIEW_MIN_ZOOM = 0.1;
+  var VIEW_MAX_ZOOM = 8;
+  var VIEW_STEP = 1.1;
+  var VIEW_PAN_STEP = 75;
+  var VIEW_SNAP = 0.015;
+  var VIEW_SLOP = 4;
+  function fitView() {
+    return { zoom: 1, x: 0, y: 0 };
+  }
+  function centred(view2) {
+    return { zoom: view2.zoom, x: 0, y: 0 };
+  }
+  function isZoomed(view2) {
+    return view2.zoom !== 1;
+  }
+  function zoomed(view2, factor) {
+    const wanted2 = Math.min(
+      Math.max(view2.zoom * factor, VIEW_MIN_ZOOM),
+      VIEW_MAX_ZOOM
+    );
+    const zoom = Math.abs(wanted2 - 1) < VIEW_SNAP ? 1 : wanted2;
+    return { ...view2, zoom };
+  }
+  function panned(view2, dx, dy, pages, box) {
+    return {
+      zoom: view2.zoom,
+      x: clamp(view2.x + dx, (view2.zoom * pages.width - box.width) / 2),
+      y: clamp(view2.y + dy, (view2.zoom * pages.height - box.height) / 2)
+    };
+  }
+  function clamp(value, limit) {
+    if (!Number.isFinite(value)) return 0;
+    const bound = Math.max(limit, 0);
+    if (!Number.isFinite(bound)) return 0;
+    return Math.min(Math.max(value, -bound), bound);
+  }
+
   // src/reader/takeover.ts
   var CLASS_SINGLE = "is-single";
+  var CLASS_ZOOMED = "is-zoomed";
   var CLASS_ACTIVE = "manga-reader-active";
   var CLASS_SPREAD = "manga-reader-spread";
   var CLASS_PAGE = "manga-reader-page";
@@ -1356,6 +1428,7 @@
   var settings = readSettings();
   var root = null;
   var container = null;
+  var view = fitView();
   var loaded = /* @__PURE__ */ new Map();
   var galleryId = null;
   var shownAt = -1;
@@ -1546,7 +1619,13 @@
       settings,
       offset,
       locale: language,
+      zoomed: isZoomed(view),
       handlers: {
+        onResetZoom: () => {
+          view = fitView();
+          applyView();
+          sync(lightbox);
+        },
         onChapter: (to) => {
           place = to;
           step();
@@ -1605,6 +1684,8 @@
       container = document.createElement("div");
       container.className = CLASS_SPREAD;
       container.addEventListener("click", onSpreadClick);
+      container.addEventListener("wheel", onSpreadWheel);
+      container.addEventListener("mousedown", onSpreadPress);
     }
     display.style.position = "relative";
     display.appendChild(container);
@@ -1612,6 +1693,15 @@
   }
   var REVEAL_BUDGET_MS = 300;
   NR.REVEAL_BUDGET_MS = REVEAL_BUDGET_MS;
+  NR.fitView = fitView;
+  NR.centred = centred;
+  NR.zoomed = zoomed;
+  NR.panned = panned;
+  NR.isZoomed = isZoomed;
+  NR.VIEW_MIN_ZOOM = VIEW_MIN_ZOOM;
+  NR.VIEW_MAX_ZOOM = VIEW_MAX_ZOOM;
+  NR.VIEW_STEP = VIEW_STEP;
+  NR.VIEW_SLOP = VIEW_SLOP;
   function fadeIn(element) {
     if (settings.fadeMs <= 0) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -1640,6 +1730,7 @@
       image.src = pageUrl(page);
       image.alt = String(screen.start + index + 1);
       image.decoding = "async";
+      image.draggable = false;
       box.appendChild(image);
       boxes.push(box);
       images.push(image);
@@ -1651,6 +1742,8 @@
       revealed = true;
       if (awaiting === at) awaiting = -1;
       container.textContent = "";
+      view = centred(view);
+      applyView();
       container.classList.toggle(CLASS_SINGLE, screen.pages.length === 1);
       boxes.forEach((box) => {
         container == null ? void 0 : container.appendChild(box);
@@ -1695,6 +1788,9 @@
       container.remove();
       container = null;
     }
+    view = fitView();
+    pressed = null;
+    dragged = false;
     if (root) {
       removeChrome(root);
       root.classList.remove(CLASS_TAKEOVER);
@@ -1814,8 +1910,16 @@
   function onSpreadClick(event) {
     const lightbox = root;
     if (!lightbox || !container) return;
+    if (dragged) {
+      dragged = false;
+      return;
+    }
     const target = event.target;
     if ((target == null ? void 0 : target.tagName) !== "IMG") {
+      if (inFullscreen(lightbox)) {
+        event.stopPropagation();
+        return;
+      }
       event.stopPropagation();
       pressEscape();
       return;
@@ -1824,6 +1928,67 @@
     const width = target.offsetWidth;
     const forward = !width || click.offsetX >= width / 2;
     if (turnBy(lightbox, forward ? 1 : -1)) event.stopPropagation();
+  }
+  function onSpreadWheel(event) {
+    if (!container) return;
+    const wheel = event;
+    const box = boxOf(container);
+    const pages = contentOf(container);
+    const up = wheel.deltaY < 0;
+    view = wheel.shiftKey ? panned(view, 0, up ? -VIEW_PAN_STEP : VIEW_PAN_STEP, pages, box) : panned(zoomed(view, up ? VIEW_STEP : 1 / VIEW_STEP), 0, 0, pages, box);
+    applyView();
+    redrawChrome();
+  }
+  function onSpreadPress(event) {
+    const press = event;
+    if (press.button !== 0) return;
+    pressed = { x: press.clientX, y: press.clientY, moved: false };
+    dragged = false;
+    document.addEventListener("mousemove", onSpreadMove);
+    document.addEventListener("mouseup", onSpreadRelease);
+  }
+  var pressed = null;
+  var dragged = false;
+  function onSpreadMove(event) {
+    if (!pressed || !container) return;
+    const move = event;
+    const dx = move.clientX - pressed.x;
+    const dy = move.clientY - pressed.y;
+    if (!pressed.moved && Math.abs(dx) < VIEW_SLOP && Math.abs(dy) < VIEW_SLOP) {
+      return;
+    }
+    pressed.moved = true;
+    pressed.x = move.clientX;
+    pressed.y = move.clientY;
+    view = panned(view, dx, dy, contentOf(container), boxOf(container));
+    applyView();
+  }
+  function onSpreadRelease() {
+    document.removeEventListener("mousemove", onSpreadMove);
+    document.removeEventListener("mouseup", onSpreadRelease);
+    if (pressed == null ? void 0 : pressed.moved) dragged = true;
+    pressed = null;
+  }
+  function applyView() {
+    if (!container) return;
+    container.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
+    container.classList.toggle(CLASS_ZOOMED, isZoomed(view));
+  }
+  function contentOf(host) {
+    let width = 0;
+    let height = 0;
+    for (const node of Array.from(host.querySelectorAll("img"))) {
+      const image = node;
+      width += image.offsetWidth || 0;
+      height = Math.max(height, image.offsetHeight || 0);
+    }
+    return { width, height };
+  }
+  function boxOf(host) {
+    return { width: host.clientWidth || 0, height: host.clientHeight || 0 };
+  }
+  function redrawChrome() {
+    if (root) sync(root);
   }
   function setOffset(gallery, next) {
     offset = next;
@@ -1837,7 +2002,17 @@
     shownAt = -1;
     step();
   }
+  var seenPath = null;
+  function onLocation(event) {
+    var _a2, _b2, _c;
+    const path = (_c = (_b2 = (_a2 = event == null ? void 0 : event.detail) == null ? void 0 : _a2.data) == null ? void 0 : _b2.location) == null ? void 0 : _c.pathname;
+    if (typeof path !== "string") return;
+    const moved = seenPath !== null && path !== seenPath;
+    seenPath = path;
+    if (moved && root) pressEscape();
+  }
   function install() {
+    var _a2;
     if (!document.body) {
       document.addEventListener("DOMContentLoaded", install);
       return;
@@ -1855,6 +2030,10 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("keydown", onKeyDown, true);
+    const api = requirePluginApi();
+    if ((_a2 = api.Event) == null ? void 0 : _a2.addEventListener) {
+      api.Event.addEventListener("stash:location", onLocation);
+    }
     installBridge();
     NS.watchStore(() => step());
     step();
