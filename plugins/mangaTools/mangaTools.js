@@ -297,12 +297,12 @@
   function installBridge() {
     const api = requirePluginApi();
     const React6 = api.React;
-    for (const target of ["ImageList", "HeaderImage"]) {
-      installAgainst(api, React6, target);
+    for (const target2 of ["ImageList", "HeaderImage"]) {
+      installAgainst(api, React6, target2);
     }
   }
-  function installAgainst(api, React6, target) {
-    api.patch.after(target, (...args) => {
+  function installAgainst(api, React6, target2) {
+    api.patch.after(target2, (...args) => {
       const result = args[args.length - 1];
       return React6.createElement(
         React6.Fragment,
@@ -746,7 +746,7 @@
     }
   }
   function drawSettings(panel2, state) {
-    const label = (id) => stringFor(state.locale, id);
+    const label2 = (id) => stringFor(state.locale, id);
     if (panel2.getAttribute("data-built") !== "yes") {
       panel2.setAttribute("data-built", "yes");
       panel2.classList.add(CLASS_SETTINGS);
@@ -817,7 +817,7 @@
       fade.appendChild(readout2);
       body.appendChild(fade);
     }
-    const heading = label("mangaReader.options");
+    const heading = label2("mangaReader.options");
     if (labels.options && labels.options.textContent !== heading) {
       labels.options.textContent = heading;
     }
@@ -827,7 +827,7 @@
     if (check && check.checked !== state.settings.doublePage) {
       check.checked = state.settings.doublePage;
     }
-    const doubleName = label("mangaReader.doublePage");
+    const doubleName = label2("mangaReader.doublePage");
     if (labels.doublePage && labels.doublePage.textContent !== doubleName) {
       labels.doublePage.textContent = doubleName;
     }
@@ -837,7 +837,7 @@
     if (offset2 && offset2.checked !== (state.offset === 1)) {
       offset2.checked = state.offset === 1;
     }
-    const offsetName = label("mangaReader.offset");
+    const offsetName = label2("mangaReader.offset");
     if (labels.offset && labels.offset.textContent !== offsetName) {
       labels.offset.textContent = offsetName;
     }
@@ -848,7 +848,7 @@
     const readout = panel2.querySelector(".manga-reader-readout");
     const shown = state.settings.fadeMs + " ms";
     if (readout && readout.textContent !== shown) readout.textContent = shown;
-    const fadeName = label("mangaReader.fade");
+    const fadeName = label2("mangaReader.fade");
     if (labels.fade && labels.fade.textContent !== fadeName) {
       labels.fade.textContent = fadeName;
     }
@@ -1300,10 +1300,10 @@
     const button = document.createElement("button");
     button.type = "button";
     button.className = "btn btn-link";
-    const label = document.createElement("div");
-    label.className = "row";
-    label.textContent = (chapter.title.length > 0 ? chapter.title + " - #" : "#") + (chapter.at + 1);
-    button.appendChild(label);
+    const label2 = document.createElement("div");
+    label2.className = "row";
+    label2.textContent = (chapter.title.length > 0 ? chapter.title + " - #" : "#") + (chapter.at + 1);
+    button.appendChild(label2);
     button.addEventListener("click", () => {
       takeOver({
         images: gallery.images,
@@ -1339,6 +1339,242 @@
     if (image.title) return image.title;
     const path = ((_a2 = image.paths) == null ? void 0 : _a2.image) || ((_c = (_b2 = image.visual_files) == null ? void 0 : _b2[0]) == null ? void 0 : _c.path) || "";
     return path.split("/").pop() || "";
+  }
+
+  // src/reader/progress.ts
+  var PROGRESS_SCRUB_MS = 120;
+  var PROGRESS_IDLE_MS = 2500;
+  function fractionOfPage(page, total) {
+    if (total <= 1) return 0;
+    return Math.min(Math.max(page, 0), total - 1) / total;
+  }
+  function pageAtFraction(fraction, total) {
+    if (total <= 1) return 0;
+    const page = Math.round(fraction * total);
+    return Math.min(Math.max(page, 0), total - 1);
+  }
+  function progressNodes(chapters, total) {
+    const nodes2 = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const chapter of chapters) {
+      if (chapter.at < 0 || chapter.at >= total || seen.has(chapter.at)) continue;
+      seen.add(chapter.at);
+      nodes2.push({
+        title: chapter.title,
+        at: chapter.at,
+        fraction: fractionOfPage(chapter.at, total)
+      });
+    }
+    return nodes2;
+  }
+  var CLASS_BAR = "manga-reader-progress";
+  var CLASS_TRACK = "manga-reader-progress-track";
+  var CLASS_READ = "manga-reader-progress-read";
+  var CLASS_THUMB = "manga-reader-progress-thumb";
+  var CLASS_NODES = "manga-reader-progress-nodes";
+  var CLASS_NODE = "manga-reader-progress-node";
+  var CLASS_LABEL = "manga-reader-progress-label";
+  var CLASS_SCRUBBING = "is-scrubbing";
+  var CLASS_IDLE = "is-idle";
+  var latest2 = null;
+  var bar = null;
+  var track = null;
+  var read = null;
+  var thumb = null;
+  var label = null;
+  var nodes = null;
+  var drawn = null;
+  var labelWidth = 0;
+  var pointer = null;
+  var target = 0;
+  var lastJump = 0;
+  var pending = null;
+  var idle = null;
+  var watching = null;
+  function ensureProgress(lightbox, state) {
+    latest2 = state;
+    const display = lightbox.querySelector(".Lightbox-display");
+    if (!display) return bar;
+    if (state.total <= 1) return null;
+    if (!bar) build(display);
+    if (!bar || !track || !read || !thumb || !label || !nodes) return bar;
+    watch(lightbox);
+    update2(state);
+    return bar;
+  }
+  function removeProgress(lightbox) {
+    const node = lightbox.querySelector("." + CLASS_BAR);
+    if (node) node.remove();
+    if (node !== bar) return;
+    stopTimers();
+    if (watching) watching.removeEventListener("mousemove", onWake);
+    bar = null;
+    track = null;
+    read = null;
+    thumb = null;
+    label = null;
+    nodes = null;
+    drawn = null;
+    latest2 = null;
+    watching = null;
+    pointer = null;
+    pressed = false;
+    labelWidth = 0;
+  }
+  function build(display) {
+    bar = document.createElement("div");
+    bar.className = CLASS_BAR;
+    label = document.createElement("div");
+    label.className = CLASS_LABEL;
+    track = document.createElement("div");
+    track.className = CLASS_TRACK;
+    read = document.createElement("div");
+    read.className = CLASS_READ;
+    nodes = document.createElement("div");
+    nodes.className = CLASS_NODES;
+    thumb = document.createElement("div");
+    thumb.className = CLASS_THUMB;
+    track.appendChild(read);
+    track.appendChild(nodes);
+    track.appendChild(thumb);
+    bar.appendChild(label);
+    bar.appendChild(track);
+    track.addEventListener("mousedown", onPress);
+    bar.addEventListener("click", (event) => event.stopPropagation());
+    display.appendChild(bar);
+  }
+  function update2(state) {
+    if (!bar || !track || !read || !thumb || !label || !nodes) return;
+    const key = state.chapters.map((c) => c.at + ":" + c.title).join("|");
+    if (!drawn || drawn.nodes !== key || drawn.total !== state.total) {
+      drawNodes(state);
+    }
+    const settled = fractionOfPage(state.at, state.total);
+    const fraction = pointer === null ? settled : pointer;
+    const where = (fraction * 100).toFixed(3) + "%";
+    if (read.style.width !== where) read.style.width = where;
+    if (thumb.style.left !== where) thumb.style.left = where;
+    const page = pointer === null ? state.at : target;
+    const name = state.chapterNameAt(page);
+    const words = page + 1 + " / " + state.total + (name ? " \xB7 " + name : "");
+    if (label.textContent !== words) {
+      label.textContent = words;
+      labelWidth = label.offsetWidth;
+    }
+    const half = labelWidth / 2;
+    const width = track.clientWidth || 0;
+    const left = Math.max(half, Math.min(fraction * width, width - half));
+    const px = left.toFixed(0) + "px";
+    if (label.style.left !== px) label.style.left = px;
+    const moved = !drawn || drawn.at !== state.at || drawn.total !== state.total;
+    drawn = { nodes: key, at: state.at, total: state.total };
+    if (moved) wake();
+  }
+  function drawNodes(state) {
+    if (!nodes) return;
+    nodes.textContent = "";
+    for (const node of progressNodes(state.chapters, state.total)) {
+      const tick = document.createElement("div");
+      tick.className = CLASS_NODE;
+      tick.style.left = (node.fraction * 100).toFixed(3) + "%";
+      if (node.title) tick.title = node.title;
+      tick.addEventListener("mousedown", (event) => event.stopPropagation());
+      tick.addEventListener("click", (event) => {
+        event.stopPropagation();
+        latest2 == null ? void 0 : latest2.handlers.onSeek(node.at);
+        wake();
+      });
+      nodes.appendChild(tick);
+    }
+  }
+  function watch(lightbox) {
+    if (watching === lightbox) return;
+    if (watching) watching.removeEventListener("mousemove", onWake);
+    lightbox.addEventListener("mousemove", onWake);
+    watching = lightbox;
+  }
+  function onWake() {
+    wake();
+  }
+  function wake() {
+    if (!bar) return;
+    bar.classList.remove(CLASS_IDLE);
+    if (idle !== null) window.clearTimeout(idle);
+    idle = window.setTimeout(() => {
+      idle = null;
+      bar == null ? void 0 : bar.classList.add(CLASS_IDLE);
+    }, PROGRESS_IDLE_MS);
+  }
+  function stopTimers() {
+    if (idle !== null) window.clearTimeout(idle);
+    if (pending !== null) window.clearTimeout(pending);
+    idle = null;
+    pending = null;
+  }
+  var pressed = false;
+  function fractionAt(clientX) {
+    if (!track) return 0;
+    const rect = track.getBoundingClientRect();
+    const width = rect.width || track.clientWidth || 1;
+    return Math.min(Math.max((clientX - rect.left) / width, 0), 1);
+  }
+  function onPress(event) {
+    const press = event;
+    if (press.button !== 0 || !track) return;
+    press.preventDefault();
+    press.stopPropagation();
+    pressed = true;
+    bar == null ? void 0 : bar.classList.add(CLASS_SCRUBBING);
+    scrubTo(fractionAt(press.clientX));
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onRelease);
+  }
+  function onMove(event) {
+    if (!pressed) return;
+    scrubTo(fractionAt(event.clientX));
+  }
+  function onRelease() {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onRelease);
+    pressed = false;
+    bar == null ? void 0 : bar.classList.remove(CLASS_SCRUBBING);
+    settle();
+  }
+  function scrubTo(fraction) {
+    var _a2;
+    pointer = fraction;
+    target = pageAtFraction(fraction, (_a2 = latest2 == null ? void 0 : latest2.total) != null ? _a2 : 1);
+    redraw2();
+    if (!latest2 || target === latest2.at) return;
+    const since = Date.now() - lastJump;
+    if (pending !== null) {
+      window.clearTimeout(pending);
+      pending = null;
+    }
+    if (since >= PROGRESS_SCRUB_MS) {
+      lastJump = Date.now();
+      latest2.handlers.onSeek(target);
+    } else {
+      pending = window.setTimeout(() => {
+        pending = null;
+        lastJump = Date.now();
+        latest2 == null ? void 0 : latest2.handlers.onSeek(target);
+      }, PROGRESS_SCRUB_MS - since);
+    }
+  }
+  function settle() {
+    if (pending !== null) {
+      window.clearTimeout(pending);
+      pending = null;
+    }
+    lastJump = Date.now();
+    const wanted2 = target;
+    pointer = null;
+    latest2 == null ? void 0 : latest2.handlers.onSeek(wanted2);
+    redraw2();
+  }
+  function redraw2() {
+    if (latest2) update2(latest2);
   }
 
   // src/reader/spreads.ts
@@ -1390,9 +1626,9 @@
   function stepsToAdjacent(screens, pageIndex, direction) {
     const at = screenAt(screens, pageIndex);
     if (at < 0) return 0;
-    const target = screens[at + direction];
-    if (!target) return 0;
-    return target.start - pageIndex;
+    const target2 = screens[at + direction];
+    if (!target2) return 0;
+    return target2.start - pageIndex;
   }
   NR.isWideSpreadPage = isWideSpreadPage;
   NR.layout = layout;
@@ -1451,7 +1687,7 @@
   var language = null;
   var logged = false;
   var clickRoot = null;
-  var pending = null;
+  var pending2 = null;
   var handedFor = null;
   var place = -1;
   function step() {
@@ -1509,13 +1745,13 @@
       step();
       return;
     }
-    if (pending === id) return;
+    if (pending2 === id) return;
     const forLightbox = root;
     if (!forLightbox) return;
-    pending = id;
+    pending2 = id;
     loadPages(id, lightboxOrder(window.location.search), forLightbox).then((answer) => {
-      if (pending !== id) return;
-      pending = null;
+      if (pending2 !== id) return;
+      pending2 = null;
       if (root !== forLightbox) return;
       const gallery = {
         id,
@@ -1536,7 +1772,7 @@
       place = -1;
       step();
     }).catch((e) => {
-      if (pending === id) pending = null;
+      if (pending2 === id) pending2 = null;
       console.error(
         "[mangaReader] could not read this gallery's pages, turning the spread view off:",
         e
@@ -1611,6 +1847,7 @@
       lightbox,
       at < 0 ? null : gallery.images[gallery.screens[at].start] || null
     );
+    if (at >= 0) ensureProgress(lightbox, progressState(gallery, at, lightbox));
     if (at < 0) return;
     if (at === shownAt && container && (container.childElementCount || awaiting === at)) {
       return;
@@ -1618,6 +1855,21 @@
     ensureContainer(lightbox);
     if (!container) return;
     draw(gallery.screens[at], at);
+  }
+  function progressState(gallery, at, lightbox) {
+    var _a2, _b2;
+    return {
+      at: (_b2 = (_a2 = gallery.screens[at]) == null ? void 0 : _a2.start) != null ? _b2 : 0,
+      total: gallery.pages.length,
+      chapters: gallery.chapters,
+      chapterNameAt: (page) => {
+        var _a3, _b3;
+        return ((_b3 = chapterAt(gallery.chapters, ((_a3 = gallery.pages[page]) == null ? void 0 : _a3.id) || "")) == null ? void 0 : _b3.title) || "";
+      },
+      handlers: {
+        onSeek: (to) => seekTo(lightbox, to)
+      }
+    };
   }
   function chromeState(gallery, lightbox) {
     var _a2;
@@ -1717,6 +1969,11 @@
   NR.VIEW_MAX_ZOOM = VIEW_MAX_ZOOM;
   NR.VIEW_STEP = VIEW_STEP;
   NR.VIEW_CLICK_MS = VIEW_CLICK_MS;
+  NR.fractionOfPage = fractionOfPage;
+  NR.pageAtFraction = pageAtFraction;
+  NR.progressNodes = progressNodes;
+  NR.PROGRESS_SCRUB_MS = PROGRESS_SCRUB_MS;
+  NR.PROGRESS_IDLE_MS = PROGRESS_IDLE_MS;
   function fadeIn(element) {
     if (settings.fadeMs <= 0) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -1804,10 +2061,11 @@
       container = null;
     }
     view = fitView();
-    pressed = null;
+    pressed2 = null;
     held = false;
     if (root) {
       removeChrome(root);
+      removeProgress(root);
       root.classList.remove(CLASS_TAKEOVER);
     }
     forgetOpenMenu();
@@ -1842,13 +2100,13 @@
       totalCount: gallery.images.length
     });
   }
-  function arrowsBelongTo(target) {
-    if (!target) return false;
-    if (target.isContentEditable) return true;
-    const tag = target.tagName;
+  function arrowsBelongTo(target2) {
+    if (!target2) return false;
+    if (target2.isContentEditable) return true;
+    const tag = target2.tagName;
     if (tag === "TEXTAREA") return true;
     if (tag !== "INPUT") return false;
-    const type = (target.type || "text").toLowerCase();
+    const type = (target2.type || "text").toLowerCase();
     return [
       "date",
       "datetime-local",
@@ -1895,6 +2153,12 @@
     sync(lightbox);
     return true;
   }
+  function seekTo(lightbox, at) {
+    const gallery = current();
+    if (!gallery) return;
+    place = Math.min(Math.max(at, 0), gallery.pages.length - 1);
+    sync(lightbox);
+  }
   function navIcon(button) {
     var _a2;
     for (const child of Array.from(button.children)) {
@@ -1903,9 +2167,9 @@
     }
     return "";
   }
-  function navDirection(target) {
+  function navDirection(target2) {
     var _a2;
-    let el = target;
+    let el = target2;
     while (el && !((_a2 = el.classList) == null ? void 0 : _a2.contains(CLASS_NAVBUTTON))) el = el.parentElement;
     if (!el) return 0;
     const icon = navIcon(el);
@@ -1929,8 +2193,8 @@
       held = false;
       return;
     }
-    const target = event.target;
-    if ((target == null ? void 0 : target.tagName) !== "IMG") {
+    const target2 = event.target;
+    if ((target2 == null ? void 0 : target2.tagName) !== "IMG") {
       if (inFullscreen(lightbox)) {
         event.stopPropagation();
         return;
@@ -1940,7 +2204,7 @@
       return;
     }
     const click = event;
-    const width = target.offsetWidth;
+    const width = target2.offsetWidth;
     const forward = !width || click.offsetX >= width / 2;
     if (turnBy(lightbox, forward ? 1 : -1)) event.stopPropagation();
   }
@@ -1955,21 +2219,21 @@
   function onSpreadPress(event) {
     const press = event;
     if (press.button !== 0) return;
-    pressed = { x: press.clientX, y: press.clientY, at: press.timeStamp };
+    pressed2 = { x: press.clientX, y: press.clientY, at: press.timeStamp };
     held = false;
     document.addEventListener("mousemove", onSpreadMove);
     document.addEventListener("mouseup", onSpreadRelease);
   }
-  var pressed = null;
+  var pressed2 = null;
   var held = false;
   function onSpreadMove(event) {
-    if (!pressed || !container) return;
+    if (!pressed2 || !container) return;
     const move = event;
-    const dx = move.clientX - pressed.x;
-    const dy = move.clientY - pressed.y;
+    const dx = move.clientX - pressed2.x;
+    const dy = move.clientY - pressed2.y;
     held = true;
-    pressed.x = move.clientX;
-    pressed.y = move.clientY;
+    pressed2.x = move.clientX;
+    pressed2.y = move.clientY;
     view = panned(view, dx, dy);
     applyView();
   }
@@ -1977,8 +2241,8 @@
     document.removeEventListener("mousemove", onSpreadMove);
     document.removeEventListener("mouseup", onSpreadRelease);
     const release = event;
-    if (pressed && release.timeStamp - pressed.at > VIEW_CLICK_MS) held = true;
-    pressed = null;
+    if (pressed2 && release.timeStamp - pressed2.at > VIEW_CLICK_MS) held = true;
+    pressed2 = null;
   }
   function applyView() {
     if (!container) return;
@@ -2299,9 +2563,9 @@
     const conditions = criterion.value || [];
     const labels2 = [];
     for (let i = 0; i < conditions.length; i++) {
-      const label = conditionLabel(intl, conditions[i]);
-      if (label === null) return null;
-      labels2.push(label);
+      const label2 = conditionLabel(intl, conditions[i]);
+      if (label2 === null) return null;
+      labels2.push(label2);
     }
     return labels2.length ? labels2 : null;
   }
@@ -2311,9 +2575,9 @@
     const labels2 = [];
     for (let i = 0; i < conditions.length; i++) {
       if (NS.ownField(conditions[i].field) !== fieldName) continue;
-      const label = conditionLabel(intl, conditions[i]);
-      if (label === null) return null;
-      labels2.push(label);
+      const label2 = conditionLabel(intl, conditions[i]);
+      if (label2 === null) return null;
+      labels2.push(label2);
     }
     return labels2.length ? labels2 : null;
   }
@@ -2728,24 +2992,24 @@
   function manageDialogTags(labels2) {
     const tags = dialogLanguageTags();
     for (let i = 0; i < tags.length; i++) {
-      const label = i < labels2.length ? labels2[i] : null;
+      const label2 = i < labels2.length ? labels2[i] : null;
       const text2 = tagText(tags[i]);
-      if (label !== null && text2.nodeValue !== label) {
-        text2.nodeValue = label;
-        tags[i].setAttribute(TAG_MARK, label);
+      if (label2 !== null && text2.nodeValue !== label2) {
+        text2.nodeValue = label2;
+        tags[i].setAttribute(TAG_MARK, label2);
       }
-      const display = label === null ? "none" : "";
+      const display = label2 === null ? "none" : "";
       if (tags[i].style.display !== display) tags[i].style.display = display;
     }
   }
   function ownTagLabels(labels2) {
     return labels2.slice(dialogLanguageTags().length);
   }
-  function clickedTagRemove(target) {
-    if (!target || typeof target.closest !== "function") return false;
-    if (!target.closest(".edit-filter-dialog")) return false;
-    if (!target.closest(".filter-tags .tag-item button")) return false;
-    const tag = target.closest(".tag-item");
+  function clickedTagRemove(target2) {
+    if (!target2 || typeof target2.closest !== "function") return false;
+    if (!target2.closest(".edit-filter-dialog")) return false;
+    if (!target2.closest(".filter-tags .tag-item button")) return false;
+    const tag = target2.closest(".tag-item");
     return !!tag && !tag.closest(".criterion-list") && isLanguageTag(tag);
   }
   function LanguageTag(props) {
@@ -2986,11 +3250,11 @@
       }
     )))));
     return /* @__PURE__ */ React3.createElement(React3.Fragment, null, host ? PluginApi3.ReactDOM.createPortal(list, host) : null, ownTagsRow ? PluginApi3.ReactDOM.createPortal(
-      ownTags.map((label, index) => /* @__PURE__ */ React3.createElement(
+      ownTags.map((label2, index) => /* @__PURE__ */ React3.createElement(
         LanguageTag,
         {
           key: index,
-          label,
+          label: label2,
           onRemove: () => {
             setChoice(EMPTY_SELECTION);
             setQuery("");
@@ -3138,23 +3402,23 @@
     const Solid = PluginApi4.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi4.components.Icon;
     const Bootstrap = PluginApi4.libraries.Bootstrap;
-    function update2(next) {
+    function update3(next) {
       applyLanguage(props.filter, history, next);
       if (!isTouchDevice() && searchRef.current) {
         searchRef.current.focus();
       }
     }
     function toggleInclude(code) {
-      update2(toggleIncluded(selection, code));
+      update3(toggleIncluded(selection, code));
     }
     function toggleExclude(code) {
-      update2(toggleExcluded(selection, code));
+      update3(toggleExcluded(selection, code));
     }
     function setModifier(modifier) {
-      update2(withModifier(selection, modifier));
+      update3(withModifier(selection, modifier));
     }
     function clearModifier() {
-      update2(withoutModifier(selection));
+      update3(withoutModifier(selection));
     }
     const options = visibleOptions(intl, selection);
     const selectable = selectableOptions(selection, options);
@@ -3306,20 +3570,20 @@
     });
     const Solid = PluginApi4.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi4.components.Icon;
-    function update2(next) {
+    function update3(next) {
       applyCensorship(props.filter, history, next);
     }
     function toggleInclude(value) {
-      update2(toggleIncluded(selection, value));
+      update3(toggleIncluded(selection, value));
     }
     function toggleExclude(value) {
-      update2(toggleExcluded(selection, value));
+      update3(toggleExcluded(selection, value));
     }
     function setModifier(modifier) {
-      update2(withModifier(selection, modifier));
+      update3(withModifier(selection, modifier));
     }
     function clearModifier() {
-      update2(withoutModifier(selection));
+      update3(withoutModifier(selection));
     }
     const options = censorshipOptions(intl);
     const chosen = options.filter(
@@ -3526,21 +3790,21 @@
     return !!components && !!components["FilteredGalleryList.SidebarSections"];
   }
   var warnedMissingSidebarContainer = false;
-  function registerPatch(kind, target, fn) {
+  function registerPatch(kind, target2, fn) {
     try {
-      PluginApi5.patch[kind](target, fn);
+      PluginApi5.patch[kind](target2, fn);
     } catch (e) {
       console.error(
-        "[mangaTools] could not register the " + target + " patch:",
+        "[mangaTools] could not register the " + target2 + " patch:",
         e
       );
     }
   }
   var firedOnce = {};
-  function noteFired(target) {
-    if (firedOnce[target]) return;
-    firedOnce[target] = true;
-    console.info("[mangaTools] patch active: " + target);
+  function noteFired(target2) {
+    if (firedOnce[target2]) return;
+    firedOnce[target2] = true;
+    console.info("[mangaTools] patch active: " + target2);
   }
   var store = null;
   var listeners = /* @__PURE__ */ new Set();
@@ -3759,9 +4023,9 @@
     }
   }
   function refreshAfterWrite() {
-    const pending2 = inFlight;
-    if (pending2) {
-      pending2.then(() => {
+    const pending3 = inFlight;
+    if (pending3) {
+      pending3.then(() => {
         refresh();
       });
     } else {
@@ -4097,12 +4361,12 @@
   }
   function readNativeFieldClasses(anchor) {
     if (!anchor) return null;
-    const label = anchor.querySelector("label");
-    const control = label == null ? void 0 : label.nextElementSibling;
-    if (!label || !control) return null;
+    const label2 = anchor.querySelector("label");
+    const control = label2 == null ? void 0 : label2.nextElementSibling;
+    if (!label2 || !control) return null;
     return {
       group: anchor.className,
-      label: label.className,
+      label: label2.className,
       control: control.className
     };
   }
