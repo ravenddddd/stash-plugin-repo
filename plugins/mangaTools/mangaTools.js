@@ -459,23 +459,10 @@
   NR.removeChapterAt = removeChapterAt;
 
   // src/reader/chapters-edit.ts
-  var undoable = /* @__PURE__ */ new Map();
   var listeners = [];
-  function writeChapters(galleryId2, next, previous) {
+  function writeChapters(galleryId2, next) {
     return write(galleryId2, next).then(() => {
-      if (previous) undoable.set(galleryId2, previous);
       announce(galleryId2, next);
-    });
-  }
-  function canUndoChapters(galleryId2) {
-    return undoable.has(galleryId2);
-  }
-  function undoChapters(galleryId2) {
-    const previous = undoable.get(galleryId2);
-    if (!previous) return Promise.resolve();
-    undoable.delete(galleryId2);
-    return write(galleryId2, previous).then(() => {
-      announce(galleryId2, previous);
     });
   }
   function watchChapters(fn) {
@@ -501,8 +488,6 @@
   }
   NR.writeChapters = writeChapters;
   NR.watchChapters = watchChapters;
-  NR.canUndoChapters = canUndoChapters;
-  NR.undoChapters = undoChapters;
 
   // src/reader/stash-lightbox.ts
   var SELECTOR_LIGHTBOX = ".Lightbox";
@@ -774,7 +759,7 @@
         if (chapters.length === 0) {
           run.skippedEmpty.push(id);
         } else {
-          await writeChapters(id, chapters, null);
+          await writeChapters(id, chapters);
           run.written.push(id);
         }
       } catch (error) {
@@ -857,7 +842,7 @@
     "mangaReader.importingChapters": "Importing\u2026",
     "mangaReader.editChapter": "Edit",
     "mangaReader.chapterTitle": "Title",
-    "mangaReader.chapterIndex": "Image index",
+    "mangaReader.chapterIndex": "Image #",
     "mangaReader.save": "Save",
     "mangaReader.cancel": "Cancel",
     "mangaReader.delete": "Delete",
@@ -934,7 +919,7 @@
     "mangaReader.importingChapters": "\u6B63\u5728\u5BFC\u5165\u2026",
     "mangaReader.editChapter": "\u7F16\u8F91",
     "mangaReader.chapterTitle": "\u6807\u9898",
-    "mangaReader.chapterIndex": "\u56FE\u7247\u5E8F\u53F7",
+    "mangaReader.chapterIndex": "\u56FE\u50CF #",
     "mangaReader.save": "\u4FDD\u5B58",
     "mangaReader.cancel": "\u53D6\u6D88",
     "mangaReader.delete": "\u5220\u9664",
@@ -1011,7 +996,7 @@
     "mangaReader.importingChapters": "\u6B63\u5728\u532F\u5165\u2026",
     "mangaReader.editChapter": "\u7DE8\u8F2F",
     "mangaReader.chapterTitle": "\u6A19\u984C",
-    "mangaReader.chapterIndex": "\u5716\u7247\u5E8F\u865F",
+    "mangaReader.chapterIndex": "\u5716\u7247 #",
     "mangaReader.save": "\u5132\u5B58",
     "mangaReader.cancel": "\u53D6\u6D88",
     "mangaReader.delete": "\u522A\u9664",
@@ -1578,16 +1563,14 @@
   var SEL_PANEL = ".container";
   var HIDDEN2 = "data-manga-reader-hidden";
   var IMPORT_ID = "manga-reader-chapters-import";
-  var UNDO_ID = "manga-reader-chapters-undo";
   var CLASS_EDIT = "manga-reader-chapter-edit";
   var TAKEN = "data-manga-reader-taken";
+  var CLASS_EDITING = "manga-reader-chapters-editing";
   var renderedFor = "";
   var panelInHand = null;
   var inHand = null;
   var form = null;
   var formError = "";
-  var undoLine = null;
-  var undoButton = null;
   var control = null;
   var controlState = null;
   var controlFor = null;
@@ -1675,6 +1658,7 @@
     renderedFor = key;
     panelInHand = panel2;
     takeOverCreate(panel2);
+    toggleCreate(panel2, !form);
     panel2.textContent = "";
     if (form) {
       drawForm(panel2, gallery);
@@ -1685,7 +1669,6 @@
     }
     if (form) hideImport();
     else drawImport(panel2, gallery);
-    drawUndo(panel2, gallery);
   }
   function takeOverCreate(panel2) {
     const button2 = panel2.previousElementSibling;
@@ -1807,6 +1790,11 @@
       }
     );
   }
+  function toggleCreate(panel2, shown) {
+    const button2 = panel2.previousElementSibling;
+    if (!isStashButton(button2)) return;
+    button2.classList.toggle(CLASS_EDITING, !shown);
+  }
   function redraw2() {
     if (!inHand || !panelInHand) return;
     render(panelInHand, inHand);
@@ -1815,32 +1803,34 @@
     var _a2, _b2;
     const editing = !!(form == null ? void 0 : form.startPageId);
     const node = document.createElement("form");
-    node.className = "manga-reader-chapters-form";
+    node.setAttribute("novalidate", "");
     node.addEventListener("submit", (event) => event.preventDefault());
-    const title = field(
-      node,
+    const container2 = document.createElement("div");
+    container2.className = "form-container px-3";
+    const titleField = field(
+      container2,
       gallery.locale,
       "mangaReader.chapterTitle",
       "title",
       "text",
       (_a2 = form == null ? void 0 : form.initialTitle) != null ? _a2 : ""
     );
-    const index = field(
-      node,
+    const indexField = field(
+      container2,
       gallery.locale,
       "mangaReader.chapterIndex",
       "image_index",
       "number",
       (_b2 = form == null ? void 0 : form.initialIndex) != null ? _b2 : "1"
     );
-    if (formError) {
-      const error = document.createElement("div");
-      error.className = "manga-reader-chapters-form-error";
-      error.textContent = stringFor(gallery.locale, formError);
-      node.appendChild(error);
-    }
+    node.appendChild(container2);
+    if (formError) refuse(indexField.error, stringFor(gallery.locale, formError));
+    const title = titleField.input;
+    const index = indexField.input;
     const buttons = document.createElement("div");
-    buttons.className = "buttons-container d-flex";
+    buttons.className = "buttons-container px-3";
+    const buttonsRow = document.createElement("div");
+    buttonsRow.className = "d-flex";
     const save = document.createElement("button");
     save.type = "button";
     save.className = "btn btn-primary";
@@ -1856,21 +1846,22 @@
       "click",
       () => submitForm(title.value, Number(index.value))
     );
-    buttons.appendChild(save);
+    buttonsRow.appendChild(save);
     const cancel = document.createElement("button");
     cancel.type = "button";
-    cancel.className = "btn btn-secondary ml-2";
+    cancel.className = "ml-2 btn btn-secondary";
     cancel.textContent = stringFor(gallery.locale, "mangaReader.cancel");
     cancel.addEventListener("click", closeForm);
-    buttons.appendChild(cancel);
+    buttonsRow.appendChild(cancel);
     if (editing) {
       const remove = document.createElement("button");
       remove.type = "button";
-      remove.className = "btn btn-danger ml-auto";
+      remove.className = "ml-auto btn btn-danger";
       remove.textContent = stringFor(gallery.locale, "mangaReader.delete");
       remove.addEventListener("click", deleteChapter);
-      buttons.appendChild(remove);
+      buttonsRow.appendChild(remove);
     }
+    buttons.appendChild(buttonsRow);
     node.appendChild(buttons);
     panel2.appendChild(node);
   }
@@ -1879,19 +1870,33 @@
     group.className = "form-group row";
     group.setAttribute("data-field", name);
     const label2 = document.createElement("label");
-    label2.className = "col-sm-3";
+    label2.className = "form-label col-form-label col-sm-3";
+    label2.setAttribute("for", name);
     label2.textContent = stringFor(locale, labelId);
     group.appendChild(label2);
     const column = document.createElement("div");
     column.className = "col-sm-9";
     const input = document.createElement("input");
+    input.className = "text-input form-control";
+    input.setAttribute("name", name);
+    input.setAttribute("id", name);
     input.type = type;
-    input.className = "form-control";
+    input.placeholder = stringFor(locale, labelId);
     input.value = value;
     column.appendChild(input);
+    const error = document.createElement("div");
+    error.className = "invalid-feedback";
+    column.appendChild(error);
     group.appendChild(column);
     parent.appendChild(group);
-    return input;
+    return { input, error };
+  }
+  function refuse(error, message2) {
+    var _a2;
+    const input = (_a2 = error == null ? void 0 : error.parentNode) == null ? void 0 : _a2.children[0];
+    if (!error || !input) return;
+    input.classList.add("is-invalid");
+    error.textContent = message2;
   }
   function submitForm(title, index) {
     const gallery = inHand;
@@ -1951,7 +1956,7 @@
   function applyEdit(gallery, next) {
     busy = true;
     redraw2();
-    writeChapters(gallery.id, next, gallery.stored).then(
+    writeChapters(gallery.id, next).then(
       () => {
         busy = false;
         closeForm();
@@ -1970,47 +1975,6 @@
     form = null;
     formError = "";
     redraw2();
-  }
-  function drawUndo(panel2, gallery) {
-    if (!canUndoChapters(gallery.id)) {
-      undoLine == null ? void 0 : undoLine.remove();
-      undoLine = null;
-      undoButton = null;
-      return;
-    }
-    if (!undoLine || !undoButton) {
-      undoButton = document.createElement("button");
-      undoButton.type = "button";
-      undoButton.className = "btn btn-link btn-sm";
-      undoButton.addEventListener("click", undoLast);
-      undoLine = document.createElement("div");
-      undoLine.id = UNDO_ID;
-      undoLine.className = "manga-reader-chapters-undo";
-      undoLine.appendChild(undoButton);
-    }
-    const place3 = panel2.parentNode;
-    if (place3 && undoLine.parentNode !== place3) {
-      place3.insertBefore(undoLine, panel2.nextElementSibling);
-    }
-    const text2 = stringFor(gallery.locale, "mangaReader.undoChapters");
-    if (undoButton.textContent !== text2) undoButton.textContent = text2;
-  }
-  function undoLast() {
-    const gallery = inHand;
-    if (!gallery || busy) return;
-    busy = true;
-    redraw2();
-    undoChapters(gallery.id).then(
-      () => {
-        busy = false;
-        redraw2();
-      },
-      (e) => {
-        busy = false;
-        console.error("[mangaReader] could not take that change back:", e);
-        redraw2();
-      }
-    );
   }
   function hideImport() {
     control == null ? void 0 : control.remove();
@@ -2084,8 +2048,6 @@
     confirming = false;
     form = null;
     formError = "";
-    undoLine = null;
-    undoButton = null;
   }
 
   // src/reader/footer.ts
