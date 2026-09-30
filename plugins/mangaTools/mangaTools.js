@@ -1335,10 +1335,10 @@
     }
   }
   function titleOf(image) {
-    var _a2, _b2, _c;
+    var _a2, _b2;
     if (image.title) return image.title;
-    const path = ((_a2 = image.paths) == null ? void 0 : _a2.image) || ((_c = (_b2 = image.visual_files) == null ? void 0 : _b2[0]) == null ? void 0 : _c.path) || "";
-    return path.split("/").pop() || "";
+    const path = ((_b2 = (_a2 = image.visual_files) == null ? void 0 : _a2[0]) == null ? void 0 : _b2.path) || "";
+    return path ? path.replace(/^.*[\\/]/, "") : "No File Name";
   }
 
   // src/reader/progress.ts
@@ -1398,6 +1398,7 @@
     if (state.total <= 1) return null;
     if (!bar) build(display);
     if (!bar || !track || !read || !thumb || !label || !nodes) return bar;
+    inset(lightbox);
     watch(lightbox);
     update2(state);
     return bar;
@@ -1469,6 +1470,16 @@
     const moved = !drawn || drawn.at !== state.at || drawn.total !== state.total;
     drawn = { nodes: key, at: state.at, total: state.total };
     if (moved) wake();
+  }
+  function inset(lightbox) {
+    if (!bar) return;
+    const button = lightbox.querySelector(
+      ".Lightbox-navbutton"
+    );
+    const width = (button == null ? void 0 : button.offsetWidth) || 0;
+    const value = width + "px";
+    if (bar.style.left !== value) bar.style.left = value;
+    if (bar.style.right !== value) bar.style.right = value;
   }
   function drawNodes(state) {
     if (!nodes) return;
