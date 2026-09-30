@@ -256,6 +256,394 @@
     return next;
   };
 
+  // src/reader/namespace.ts
+  window.MangaReader = window.MangaReader || {};
+  var NR = window.MangaReader;
+
+  // src/reader/chapters.ts
+  var CHAPTERS_VERSION = 1;
+  function parseChapters(raw) {
+    if (!raw) return null;
+    let stored = null;
+    try {
+      stored = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+    if (!stored || typeof stored !== "object") return null;
+    if (stored.v !== CHAPTERS_VERSION) return null;
+    if (!Array.isArray(stored.chapters)) return null;
+    const chapters = [];
+    for (const entry of stored.chapters) {
+      if (!entry || typeof entry !== "object") continue;
+      const row2 = entry;
+      if (!Array.isArray(row2.images)) continue;
+      const images = [];
+      for (const id of row2.images) {
+        if (typeof id === "string" || typeof id === "number") {
+          images.push(String(id));
+        }
+      }
+      chapters.push({
+        title: typeof row2.title === "string" ? row2.title : "",
+        images
+      });
+    }
+    return chapters;
+  }
+  function serializeChapters(chapters) {
+    return JSON.stringify({
+      v: CHAPTERS_VERSION,
+      chapters: chapters.map((chapter) => ({
+        title: typeof chapter.title === "string" ? chapter.title : "",
+        images: chapter.images.map((id) => String(id))
+      }))
+    });
+  }
+  function chaptersFromStash(rows, pathIds) {
+    if (!Array.isArray(rows)) return [];
+    const starts = [];
+    for (const row2 of rows) {
+      const index = Number(row2 == null ? void 0 : row2.image_index);
+      if (!Number.isInteger(index) || index < 1 || index > pathIds.length)
+        continue;
+      starts.push({
+        title: typeof (row2 == null ? void 0 : row2.title) === "string" ? row2.title : "",
+        index
+      });
+    }
+    starts.sort((a, b) => a.index - b.index);
+    return starts.map((start2, i) => {
+      const next = starts[i + 1];
+      const end = next ? next.index - 1 : pathIds.length;
+      return {
+        title: start2.title,
+        images: pathIds.slice(start2.index - 1, end)
+      };
+    });
+  }
+  function placeChapters(chapters, pages) {
+    const position = /* @__PURE__ */ new Map();
+    for (let i = 0; i < pages.length; i++) {
+      if (!position.has(pages[i].id)) position.set(pages[i].id, i);
+    }
+    const placed = [];
+    for (const chapter of chapters) {
+      let at = -1;
+      for (const id of chapter.images) {
+        const index = position.get(id);
+        if (index !== void 0 && (at < 0 || index < at)) at = index;
+      }
+      if (at < 0) continue;
+      placed.push({ title: chapter.title, images: chapter.images, at });
+    }
+    placed.sort((a, b) => a.at - b.at);
+    return placed;
+  }
+  function chapterAt(placed, pageId) {
+    for (const chapter of placed) {
+      if (chapter.images.includes(pageId)) return chapter;
+    }
+    return null;
+  }
+  NR.CHAPTERS_VERSION = CHAPTERS_VERSION;
+  NR.chapterAt = chapterAt;
+  NR.parseChapters = parseChapters;
+  NR.serializeChapters = serializeChapters;
+  NR.chaptersFromStash = chaptersFromStash;
+  NR.placeChapters = placeChapters;
+
+  // src/reader/stash-lightbox.ts
+  var SELECTOR_LIGHTBOX = ".Lightbox";
+  var SELECTOR_DISPLAY = ".Lightbox-display";
+  var SELECTOR_CAROUSEL = ".Lightbox-carousel";
+  var CLASS_NAVBUTTON = "Lightbox-navbutton";
+  var CLASS_LOADING = "LoadingIndicator";
+  function parseIndicator(text2) {
+    const match = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(text2);
+    if (!match) return null;
+    const current2 = Number(match[1]);
+    const total = Number(match[2]);
+    if (!total || current2 < 1 || current2 > total) return null;
+    return { current: current2, total };
+  }
+  function galleryIdFromPath(pathname) {
+    const match = /^\/galleries\/(\d+)/.exec(pathname);
+    return match ? match[1] : null;
+  }
+  function inFullscreen(lightbox) {
+    const element = document.fullscreenElement;
+    return element ? lightbox.contains(element) : false;
+  }
+  function pressEscape() {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true
+      })
+    );
+  }
+  function lightboxOrder(search) {
+    const params = new URLSearchParams(search || "");
+    const sort = params.get("sortby") || "path";
+    const direction = params.get("sortdir");
+    return {
+      sort,
+      direction: direction === "desc" || direction === null && sort === "date" ? "DESC" : "ASC"
+    };
+  }
+  var GALLERY_QUERY_TEXT = [
+    "query MangaReaderGallery($galleryId: ID!, $sort: String, $direction: SortDirectionEnum, $withPathIds: Boolean!) {",
+    "  configuration {",
+    "    interface {",
+    "      language",
+    "    }",
+    "  }",
+    "  findGallery(id: $galleryId) {",
+    "    id",
+    "    custom_fields",
+    "    chapters {",
+    "      title",
+    "      image_index",
+    "    }",
+    "  }",
+    "  pages: findImages(",
+    "    image_filter: { galleries: { value: [$galleryId], modifier: INCLUDES } }",
+    "    filter: { per_page: -1, sort: $sort, direction: $direction }",
+    "  ) {",
+    "    images {",
+    "      id",
+    "      title",
+    "      visual_files {",
+    "        __typename",
+    "        ... on VideoFile {",
+    "          path",
+    "          video_codec",
+    "        }",
+    "        ... on ImageFile {",
+    "          path",
+    "          width",
+    "          height",
+    "        }",
+    "      }",
+    "      paths {",
+    "        image",
+    "      }",
+    "      galleries {",
+    "        id",
+    "        title",
+    "        folder {",
+    "          path",
+    "        }",
+    "      }",
+    "    }",
+    "  }",
+    "  byPath: findImages(",
+    "    image_filter: { galleries: { value: [$galleryId], modifier: INCLUDES } }",
+    '    filter: { per_page: -1, sort: "path", direction: ASC }',
+    "  ) @include(if: $withPathIds) {",
+    "    images {",
+    "      id",
+    "    }",
+    "  }",
+    "}"
+  ].join("\n");
+  var galleryQuery = null;
+  function carouselImage(lightbox) {
+    var _a2, _b2;
+    const carousel = lightbox.querySelector(
+      SELECTOR_CAROUSEL
+    );
+    if (!carousel) return null;
+    const offset2 = /^(-?\d+(?:\.\d+)?)vw$/.exec(((_a2 = carousel.style) == null ? void 0 : _a2.left) || "");
+    if (!offset2) return null;
+    const at = Math.round(-Number(offset2[1]) / 100);
+    if (!Number.isFinite(at) || at < 0) return null;
+    const slide = carousel.children[at];
+    const media = (slide == null ? void 0 : slide.querySelector("img")) || (slide == null ? void 0 : slide.querySelector("video"));
+    const src = (media == null ? void 0 : media.src) || "";
+    const id = (_b2 = /\/image\/([^/]+)\//.exec(src)) == null ? void 0 : _b2[1];
+    if (!id) return null;
+    return { at, id };
+  }
+  async function fetchGallery(galleryId2, order) {
+    var _a2, _b2, _c, _d, _e, _f, _g;
+    if (!galleryQuery) {
+      galleryQuery = gqlDoc(GALLERY_QUERY_TEXT, "build the gallery query");
+    }
+    const query = galleryQuery;
+    if (!query) throw new Error("[mangaReader] no gallery query document");
+    const pathIdsNeeded = order.sort !== "path";
+    const data = await requirePluginApi().utils.StashService.getClient().query({
+      query,
+      variables: {
+        galleryId: galleryId2,
+        sort: order.sort,
+        direction: order.direction,
+        withPathIds: pathIdsNeeded
+      },
+      fetchPolicy: "no-cache"
+    }).then((res) => res == null ? void 0 : res.data);
+    const pages = (((_a2 = data == null ? void 0 : data.pages) == null ? void 0 : _a2.images) || []).map((image) => {
+      var _a3;
+      const file = (image.visual_files || []).find(
+        (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
+      );
+      return {
+        id: String(image.id),
+        width: (file == null ? void 0 : file.width) || 0,
+        height: (file == null ? void 0 : file.height) || 0,
+        // Stash's own URL for the image, kept for the query on it — which is a
+        // version stamp, and is the whole reason this field is fetched at all. See
+        // pageUrl in takeover.ts.
+        url: ((_a3 = image.paths) == null ? void 0 : _a3.image) || ""
+      };
+    });
+    const images = (((_b2 = data == null ? void 0 : data.pages) == null ? void 0 : _b2.images) || []).map((image) => {
+      var _a3, _b3, _c2, _d2, _e2;
+      const files = image.visual_files || [];
+      const sized = files.find(
+        (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
+      );
+      const file = files[0];
+      return {
+        id: String(image.id),
+        // Passed through as it came: Stash's lightbox shows a title when there is one
+        // and the file's name when there is not, and telling it which is which is the
+        // whole of this plugin's part in that.
+        title: String((_a3 = image.title) != null ? _a3 : ""),
+        paths: { image: ((_b3 = image.paths) == null ? void 0 : _b3.image) || "" },
+        visual_files: [
+          {
+            __typename: String(
+              (sized == null ? void 0 : sized.__typename) || (file == null ? void 0 : file.__typename) || "ImageFile"
+            ),
+            path: String((_d2 = (_c2 = sized == null ? void 0 : sized.path) != null ? _c2 : file == null ? void 0 : file.path) != null ? _d2 : ""),
+            video_codec: (_e2 = sized == null ? void 0 : sized.video_codec) != null ? _e2 : file == null ? void 0 : file.video_codec,
+            width: (sized == null ? void 0 : sized.width) || 0,
+            height: (sized == null ? void 0 : sized.height) || 0
+          }
+        ],
+        // As they came, and always a list: Stash asks whether there are any, so an image
+        // with none and an image nobody asked about have to look the same to it.
+        galleries: (image.galleries || []).map((gallery) => {
+          var _a4, _b4;
+          return {
+            id: String(gallery.id),
+            title: String((_a4 = gallery.title) != null ? _a4 : ""),
+            folder: gallery.folder ? { path: String((_b4 = gallery.folder.path) != null ? _b4 : "") } : null
+          };
+        })
+      };
+    });
+    return {
+      language: ((_d = (_c = data == null ? void 0 : data.configuration) == null ? void 0 : _c.interface) == null ? void 0 : _d.language) || null,
+      pages,
+      images,
+      customFields: ((_e = data == null ? void 0 : data.findGallery) == null ? void 0 : _e.custom_fields) || {},
+      stashChapters: ((_f = data == null ? void 0 : data.findGallery) == null ? void 0 : _f.chapters) || [],
+      pathIds: pathIdsNeeded ? (((_g = data == null ? void 0 : data.byPath) == null ? void 0 : _g.images) || []).map((image) => String(image.id)) : null
+    };
+  }
+  NR.parseIndicator = parseIndicator;
+  NR.galleryIdFromPath = galleryIdFromPath;
+  NR.lightboxOrder = lightboxOrder;
+  function lightboxIsLoading(lightbox) {
+    return lightbox.querySelector("." + CLASS_LOADING) !== null;
+  }
+  NR.carouselImage = carouselImage;
+  NR.lightboxIsLoading = lightboxIsLoading;
+
+  // src/reader/chapters-import.ts
+  var CHAPTERS_QUERY_TEXT = [
+    "query MangaReaderChapterImports($field: String!, $perPage: Int!) {",
+    "  findGalleries(",
+    "    gallery_filter: { custom_fields: { value: [$field], modifier: EQUALS } }",
+    "    filter: { per_page: $perPage }",
+    "  ) {",
+    "    count",
+    "    galleries {",
+    "      id",
+    "      custom_fields",
+    "      chapters {",
+    "        title",
+    "        image_index",
+    "      }",
+    "    }",
+    "  }",
+    "}"
+  ].join("\n");
+  var chaptersQuery = null;
+  async function planChapterImports() {
+    var _a2;
+    if (!chaptersQuery) {
+      chaptersQuery = gqlDoc(
+        CHAPTERS_QUERY_TEXT,
+        "build the chapter import query"
+      );
+    }
+    const query = chaptersQuery;
+    if (!query) throw new Error("[mangaReader] no chapter import query document");
+    const data = await requirePluginApi().utils.StashService.getClient().query({
+      query,
+      variables: { field: NS.MANGA_FIELD_NAME, perPage: -1 },
+      fetchPolicy: "no-cache"
+    }).then((res) => res == null ? void 0 : res.data);
+    const galleries = ((_a2 = data == null ? void 0 : data.findGalleries) == null ? void 0 : _a2.galleries) || [];
+    const plan = { toImport: [], owned: [], considered: 0 };
+    for (const gallery of galleries) {
+      const id = (gallery == null ? void 0 : gallery.id) === void 0 ? "" : String(gallery.id);
+      if (!id) continue;
+      plan.considered += 1;
+      if (!(gallery.chapters || []).length) continue;
+      const own = parseChapters(
+        NS.pickField(gallery.custom_fields, NS.CHAPTER_FIELD_NAME) || null
+      );
+      (own ? plan.owned : plan.toImport).push(id);
+    }
+    return plan;
+  }
+  async function runChapterImports(plan, options = {}) {
+    var _a2;
+    const ids = options.reimport ? [...plan.toImport, ...plan.owned] : [...plan.toImport];
+    const run = { written: [], failed: [], skippedEmpty: [] };
+    let done = 0;
+    for (const id of ids) {
+      try {
+        const answer = await fetchGallery(id, { sort: "path", direction: "ASC" });
+        const chapters = chaptersFromStash(
+          answer.stashChapters,
+          answer.pages.map((page) => page.id)
+        );
+        if (chapters.length === 0) {
+          run.skippedEmpty.push(id);
+        } else {
+          await writeChapters(id, serializeChapters(chapters));
+          run.written.push(id);
+        }
+      } catch (error) {
+        run.failed.push({ id, error });
+      }
+      done += 1;
+      (_a2 = options.onProgress) == null ? void 0 : _a2.call(options, done, ids.length);
+    }
+    return run;
+  }
+  function writeChapters(galleryId2, json) {
+    const write = NS.importChapters;
+    if (typeof write !== "function") {
+      return Promise.reject(
+        new Error(
+          "[mangaReader] the tools half is not running, so chapters cannot be written"
+        )
+      );
+    }
+    return write(galleryId2, json);
+  }
+  NR.planChapterImports = planChapterImports;
+  NR.runChapterImports = runChapterImports;
+
   // src/reader/bridge.ts
   var handles = [];
   function bridged() {
@@ -319,6 +707,12 @@
     "mangaReader.doublePage": "Double page",
     "mangaReader.fade": "Fade in",
     "mangaReader.offset": "Shift the pairing by one page",
+    "mangaReader.importChapters": "Import Stash's chapters",
+    "mangaReader.reimportChapters": "Re-import Stash's chapters",
+    "mangaReader.importingChapters": "Importing\u2026",
+    "mangaReader.reimportWarning": "Replace this gallery's chapters with Stash's? The plugin's own list for it is overwritten.",
+    "mangaReader.reimportReplace": "Replace",
+    "mangaReader.reimportCancel": "Cancel",
     "mangaTools.select.placeholder": "Select language\u2026",
     "mangaTools.settings.enabledLanguages.heading": "Enabled languages",
     "mangaTools.settings.enabledLanguages.description": "Only these languages appear in the edit-page dropdown. Display (badge and detail row) is unaffected. Leave empty to show every language.",
@@ -333,6 +727,18 @@
     "mangaTools.settings.openEditBlock.description": "The Manga info block in a gallery's edit form, where its language, censorship and translation group are set. This decides the state a block opens in, not whether it can be opened.",
     "mangaTools.settings.hidePerformers.heading": "Hide the performers field on a manga gallery",
     "mangaTools.settings.hidePerformers.description": "A manga gallery rarely has performers, so its edit page leaves the field out. Only the field is hidden \u2014 whatever a gallery already has stays on the gallery and is kept when it is saved. The bulk edit dialog and the details tab are unaffected.",
+    "mangaTools.settings.chapters.heading": "Import chapters from Stash",
+    "mangaTools.settings.chapters.description": "Copies every marked gallery's Stash chapters into this plugin's own chapters field \u2014 the one the reader prefers, and the one nothing has ever written. Nothing of Stash's is changed. Galleries that already have a list of this plugin's own are left alone unless you ask to replace them.",
+    "mangaTools.settings.chapters.check": "Check what would be imported",
+    "mangaTools.settings.chapters.checking": "Checking\u2026",
+    "mangaTools.settings.chapters.toImport": "Galleries to import",
+    "mangaTools.settings.chapters.owned": "Already imported",
+    "mangaTools.settings.chapters.replace": "Also replace the ones already imported",
+    "mangaTools.settings.chapters.start": "Import",
+    "mangaTools.settings.chapters.progress": "Imported",
+    "mangaTools.settings.chapters.of": "of",
+    "mangaTools.settings.chapters.skipped": "Skipped, nothing to bring over",
+    "mangaTools.settings.chapters.failed": "Failed",
     "mangaTools.manga.mark": "Mark as manga",
     "mangaTools.manga.marked": "Manga",
     "mangaTools.manga.isManga": "Is manga",
@@ -368,6 +774,12 @@
     "mangaReader.doublePage": "\u53CC\u9875\u9605\u8BFB",
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.offset": "\u914D\u5BF9\u504F\u79FB\u4E00\u683C",
+    "mangaReader.importChapters": "\u5BFC\u5165 Stash \u7684\u7AE0\u8282",
+    "mangaReader.reimportChapters": "\u91CD\u65B0\u5BFC\u5165 Stash \u7684\u7AE0\u8282",
+    "mangaReader.importingChapters": "\u6B63\u5728\u5BFC\u5165\u2026",
+    "mangaReader.reimportWarning": "\u7528 Stash \u7684\u7AE0\u8282\u66FF\u6362\u8FD9\u672C\u7684\uFF1F\u63D2\u4EF6\u5DF2\u6709\u7684\u90A3\u4EFD\u4F1A\u88AB\u8986\u76D6\u3002",
+    "mangaReader.reimportReplace": "\u66FF\u6362",
+    "mangaReader.reimportCancel": "\u53D6\u6D88",
     "mangaTools.select.placeholder": "\u9009\u62E9\u8BED\u8A00\u2026",
     "mangaTools.settings.enabledLanguages.heading": "\u542F\u7528\u7684\u8BED\u8A00",
     "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u8FD9\u4E9B\u8BED\u8A00\u4F1A\u51FA\u73B0\u5728\u7F16\u8F91\u9875\u7684\u4E0B\u62C9\u6846\u91CC\u3002\u663E\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8BE6\u60C5\u9875\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u54CD\u3002\u7559\u7A7A\u8868\u793A\u663E\u793A\u5168\u90E8\u8BED\u8A00\u3002",
@@ -382,6 +794,18 @@
     "mangaTools.settings.openEditBlock.description": "\u753B\u5ECA\u7F16\u8F91\u8868\u5355\u91CC\u7684\u90A3\u4E00\u5757\uFF0C\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5728\u90A3\u91CC\u8BBE\u7F6E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00.",
     "mangaTools.settings.hidePerformers.heading": "\u5728\u6F2B\u753B\u7684\u7F16\u8F91\u9875\u9690\u85CF\u300C\u6F14\u5458\u300D",
     "mangaTools.settings.hidePerformers.description": "\u6F2B\u753B\u4E00\u822C\u6CA1\u6709\u6F14\u5458\uFF0C\u6240\u4EE5\u7F16\u8F91\u9875\u4E0D\u663E\u793A\u8FD9\u4E00\u680F\u3002\u53EA\u662F\u9690\u85CF\uFF1A\u753B\u5ECA\u5DF2\u6709\u7684\u6F14\u5458\u4ECD\u7136\u7559\u5728\u753B\u5ECA\u4E0A\uFF0C\u4FDD\u5B58\u65F6\u4E5F\u4E0D\u4F1A\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7F16\u8F91\u5BF9\u8BDD\u6846\u548C\u7B80\u4ECB\u9875\u4E0D\u53D7\u5F71\u54CD\u3002",
+    "mangaTools.settings.chapters.heading": "\u4ECE Stash \u5BFC\u5165\u7AE0\u8282",
+    "mangaTools.settings.chapters.description": "\u628A\u6BCF\u672C\u5DF2\u6807\u8BB0\u6F2B\u753B\u7684 Stash \u7AE0\u8282\u6284\u8FDB\u63D2\u4EF6\u81EA\u5DF1\u7684\u7AE0\u8282\u5B57\u6BB5 \u2014\u2014 \u9605\u8BFB\u534A\u8FB9\u4F18\u5148\u8BFB\u7684\u5C31\u662F\u5B83\uFF0C\u800C\u5B83\u4ECE\u6765\u8FD8\u6CA1\u6709\u88AB\u5199\u8FC7\u3002Stash \u90A3\u8FB9\u4E00\u4E2A\u5B57\u8282\u90FD\u4E0D\u6539\u3002\u5DF2\u6709\u63D2\u4EF6\u7AE0\u8282\u7684\u753B\u5ECA\u9ED8\u8BA4\u4E0D\u52A8\uFF0C\u9664\u975E\u4F60\u8981\u6C42\u8986\u76D6\u3002",
+    "mangaTools.settings.chapters.check": "\u5148\u770B\u770B\u4F1A\u5BFC\u5165\u54EA\u4E9B",
+    "mangaTools.settings.chapters.checking": "\u6B63\u5728\u68C0\u67E5\u2026",
+    "mangaTools.settings.chapters.toImport": "\u5C06\u5BFC\u5165",
+    "mangaTools.settings.chapters.owned": "\u5DF2\u5BFC\u5165",
+    "mangaTools.settings.chapters.replace": "\u540C\u65F6\u8986\u76D6\u5DF2\u5BFC\u5165\u7684\u90A3\u4E9B",
+    "mangaTools.settings.chapters.start": "\u5BFC\u5165",
+    "mangaTools.settings.chapters.progress": "\u5DF2\u5BFC\u5165",
+    "mangaTools.settings.chapters.of": "/",
+    "mangaTools.settings.chapters.skipped": "\u8DF3\u8FC7\uFF08\u6CA1\u6709\u53EF\u642C\u7684\uFF09",
+    "mangaTools.settings.chapters.failed": "\u5931\u8D25",
     "mangaTools.manga.mark": "\u6807\u8BB0\u4E3A\u6F2B\u753B",
     "mangaTools.manga.marked": "\u6F2B\u753B",
     "mangaTools.manga.isManga": "\u662F\u5426\u4E3A\u6F2B\u753B",
@@ -417,6 +841,12 @@
     "mangaReader.doublePage": "\u96D9\u9801\u95B1\u8B80",
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.offset": "\u914D\u5C0D\u504F\u79FB\u4E00\u683C",
+    "mangaReader.importChapters": "\u532F\u5165 Stash \u7684\u7AE0\u7BC0",
+    "mangaReader.reimportChapters": "\u91CD\u65B0\u532F\u5165 Stash \u7684\u7AE0\u7BC0",
+    "mangaReader.importingChapters": "\u6B63\u5728\u532F\u5165\u2026",
+    "mangaReader.reimportWarning": "\u7528 Stash \u7684\u7AE0\u7BC0\u53D6\u4EE3\u9019\u672C\u7684\uFF1F\u5916\u639B\u5DF2\u6709\u7684\u90A3\u4EFD\u6703\u88AB\u8986\u84CB\u3002",
+    "mangaReader.reimportReplace": "\u53D6\u4EE3",
+    "mangaReader.reimportCancel": "\u53D6\u6D88",
     "mangaTools.select.placeholder": "\u9078\u64C7\u8A9E\u8A00\u2026",
     "mangaTools.settings.enabledLanguages.heading": "\u555F\u7528\u7684\u8A9E\u8A00",
     "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u9019\u4E9B\u8A9E\u8A00\u6703\u51FA\u73FE\u5728\u7DE8\u8F2F\u9801\u7684\u4E0B\u62C9\u9078\u55AE\u88E1\u3002\u986F\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8A73\u7D30\u9801\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u97FF\u3002\u7559\u7A7A\u8868\u793A\u986F\u793A\u5168\u90E8\u8A9E\u8A00\u3002",
@@ -431,6 +861,18 @@
     "mangaTools.settings.openEditBlock.description": "\u756B\u5ECA\u7DE8\u8F2F\u8868\u55AE\u88E1\u7684\u90A3\u4E00\u584A\uFF0C\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u5728\u90A3\u88E1\u8A2D\u5B9A\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B.",
     "mangaTools.settings.hidePerformers.heading": "\u5728\u6F2B\u756B\u7684\u7DE8\u8F2F\u9801\u96B1\u85CF\u300C\u6F14\u54E1\u300D",
     "mangaTools.settings.hidePerformers.description": "\u6F2B\u756B\u4E00\u822C\u6C92\u6709\u6F14\u54E1\uFF0C\u6240\u4EE5\u7DE8\u8F2F\u9801\u4E0D\u986F\u793A\u9019\u4E00\u6B04\u3002\u53EA\u662F\u96B1\u85CF\uFF1A\u756B\u5ECA\u5DF2\u6709\u7684\u6F14\u54E1\u4ECD\u7136\u7559\u5728\u756B\u5ECA\u4E0A\uFF0C\u5132\u5B58\u6642\u4E5F\u4E0D\u6703\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7DE8\u8F2F\u5C0D\u8A71\u6846\u548C\u7C21\u4ECB\u9801\u4E0D\u53D7\u5F71\u97FF\u3002",
+    "mangaTools.settings.chapters.heading": "\u5F9E Stash \u532F\u5165\u7AE0\u7BC0",
+    "mangaTools.settings.chapters.description": "\u628A\u6BCF\u672C\u5DF2\u6A19\u8A18\u6F2B\u756B\u7684 Stash \u7AE0\u7BC0\u6284\u9032\u5916\u639B\u81EA\u5DF1\u7684\u7AE0\u7BC0\u6B04\u4F4D \u2014\u2014 \u95B1\u8B80\u534A\u908A\u512A\u5148\u8B80\u7684\u5C31\u662F\u5B83\uFF0C\u800C\u5B83\u5F9E\u4F86\u9084\u6C92\u6709\u88AB\u5BEB\u904E\u3002Stash \u90A3\u908A\u4E00\u500B\u4F4D\u5143\u7D44\u90FD\u4E0D\u6539\u3002\u5DF2\u6709\u5916\u639B\u7AE0\u7BC0\u7684\u756B\u5ECA\u9810\u8A2D\u4E0D\u52D5\uFF0C\u9664\u975E\u4F60\u8981\u6C42\u8986\u84CB\u3002",
+    "mangaTools.settings.chapters.check": "\u5148\u770B\u770B\u6703\u532F\u5165\u54EA\u4E9B",
+    "mangaTools.settings.chapters.checking": "\u6B63\u5728\u6AA2\u67E5\u2026",
+    "mangaTools.settings.chapters.toImport": "\u5C07\u532F\u5165",
+    "mangaTools.settings.chapters.owned": "\u5DF2\u532F\u5165",
+    "mangaTools.settings.chapters.replace": "\u540C\u6642\u8986\u84CB\u5DF2\u532F\u5165\u7684\u90A3\u4E9B",
+    "mangaTools.settings.chapters.start": "\u532F\u5165",
+    "mangaTools.settings.chapters.progress": "\u5DF2\u532F\u5165",
+    "mangaTools.settings.chapters.of": "/",
+    "mangaTools.settings.chapters.skipped": "\u8DF3\u904E\uFF08\u6C92\u6709\u53EF\u642C\u7684\uFF09",
+    "mangaTools.settings.chapters.failed": "\u5931\u6557",
     "mangaTools.manga.mark": "\u6A19\u8A18\u70BA\u6F2B\u756B",
     "mangaTools.manga.marked": "\u6F2B\u756B",
     "mangaTools.manga.isManga": "\u662F\u5426\u70BA\u6F2B\u756B",
@@ -500,10 +942,6 @@
   NS.stringFor = stringFor;
   NS.catalogFor = catalogFor;
   NS.catalogs = catalogs;
-
-  // src/reader/namespace.ts
-  window.MangaReader = window.MangaReader || {};
-  var NR = window.MangaReader;
 
   // src/reader/settings.ts
   var STORAGE_KEY = "plugin.mangaTools.settings";
@@ -713,11 +1151,11 @@
     );
     if (!chapterPanel || !settingsPanel) return;
     for (const node of chrome.querySelectorAll("." + CLASS_MENU_BUTTON)) {
-      const button = node;
-      const which = button.dataset.opens;
+      const button2 = node;
+      const which = button2.dataset.opens;
       const open = which === openMenu;
-      button.setAttribute("aria-expanded", open ? "true" : "false");
-      setIcon(button, iconFor(which, open));
+      button2.setAttribute("aria-expanded", open ? "true" : "false");
+      setIcon(button2, iconFor(which, open));
     }
     chapterPanel.classList.toggle("show", openMenu === "chapters");
     settingsPanel.classList.toggle("show", openMenu === "settings");
@@ -870,18 +1308,18 @@
     return node;
   }
   function menuButton(opens, classes, icon) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = classes + " " + CLASS_MENU_BUTTON;
-    button.dataset.opens = opens;
-    button.setAttribute("aria-haspopup", "true");
-    button.setAttribute("aria-expanded", "false");
-    setIcon(button, icon);
-    button.addEventListener("click", () => {
+    const button2 = document.createElement("button");
+    button2.type = "button";
+    button2.className = classes + " " + CLASS_MENU_BUTTON;
+    button2.dataset.opens = opens;
+    button2.setAttribute("aria-haspopup", "true");
+    button2.setAttribute("aria-expanded", "false");
+    setIcon(button2, icon);
+    button2.addEventListener("click", () => {
       openMenu = openMenu === opens ? null : opens;
       redraw();
     });
-    return button;
+    return button2;
   }
   function showWhen(node, shown) {
     if (!node) return;
@@ -920,337 +1358,58 @@
     render2(api.React.createElement(Icon, { icon }), host);
   }
   function zoomButton() {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = CLASS_ICON_BUTTON + " " + CLASS_ZOOM;
-    button.title = "Reset zoom";
-    button.setAttribute(HIDDEN, "");
-    setIcon(button, "faSearchMinus");
-    button.addEventListener("click", () => {
+    const button2 = document.createElement("button");
+    button2.type = "button";
+    button2.className = CLASS_ICON_BUTTON + " " + CLASS_ZOOM;
+    button2.title = "Reset zoom";
+    button2.setAttribute(HIDDEN, "");
+    setIcon(button2, "faSearchMinus");
+    button2.addEventListener("click", () => {
       openMenu = null;
       latest == null ? void 0 : latest.handlers.onResetZoom();
     });
-    return button;
+    return button2;
   }
   function fullscreenButton(lightbox) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = CLASS_ICON_BUTTON + " " + CLASS_FULLSCREEN;
-    button.title = "Toggle Fullscreen";
-    setIcon(button, "faExpand");
-    button.addEventListener("click", () => {
+    const button2 = document.createElement("button");
+    button2.type = "button";
+    button2.className = CLASS_ICON_BUTTON + " " + CLASS_FULLSCREEN;
+    button2.title = "Toggle Fullscreen";
+    setIcon(button2, "faExpand");
+    button2.addEventListener("click", () => {
       openMenu = null;
       if (document.fullscreenElement) document.exitFullscreen();
       else lightbox.requestFullscreen();
     });
-    return button;
+    return button2;
   }
   function closeButton() {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = CLASS_ICON_BUTTON + " " + CLASS_CLOSE;
-    button.title = "Close Lightbox";
-    setIcon(button, "faTimes");
-    button.addEventListener("click", () => {
+    const button2 = document.createElement("button");
+    button2.type = "button";
+    button2.className = CLASS_ICON_BUTTON + " " + CLASS_CLOSE;
+    button2.title = "Close Lightbox";
+    setIcon(button2, "faTimes");
+    button2.addEventListener("click", () => {
       openMenu = null;
       latest == null ? void 0 : latest.handlers.onClose();
     });
-    return button;
+    return button2;
   }
   function forgetOpenMenu() {
     openMenu = null;
   }
 
-  // src/reader/chapters.ts
-  var CHAPTERS_VERSION = 1;
-  function parseChapters(raw) {
-    if (!raw) return null;
-    let stored = null;
-    try {
-      stored = JSON.parse(raw);
-    } catch {
-      return null;
-    }
-    if (!stored || typeof stored !== "object") return null;
-    if (stored.v !== CHAPTERS_VERSION) return null;
-    if (!Array.isArray(stored.chapters)) return null;
-    const chapters = [];
-    for (const entry of stored.chapters) {
-      if (!entry || typeof entry !== "object") continue;
-      const row2 = entry;
-      if (!Array.isArray(row2.images)) continue;
-      const images = [];
-      for (const id of row2.images) {
-        if (typeof id === "string" || typeof id === "number") {
-          images.push(String(id));
-        }
-      }
-      chapters.push({
-        title: typeof row2.title === "string" ? row2.title : "",
-        images
-      });
-    }
-    return chapters;
-  }
-  function chaptersFromStash(rows, pathIds) {
-    if (!Array.isArray(rows)) return [];
-    const starts = [];
-    for (const row2 of rows) {
-      const index = Number(row2 == null ? void 0 : row2.image_index);
-      if (!Number.isInteger(index) || index < 1 || index > pathIds.length)
-        continue;
-      starts.push({
-        title: typeof (row2 == null ? void 0 : row2.title) === "string" ? row2.title : "",
-        index
-      });
-    }
-    starts.sort((a, b) => a.index - b.index);
-    return starts.map((start2, i) => {
-      const next = starts[i + 1];
-      const end = next ? next.index - 1 : pathIds.length;
-      return {
-        title: start2.title,
-        images: pathIds.slice(start2.index - 1, end)
-      };
-    });
-  }
-  function placeChapters(chapters, pages) {
-    const position = /* @__PURE__ */ new Map();
-    for (let i = 0; i < pages.length; i++) {
-      if (!position.has(pages[i].id)) position.set(pages[i].id, i);
-    }
-    const placed = [];
-    for (const chapter of chapters) {
-      let at = -1;
-      for (const id of chapter.images) {
-        const index = position.get(id);
-        if (index !== void 0 && (at < 0 || index < at)) at = index;
-      }
-      if (at < 0) continue;
-      placed.push({ title: chapter.title, images: chapter.images, at });
-    }
-    placed.sort((a, b) => a.at - b.at);
-    return placed;
-  }
-  function chapterAt(placed, pageId) {
-    for (const chapter of placed) {
-      if (chapter.images.includes(pageId)) return chapter;
-    }
-    return null;
-  }
-  NR.CHAPTERS_VERSION = CHAPTERS_VERSION;
-  NR.chapterAt = chapterAt;
-  NR.parseChapters = parseChapters;
-  NR.chaptersFromStash = chaptersFromStash;
-  NR.placeChapters = placeChapters;
-
-  // src/reader/stash-lightbox.ts
-  var SELECTOR_LIGHTBOX = ".Lightbox";
-  var SELECTOR_DISPLAY = ".Lightbox-display";
-  var SELECTOR_CAROUSEL = ".Lightbox-carousel";
-  var CLASS_NAVBUTTON = "Lightbox-navbutton";
-  var CLASS_LOADING = "LoadingIndicator";
-  function parseIndicator(text2) {
-    const match = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(text2);
-    if (!match) return null;
-    const current2 = Number(match[1]);
-    const total = Number(match[2]);
-    if (!total || current2 < 1 || current2 > total) return null;
-    return { current: current2, total };
-  }
-  function galleryIdFromPath(pathname) {
-    const match = /^\/galleries\/(\d+)/.exec(pathname);
-    return match ? match[1] : null;
-  }
-  function inFullscreen(lightbox) {
-    const element = document.fullscreenElement;
-    return element ? lightbox.contains(element) : false;
-  }
-  function pressEscape() {
-    document.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Escape",
-        bubbles: true,
-        cancelable: true
-      })
-    );
-  }
-  function lightboxOrder(search) {
-    const params = new URLSearchParams(search || "");
-    const sort = params.get("sortby") || "path";
-    const direction = params.get("sortdir");
-    return {
-      sort,
-      direction: direction === "desc" || direction === null && sort === "date" ? "DESC" : "ASC"
-    };
-  }
-  var GALLERY_QUERY_TEXT = [
-    "query MangaReaderGallery($galleryId: ID!, $sort: String, $direction: SortDirectionEnum, $withPathIds: Boolean!) {",
-    "  configuration {",
-    "    interface {",
-    "      language",
-    "    }",
-    "  }",
-    "  findGallery(id: $galleryId) {",
-    "    id",
-    "    custom_fields",
-    "    chapters {",
-    "      title",
-    "      image_index",
-    "    }",
-    "  }",
-    "  pages: findImages(",
-    "    image_filter: { galleries: { value: [$galleryId], modifier: INCLUDES } }",
-    "    filter: { per_page: -1, sort: $sort, direction: $direction }",
-    "  ) {",
-    "    images {",
-    "      id",
-    "      title",
-    "      visual_files {",
-    "        __typename",
-    "        ... on VideoFile {",
-    "          path",
-    "          video_codec",
-    "        }",
-    "        ... on ImageFile {",
-    "          path",
-    "          width",
-    "          height",
-    "        }",
-    "      }",
-    "      paths {",
-    "        image",
-    "      }",
-    "      galleries {",
-    "        id",
-    "        title",
-    "        folder {",
-    "          path",
-    "        }",
-    "      }",
-    "    }",
-    "  }",
-    "  byPath: findImages(",
-    "    image_filter: { galleries: { value: [$galleryId], modifier: INCLUDES } }",
-    '    filter: { per_page: -1, sort: "path", direction: ASC }',
-    "  ) @include(if: $withPathIds) {",
-    "    images {",
-    "      id",
-    "    }",
-    "  }",
-    "}"
-  ].join("\n");
-  var galleryQuery = null;
-  function carouselImage(lightbox) {
-    var _a2, _b2;
-    const carousel = lightbox.querySelector(
-      SELECTOR_CAROUSEL
-    );
-    if (!carousel) return null;
-    const offset2 = /^(-?\d+(?:\.\d+)?)vw$/.exec(((_a2 = carousel.style) == null ? void 0 : _a2.left) || "");
-    if (!offset2) return null;
-    const at = Math.round(-Number(offset2[1]) / 100);
-    if (!Number.isFinite(at) || at < 0) return null;
-    const slide = carousel.children[at];
-    const media = (slide == null ? void 0 : slide.querySelector("img")) || (slide == null ? void 0 : slide.querySelector("video"));
-    const src = (media == null ? void 0 : media.src) || "";
-    const id = (_b2 = /\/image\/([^/]+)\//.exec(src)) == null ? void 0 : _b2[1];
-    if (!id) return null;
-    return { at, id };
-  }
-  async function fetchGallery(galleryId2, order) {
-    var _a2, _b2, _c, _d, _e, _f, _g;
-    if (!galleryQuery) {
-      galleryQuery = gqlDoc(GALLERY_QUERY_TEXT, "build the gallery query");
-    }
-    const query = galleryQuery;
-    if (!query) throw new Error("[mangaReader] no gallery query document");
-    const pathIdsNeeded = order.sort !== "path";
-    const data = await requirePluginApi().utils.StashService.getClient().query({
-      query,
-      variables: {
-        galleryId: galleryId2,
-        sort: order.sort,
-        direction: order.direction,
-        withPathIds: pathIdsNeeded
-      },
-      fetchPolicy: "no-cache"
-    }).then((res) => res == null ? void 0 : res.data);
-    const pages = (((_a2 = data == null ? void 0 : data.pages) == null ? void 0 : _a2.images) || []).map((image) => {
-      var _a3;
-      const file = (image.visual_files || []).find(
-        (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
-      );
-      return {
-        id: String(image.id),
-        width: (file == null ? void 0 : file.width) || 0,
-        height: (file == null ? void 0 : file.height) || 0,
-        // Stash's own URL for the image, kept for the query on it — which is a
-        // version stamp, and is the whole reason this field is fetched at all. See
-        // pageUrl in takeover.ts.
-        url: ((_a3 = image.paths) == null ? void 0 : _a3.image) || ""
-      };
-    });
-    const images = (((_b2 = data == null ? void 0 : data.pages) == null ? void 0 : _b2.images) || []).map((image) => {
-      var _a3, _b3, _c2, _d2, _e2;
-      const files = image.visual_files || [];
-      const sized = files.find(
-        (f) => typeof (f == null ? void 0 : f.width) === "number" && typeof (f == null ? void 0 : f.height) === "number"
-      );
-      const file = files[0];
-      return {
-        id: String(image.id),
-        // Passed through as it came: Stash's lightbox shows a title when there is one
-        // and the file's name when there is not, and telling it which is which is the
-        // whole of this plugin's part in that.
-        title: String((_a3 = image.title) != null ? _a3 : ""),
-        paths: { image: ((_b3 = image.paths) == null ? void 0 : _b3.image) || "" },
-        visual_files: [
-          {
-            __typename: String(
-              (sized == null ? void 0 : sized.__typename) || (file == null ? void 0 : file.__typename) || "ImageFile"
-            ),
-            path: String((_d2 = (_c2 = sized == null ? void 0 : sized.path) != null ? _c2 : file == null ? void 0 : file.path) != null ? _d2 : ""),
-            video_codec: (_e2 = sized == null ? void 0 : sized.video_codec) != null ? _e2 : file == null ? void 0 : file.video_codec,
-            width: (sized == null ? void 0 : sized.width) || 0,
-            height: (sized == null ? void 0 : sized.height) || 0
-          }
-        ],
-        // As they came, and always a list: Stash asks whether there are any, so an image
-        // with none and an image nobody asked about have to look the same to it.
-        galleries: (image.galleries || []).map((gallery) => {
-          var _a4, _b4;
-          return {
-            id: String(gallery.id),
-            title: String((_a4 = gallery.title) != null ? _a4 : ""),
-            folder: gallery.folder ? { path: String((_b4 = gallery.folder.path) != null ? _b4 : "") } : null
-          };
-        })
-      };
-    });
-    return {
-      language: ((_d = (_c = data == null ? void 0 : data.configuration) == null ? void 0 : _c.interface) == null ? void 0 : _d.language) || null,
-      pages,
-      images,
-      customFields: ((_e = data == null ? void 0 : data.findGallery) == null ? void 0 : _e.custom_fields) || {},
-      stashChapters: ((_f = data == null ? void 0 : data.findGallery) == null ? void 0 : _f.chapters) || [],
-      pathIds: pathIdsNeeded ? (((_g = data == null ? void 0 : data.byPath) == null ? void 0 : _g.images) || []).map((image) => String(image.id)) : null
-    };
-  }
-  NR.parseIndicator = parseIndicator;
-  NR.galleryIdFromPath = galleryIdFromPath;
-  NR.lightboxOrder = lightboxOrder;
-  function lightboxIsLoading(lightbox) {
-    return lightbox.querySelector("." + CLASS_LOADING) !== null;
-  }
-  NR.carouselImage = carouselImage;
-  NR.lightboxIsLoading = lightboxIsLoading;
-
   // src/reader/chapters-tab.ts
   var SEL_PANEL = ".container";
   var HIDDEN2 = "data-manga-reader-hidden";
+  var IMPORT_ID = "manga-reader-chapters-import";
   var renderedFor = "";
   var inHand = null;
+  var control = null;
+  var controlState = null;
+  var controlFor = null;
+  var busy = false;
+  var confirming = false;
   function syncChaptersTab() {
     const id = galleryIdFromPath(window.location.pathname);
     if (!id) {
@@ -1270,8 +1429,20 @@
       renderedFor = "";
       fetchGallery(id, { sort: "path", direction: "ASC" }).then((answer) => {
         if (galleryIdFromPath(window.location.pathname) !== id) return;
-        const chapters = placeChapters(chaptersOf(answer), answer.pages);
-        inHand = { id, images: answer.images, chapters };
+        const pageIds = answer.pages.map((page) => page.id);
+        const own = chaptersOf(answer);
+        inHand = {
+          id,
+          images: answer.images,
+          chapters: placeChapters(own.chapters, answer.pages),
+          // The list an import would write, which is the same translation the tab
+          // is showing for a gallery that has no list of this plugin's own.
+          // Computed from the rows rather than from what is on screen: it is what
+          // would be *written*, so it cannot depend on how the screen is ordered.
+          importable: chaptersFromStash(answer.stashChapters, pageIds),
+          own: own.own,
+          locale: answer.language
+        };
         syncChaptersTab();
       }).catch((e) => {
         console.error(
@@ -1285,11 +1456,14 @@
     const own = parseChapters(
       NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null
     );
-    if (own) return own;
-    return chaptersFromStash(
-      answer.stashChapters,
-      answer.pages.map((page) => page.id)
-    );
+    if (own) return { chapters: own, own: true };
+    return {
+      chapters: chaptersFromStash(
+        answer.stashChapters,
+        answer.pages.map((page) => page.id)
+      ),
+      own: false
+    };
   }
   function findPanel() {
     const panels = document.querySelectorAll(SEL_PANEL);
@@ -1305,16 +1479,130 @@
   function render(panel2, gallery) {
     const key = [
       gallery.id,
+      gallery.own ? "own" : "none",
+      String(gallery.importable.length),
+      busy ? "busy" : confirming ? "confirm" : "idle",
       ...gallery.chapters.map((c) => c.title + "@" + c.at)
     ].join("|");
     if (key === renderedFor && panel2.childElementCount > 0) return;
     renderedFor = key;
-    const button = panel2.previousElementSibling;
-    if (button) button.setAttribute(HIDDEN2, "");
+    const button2 = panel2.previousElementSibling;
+    if (button2) button2.setAttribute(HIDDEN2, "");
     panel2.textContent = "";
     for (const chapter of gallery.chapters) {
       panel2.appendChild(row(gallery, chapter));
     }
+    drawImport(panel2, gallery);
+  }
+  function drawImport(panel2, gallery) {
+    if (gallery.importable.length === 0) {
+      control == null ? void 0 : control.remove();
+      control = null;
+      controlState = null;
+      controlFor = null;
+      confirming = false;
+      return;
+    }
+    if ((controlFor == null ? void 0 : controlFor.id) !== gallery.id) confirming = false;
+    controlFor = {
+      id: gallery.id,
+      importable: gallery.importable,
+      own: gallery.own
+    };
+    if (!control) {
+      control = document.createElement("div");
+      control.id = IMPORT_ID;
+      control.className = "manga-reader-chapters-import";
+    }
+    const place3 = panel2.parentNode;
+    if (place3 && control.parentNode !== place3) {
+      place3.insertBefore(control, panel2.nextElementSibling);
+    }
+    const state = busy ? "busy" : confirming ? "confirm" : "offer";
+    if (state !== controlState) {
+      controlState = state;
+      control.textContent = "";
+      buildControl(control, gallery.locale, state);
+    }
+  }
+  function buildControl(box, locale, state) {
+    if (state === "confirm") {
+      const warning = document.createElement("div");
+      warning.className = "manga-reader-chapters-import-warning";
+      warning.textContent = stringFor(locale, "mangaReader.reimportWarning");
+      box.appendChild(warning);
+      box.appendChild(
+        button("btn btn-danger btn-sm", "mangaReader.reimportReplace", () => {
+          confirming = false;
+          importChapters();
+        })
+      );
+      box.appendChild(
+        button("btn btn-secondary btn-sm", "mangaReader.reimportCancel", () => {
+          confirming = false;
+          redraw2();
+        })
+      );
+      return;
+    }
+    const wording = state === "busy" ? "mangaReader.importingChapters" : (controlFor == null ? void 0 : controlFor.own) ? "mangaReader.reimportChapters" : "mangaReader.importChapters";
+    const offer = button("btn btn-secondary btn-sm", wording, askToImport);
+    offer.disabled = state === "busy";
+    box.appendChild(offer);
+  }
+  function button(className, wording, onClick) {
+    const node = document.createElement("button");
+    node.type = "button";
+    node.className = className;
+    node.textContent = stringFor(inHand == null ? void 0 : inHand.locale, wording);
+    node.addEventListener("click", onClick);
+    return node;
+  }
+  function askToImport() {
+    if (!controlFor || busy) return;
+    if (controlFor.own) {
+      confirming = true;
+      redraw2();
+      return;
+    }
+    importChapters();
+  }
+  function importChapters() {
+    const target2 = controlFor;
+    if (!target2 || busy) return;
+    if (typeof NS.importChapters !== "function") {
+      console.error(
+        "[mangaReader] the tools half is not running, so this gallery's chapters cannot be written"
+      );
+      return;
+    }
+    busy = true;
+    redraw2();
+    NS.importChapters(target2.id, serializeChapters(target2.importable)).then(
+      () => {
+        busy = false;
+        if ((inHand == null ? void 0 : inHand.id) === target2.id) {
+          inHand.own = true;
+          inHand.importable = target2.importable;
+        }
+        confirming = false;
+        redraw2();
+      },
+      (e) => {
+        busy = false;
+        confirming = false;
+        console.error(
+          "[mangaReader] could not import this gallery's chapters:",
+          e
+        );
+        redraw2();
+      }
+    );
+  }
+  function redraw2() {
+    if (!inHand) return;
+    const panel2 = control == null ? void 0 : control.previousElementSibling;
+    if (panel2) render(panel2, inHand);
   }
   function row(gallery, chapter) {
     const wrap = document.createElement("div");
@@ -1322,27 +1610,31 @@
     wrap.appendChild(rule);
     const line = document.createElement("div");
     line.className = "row";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn btn-link";
+    const button2 = document.createElement("button");
+    button2.type = "button";
+    button2.className = "btn btn-link";
     const label2 = document.createElement("div");
     label2.className = "row";
     label2.textContent = (chapter.title.length > 0 ? chapter.title + " - #" : "#") + (chapter.at + 1);
-    button.appendChild(label2);
-    button.addEventListener("click", () => {
+    button2.appendChild(label2);
+    button2.addEventListener("click", () => {
       takeOver({
         images: gallery.images,
         totalCount: gallery.images.length,
         at: chapter.at
       });
     });
-    line.appendChild(button);
+    line.appendChild(button2);
     wrap.appendChild(line);
     return wrap;
   }
   function forgetChaptersTab() {
     inHand = null;
     renderedFor = "";
+    control = null;
+    controlState = null;
+    controlFor = null;
+    confirming = false;
   }
 
   // src/reader/footer.ts
@@ -1565,7 +1857,7 @@
       chapter,
       fraction: Number(((_c = tick.dataset) == null ? void 0 : _c.fraction) || 0)
     });
-    redraw2();
+    redraw3();
   }
   function onLeaveTrack() {
     if (!pressed) takeBubbleDown();
@@ -1583,7 +1875,7 @@
     if (!bubble) return;
     bubble = null;
     bar == null ? void 0 : bar.classList.remove(CLASS_SHOWING);
-    redraw2();
+    redraw3();
   }
   function wake() {
     if (!bar) return;
@@ -1628,7 +1920,7 @@
       lastJump = Date.now();
       setBubble({ page: "", chapter: ((_c = tick.dataset) == null ? void 0 : _c.name) || "", fraction });
       latest2 == null ? void 0 : latest2.handlers.onSeek(target);
-      redraw2();
+      redraw3();
     } else {
       bubble = null;
       scrubTo(fractionAt(press.clientX));
@@ -1656,7 +1948,7 @@
       chapter: (latest2 == null ? void 0 : latest2.chapterNameAt(target)) || "",
       fraction
     });
-    redraw2();
+    redraw3();
     if (!latest2 || target === latest2.at) return;
     const since = Date.now() - lastJump;
     if (pending !== null) {
@@ -1684,9 +1976,9 @@
     pointer = null;
     latest2 == null ? void 0 : latest2.handlers.onSeek(wanted2);
     takeBubbleDown();
-    redraw2();
+    redraw3();
   }
-  function redraw2() {
+  function redraw3() {
     if (latest2) update2(latest2);
   }
 
@@ -2300,9 +2592,9 @@
     place2 = Math.min(Math.max(at, 0), gallery.pages.length - 1);
     sync(lightbox);
   }
-  function navIcon(button) {
+  function navIcon(button2) {
     var _a2;
-    for (const child of Array.from(button.children)) {
+    for (const child of Array.from(button2.children)) {
       const name = (_a2 = child.dataset) == null ? void 0 : _a2.icon;
       if (name) return name;
     }
@@ -3901,6 +4193,7 @@
   var MANGA_FIELD_NAME = NS.MANGA_FIELD_NAME;
   var TRANSLATION_GROUP_FIELD_NAME = NS.TRANSLATION_GROUP_FIELD_NAME;
   var ORIGINAL_FIELD_NAME = NS.ORIGINAL_FIELD_NAME;
+  var CHAPTER_FIELD_NAME = NS.CHAPTER_FIELD_NAME;
   var PLUGIN_ID = "mangaTools";
   var EDIT_ANCHOR = '.form-group[data-field="studio_id"]';
   var BULK_ANCHOR = '[data-field="studio"]';
@@ -4277,9 +4570,9 @@
   }
   var toolbarHost = null;
   function ensureToolbarHost() {
-    const button = document.querySelector(".gallery-toolbar .organized-button");
-    if (!button) return toolbarHost;
-    const anchor = (button == null ? void 0 : button.parentNode) || null;
+    const button2 = document.querySelector(".gallery-toolbar .organized-button");
+    if (!button2) return toolbarHost;
+    const anchor = (button2 == null ? void 0 : button2.parentNode) || null;
     if (!(anchor == null ? void 0 : anchor.parentNode)) {
       toolbarHost = null;
       return null;
@@ -4318,13 +4611,131 @@
     var _a2;
     return (_a2 = store == null ? void 0 : store.has(String(galleryId2))) != null ? _a2 : false;
   }
-  function ConfirmUnmark(props) {
-    const intl = PluginApi5.libraries.Intl.useIntl();
+  function ConfirmDialog(props) {
     const Bootstrap = PluginApi5.libraries.Bootstrap;
     const Modal = Bootstrap == null ? void 0 : Bootstrap.Modal;
     const Button = Bootstrap == null ? void 0 : Bootstrap.Button;
     if (!Modal || !Button || !Modal.Body || !Modal.Footer) return null;
-    return /* @__PURE__ */ React5.createElement(Modal, { show: true, size: "sm", onHide: props.onCancel }, /* @__PURE__ */ React5.createElement(Modal.Body, null, /* @__PURE__ */ React5.createElement("div", null, t(intl, "mangaTools.manga.confirm")), props.resetsForm ? /* @__PURE__ */ React5.createElement("div", null, t(intl, "mangaTools.manga.confirmResetsForm")) : null), /* @__PURE__ */ React5.createElement(Modal.Footer, null, /* @__PURE__ */ React5.createElement(Button, { variant: "secondary", onClick: props.onCancel }, t(intl, "mangaTools.manga.confirmCancel")), /* @__PURE__ */ React5.createElement(Button, { variant: "danger", onClick: props.onConfirm }, t(intl, "mangaTools.manga.confirmOk"))));
+    return /* @__PURE__ */ React5.createElement(Modal, { show: true, size: "sm", onHide: props.onCancel }, /* @__PURE__ */ React5.createElement(Modal.Body, null, props.children), /* @__PURE__ */ React5.createElement(Modal.Footer, null, /* @__PURE__ */ React5.createElement(Button, { variant: "secondary", onClick: props.onCancel }, props.cancelLabel), /* @__PURE__ */ React5.createElement(Button, { variant: props.variant, onClick: props.onConfirm }, props.confirmLabel)));
+  }
+  function ConfirmUnmark(props) {
+    const intl = PluginApi5.libraries.Intl.useIntl();
+    return /* @__PURE__ */ React5.createElement(
+      ConfirmDialog,
+      {
+        variant: "danger",
+        confirmLabel: t(intl, "mangaTools.manga.confirmOk"),
+        cancelLabel: t(intl, "mangaTools.manga.confirmCancel"),
+        onCancel: props.onCancel,
+        onConfirm: props.onConfirm
+      },
+      /* @__PURE__ */ React5.createElement("div", null, t(intl, "mangaTools.manga.confirm")),
+      props.resetsForm ? /* @__PURE__ */ React5.createElement("div", null, t(intl, "mangaTools.manga.confirmResetsForm")) : null
+    );
+  }
+  var chapterJob = { phase: "idle" };
+  function readerChapters() {
+    const reader = window.MangaReader;
+    if (!reader || typeof reader.planChapterImports !== "function" || typeof reader.runChapterImports !== "function") {
+      return null;
+    }
+    return reader;
+  }
+  function ChapterImportSetting(props) {
+    const intl = props.intl;
+    const Bootstrap = PluginApi5.libraries.Bootstrap;
+    const Button = Bootstrap == null ? void 0 : Bootstrap.Button;
+    const job = chapterJob;
+    function plan() {
+      const reader = readerChapters();
+      if (!reader) {
+        console.error(
+          "[mangaTools] the reader half is not running, so its chapter import cannot be asked for"
+        );
+        return;
+      }
+      chapterJob = { phase: "planning" };
+      emit();
+      reader.planChapterImports().then(
+        (next) => {
+          chapterJob = next.toImport.length > 0 || next.owned.length > 0 ? { phase: "confirming", plan: next, replace: false } : { phase: "done", outcome: emptyRun() };
+          emit();
+        },
+        (e) => {
+          console.error("[mangaTools] could not work out what to import:", e);
+          chapterJob = { phase: "idle" };
+          emit();
+        }
+      );
+    }
+    function run(plan2, replace) {
+      const reader = readerChapters();
+      if (!reader) return;
+      const total = replace ? plan2.toImport.length + plan2.owned.length : plan2.toImport.length;
+      chapterJob = { phase: "running", plan: plan2, replace, done: 0, total };
+      emit();
+      reader.runChapterImports(plan2, {
+        reimport: replace,
+        onProgress: (done, total2) => {
+          chapterJob = { phase: "running", plan: plan2, replace, done, total: total2 };
+          emit();
+        }
+      }).then(
+        (outcome) => {
+          chapterJob = { phase: "done", outcome };
+          emit();
+        },
+        (e) => {
+          console.error("[mangaTools] the chapter import did not finish:", e);
+          chapterJob = { phase: "idle" };
+          emit();
+        }
+      );
+    }
+    if (!Button) return null;
+    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React5.createElement("h3", null, t(intl, "mangaTools.settings.chapters.heading")), /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.chapters.description")), /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-control" }, job.phase === "running" ? /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-settings-progress" }, t(intl, "mangaTools.settings.chapters.progress"), " ", job.done, " ", t(intl, "mangaTools.settings.chapters.of"), " ", job.total) : /* @__PURE__ */ React5.createElement(
+      Button,
+      {
+        variant: "secondary",
+        disabled: job.phase === "planning",
+        onClick: plan
+      },
+      t(
+        intl,
+        job.phase === "planning" ? "mangaTools.settings.chapters.checking" : "mangaTools.settings.chapters.check"
+      )
+    )), job.phase === "done" ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.chapters.progress"), " ", job.outcome.written.length, " \xB7", " ", t(intl, "mangaTools.settings.chapters.skipped"), " ", job.outcome.skippedEmpty.length, " \xB7", " ", t(intl, "mangaTools.settings.chapters.failed"), " ", job.outcome.failed.length) : null)), job.phase === "confirming" ? /* @__PURE__ */ React5.createElement(
+      ConfirmDialog,
+      {
+        variant: "danger",
+        confirmLabel: t(intl, "mangaTools.settings.chapters.start"),
+        cancelLabel: t(intl, "mangaTools.manga.confirmCancel"),
+        onCancel: () => {
+          chapterJob = { phase: "idle" };
+          emit();
+        },
+        onConfirm: () => run(job.plan, job.replace)
+      },
+      /* @__PURE__ */ React5.createElement("div", null, t(intl, "mangaTools.settings.chapters.toImport"), " ", job.plan.toImport.length, " \xB7", " ", t(intl, "mangaTools.settings.chapters.owned"), " ", job.plan.owned.length),
+      /* @__PURE__ */ React5.createElement("label", { className: "manga-tools-settings-check" }, /* @__PURE__ */ React5.createElement(
+        "input",
+        {
+          type: "checkbox",
+          checked: job.replace,
+          onChange: () => {
+            chapterJob = {
+              phase: "confirming",
+              plan: job.plan,
+              replace: !job.replace
+            };
+            emit();
+          }
+        }
+      ), " ", t(intl, "mangaTools.settings.chapters.replace"))
+    ) : null);
+  }
+  function emptyRun() {
+    return { written: [], failed: [], skippedEmpty: [] };
   }
   var editForm = null;
   function editFormFor(galleryId2) {
@@ -4372,15 +4783,38 @@
       variables: { input: { id: galleryId2, custom_fields: fields } }
     });
   }
+  NS.importChapters = (galleryId2, json) => {
+    const current2 = store == null ? void 0 : store.get(galleryId2);
+    if (current2) {
+      store == null ? void 0 : store.set(galleryId2, NS.setField(current2, CHAPTER_FIELD_NAME, json));
+    }
+    const form = editFormFor(galleryId2);
+    if (form) {
+      form.onChange(NS.setField(form.values, CHAPTER_FIELD_NAME, json));
+    }
+    emit();
+    return writeQuietly(galleryId2, {
+      partial: { [CHAPTER_FIELD_NAME]: json }
+    }).then(
+      () => {
+        refreshAfterWrite();
+      },
+      (e) => {
+        console.error("[mangaTools] could not write this gallery's chapters:", e);
+        refreshAfterWrite();
+        throw e;
+      }
+    );
+  };
   function GalleryToolbar(props) {
     useGlobalVersion();
     useAfterMount();
     const intl = PluginApi5.libraries.Intl.useIntl();
     const busyState = React5.useState(false);
-    const busy = busyState[0];
+    const busy2 = busyState[0];
     const setBusy = busyState[1];
     const confirmState = React5.useState(false);
-    const confirming = confirmState[0];
+    const confirming2 = confirmState[0];
     const setConfirming = confirmState[1];
     const host = ensureToolbarHost();
     if (!host) return null;
@@ -4458,11 +4892,11 @@
             marked ? "mangaTools.manga.marked" : "mangaTools.manga.mark"
           ),
           "aria-pressed": marked,
-          disabled: busy,
+          disabled: busy2,
           onClick: onToggle
         },
         /* @__PURE__ */ React5.createElement(MangaIcon, null)
-      ), confirming ? /* @__PURE__ */ React5.createElement(
+      ), confirming2 ? /* @__PURE__ */ React5.createElement(
         ConfirmUnmark,
         {
           onCancel: () => setConfirming(false),
@@ -4505,12 +4939,12 @@
   function readNativeFieldClasses(anchor) {
     if (!anchor) return null;
     const label2 = anchor.querySelector("label");
-    const control = label2 == null ? void 0 : label2.nextElementSibling;
-    if (!label2 || !control) return null;
+    const control2 = label2 == null ? void 0 : label2.nextElementSibling;
+    if (!label2 || !control2) return null;
     return {
       group: anchor.className,
       label: label2.className,
-      control: control.className
+      control: control2.className
     };
   }
   function MangaFieldBlock(props) {
@@ -4870,7 +5304,7 @@
           persist();
         }
       }
-    ), /* @__PURE__ */ React5.createElement(
+    ), /* @__PURE__ */ React5.createElement(ChapterImportSetting, { intl }), /* @__PURE__ */ React5.createElement(
       BooleanSetting,
       {
         id: "mangaTools-hidePerformers",
