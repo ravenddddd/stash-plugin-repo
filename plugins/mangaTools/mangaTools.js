@@ -1398,6 +1398,8 @@
   var lastJump = 0;
   var pending = null;
   var idle = null;
+  var lastWidth = 0;
+  var owed = false;
   function ensureProgress(lightbox, state) {
     latest2 = state;
     if (!lightbox.querySelector(".Lightbox-footer")) return bar;
@@ -1468,8 +1470,9 @@
     if (!drawn || drawn.nodes !== key || drawn.total !== state.total) {
       drawNodes(state);
     }
-    if (state.width > 0) {
-      const wanted2 = Math.round(state.width) + "px";
+    if (state.width > 0) lastWidth = state.width;
+    if (!pressed && lastWidth > 0) {
+      const wanted2 = Math.round(lastWidth) + "px";
       if (track.style.width !== wanted2) track.style.width = wanted2;
     }
     const settled = fractionOfPage(state.at, state.total);
@@ -1495,6 +1498,10 @@
       ) + "px";
       if (label.style.left !== px) label.style.left = px;
     }
+    if (owed && state.width > 0) {
+      owed = false;
+      wake();
+    }
     const moved = drawn !== null && (drawn.at !== state.at || drawn.total !== state.total);
     drawn = { nodes: key, at: state.at, total: state.total };
     if (moved && !pressed) takeBubbleDown();
@@ -1507,13 +1514,8 @@
       const tick = document.createElement("div");
       tick.className = CLASS_NODE;
       tick.style.left = (node.fraction * 100).toFixed(3) + "%";
-      tick.addEventListener("mousedown", (event) => event.stopPropagation());
-      tick.addEventListener("click", (event) => {
-        event.stopPropagation();
-        latest2 == null ? void 0 : latest2.handlers.onSeek(node.at);
-        wake();
-      });
       tick.dataset.name = node.name;
+      tick.dataset.at = String(node.at);
       tick.dataset.fraction = String(node.fraction);
       nodes.appendChild(tick);
     }
@@ -1540,6 +1542,11 @@
   function onLeaveTrack() {
     if (!pressed) takeBubbleDown();
   }
+  function tickUnder(target2) {
+    var _a2;
+    const node = target2;
+    return ((_a2 = node == null ? void 0 : node.classList) == null ? void 0 : _a2.contains(CLASS_NODE)) ? node : null;
+  }
   function setBubble(next) {
     bubble = next;
     bar == null ? void 0 : bar.classList.add(CLASS_SHOWING);
@@ -1552,6 +1559,11 @@
   }
   function wake() {
     if (!bar) return;
+    if (lastWidth <= 0) {
+      bar.classList.add(CLASS_IDLE);
+      owed = true;
+      return;
+    }
     bar.classList.remove(CLASS_IDLE);
     if (idle !== null) window.clearTimeout(idle);
     idle = window.setTimeout(() => {
@@ -1573,14 +1585,24 @@
     return Math.min(Math.max((clientX - rect.left) / width, 0), 1);
   }
   function onPress(event) {
+    var _a2, _b2;
     const press = event;
     if (press.button !== 0 || !track) return;
     press.preventDefault();
     press.stopPropagation();
     pressed = true;
     bar == null ? void 0 : bar.classList.add(CLASS_SCRUBBING);
-    bubble = null;
-    scrubTo(fractionAt(press.clientX));
+    const tick = tickUnder(press.target);
+    if (tick) {
+      target = Number(((_a2 = tick.dataset) == null ? void 0 : _a2.at) || 0);
+      pointer = Number(((_b2 = tick.dataset) == null ? void 0 : _b2.fraction) || 0);
+      lastJump = Date.now();
+      latest2 == null ? void 0 : latest2.handlers.onSeek(target);
+      redraw2();
+    } else {
+      bubble = null;
+      scrubTo(fractionAt(press.clientX));
+    }
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onRelease);
   }
@@ -2160,6 +2182,9 @@
     galleryId = null;
     logged = false;
   }
+  function measureAgain() {
+    if (root) sync(root);
+  }
   function handOverChapters(lightbox, gallery) {
     if (!bridged()) return;
     if ((handedFor == null ? void 0 : handedFor.lightbox) === lightbox && handedFor.gallery === gallery.id)
@@ -2373,6 +2398,8 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("fullscreenchange", measureAgain);
+    window.addEventListener("resize", measureAgain);
     const api = requirePluginApi();
     if ((_a2 = api.Event) == null ? void 0 : _a2.addEventListener) {
       api.Event.addEventListener("stash:location", onLocation);
