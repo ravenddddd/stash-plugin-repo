@@ -1343,7 +1343,7 @@
 
   // src/reader/progress.ts
   var PROGRESS_SCRUB_MS = 120;
-  var PROGRESS_IDLE_MS = 2500;
+  var PROGRESS_IDLE_MS = 2e3;
   function fractionOfPage(page, total) {
     if (total <= 1) return 0;
     return Math.min(Math.max(page, 0), total - 1) / total;
@@ -1374,6 +1374,8 @@
   var CLASS_READ = "manga-reader-progress-read";
   var CLASS_THUMB = "manga-reader-progress-thumb";
   var CLASS_NODES = "manga-reader-progress-nodes";
+  var CLASS_PAGE_WORDS = "manga-reader-progress-page";
+  var CLASS_CHAPTER_WORDS = "manga-reader-progress-chapter";
   var CLASS_NODE = "manga-reader-progress-node";
   var CLASS_LABEL = "manga-reader-progress-label";
   var CLASS_SCRUBBING = "is-scrubbing";
@@ -1385,9 +1387,12 @@
   var read = null;
   var thumb = null;
   var label = null;
+  var labelPage = null;
+  var labelChapter = null;
   var nodes = null;
   var drawn = null;
   var labelWidth = 0;
+  var naming = null;
   var pointer = null;
   var target = 0;
   var lastJump = 0;
@@ -1416,15 +1421,22 @@
     nodes = null;
     drawn = null;
     latest2 = null;
+    naming = null;
     pointer = null;
     pressed = false;
     labelWidth = 0;
   }
   function build(lightbox) {
     bar = document.createElement("div");
-    bar.className = CLASS_BAR;
+    bar.className = CLASS_BAR + " " + CLASS_IDLE;
     label = document.createElement("div");
     label.className = CLASS_LABEL;
+    labelPage = document.createElement("div");
+    labelPage.className = CLASS_PAGE_WORDS;
+    labelChapter = document.createElement("div");
+    labelChapter.className = CLASS_CHAPTER_WORDS;
+    label.appendChild(labelPage);
+    label.appendChild(labelChapter);
     track = document.createElement("div");
     track.className = CLASS_TRACK;
     read = document.createElement("div");
@@ -1464,18 +1476,25 @@
     if (read.style.width !== where) read.style.width = where;
     if (thumb.style.left !== where) thumb.style.left = where;
     const page = pointer === null ? state.at : target;
-    const name2 = state.chapterNameAt(page);
-    const words = page + 1 + " / " + state.total + (name2 ? " \xB7 " + name2 : "");
-    if (label.textContent !== words) {
-      label.textContent = words;
+    const words = naming ? { page: "", chapter: naming.words } : {
+      page: page + 1 + " / " + state.total,
+      chapter: state.chapterNameAt(page)
+    };
+    const place3 = naming ? naming.fraction : null;
+    if ((labelPage == null ? void 0 : labelPage.textContent) !== words.page) {
+      if (labelPage) labelPage.textContent = words.page;
+      labelWidth = label.offsetWidth;
+    }
+    if ((labelChapter == null ? void 0 : labelChapter.textContent) !== words.chapter) {
+      if (labelChapter) labelChapter.textContent = words.chapter;
       labelWidth = label.offsetWidth;
     }
     const half = labelWidth / 2;
     const width = track.clientWidth || 0;
-    const left = Math.max(half, Math.min(fraction * width, width - half));
-    const px = left.toFixed(0) + "px";
+    const at = place3 === null ? fraction : place3;
+    const px = Math.max(half, Math.min(at * width, width - half)).toFixed(0) + "px";
     if (label.style.left !== px) label.style.left = px;
-    const moved = !drawn || drawn.at !== state.at || drawn.total !== state.total;
+    const moved = drawn !== null && (drawn.at !== state.at || drawn.total !== state.total);
     drawn = { nodes: key, at: state.at, total: state.total };
     if (moved) wake();
   }
@@ -1500,7 +1519,10 @@
     wake();
   }
   function onLeave() {
+    if (!naming) return;
+    naming = null;
     bar == null ? void 0 : bar.classList.remove(CLASS_NAMING);
+    redraw2();
   }
   function wake() {
     if (!bar) return;
@@ -1518,15 +1540,10 @@
     pending = null;
   }
   function name(words, fraction) {
-    if (!bar || !label || !track) return;
-    if (label.textContent !== words) {
-      label.textContent = words;
-      labelWidth = label.offsetWidth;
-    }
-    const half = labelWidth / 2;
-    const width = track.clientWidth || 0;
-    label.style.left = Math.max(half, Math.min(fraction * width, width - half)).toFixed(0) + "px";
+    if (!bar) return;
+    naming = { words, fraction };
     bar.classList.add(CLASS_NAMING);
+    redraw2();
   }
   var pressed = false;
   function fractionAt(clientX) {
