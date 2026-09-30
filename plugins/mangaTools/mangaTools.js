@@ -1384,7 +1384,7 @@
   var VIEW_STEP = 1.1;
   var VIEW_PAN_STEP = 75;
   var VIEW_SNAP = 0.015;
-  var VIEW_SLOP = 4;
+  var VIEW_CLICK_MS = 200;
   function fitView() {
     return { zoom: 1, x: 0, y: 0 };
   }
@@ -1402,18 +1402,8 @@
     const zoom = Math.abs(wanted2 - 1) < VIEW_SNAP ? 1 : wanted2;
     return { ...view2, zoom };
   }
-  function panned(view2, dx, dy, pages, box) {
-    return {
-      zoom: view2.zoom,
-      x: clamp(view2.x + dx, (view2.zoom * pages.width - box.width) / 2),
-      y: clamp(view2.y + dy, (view2.zoom * pages.height - box.height) / 2)
-    };
-  }
-  function clamp(value, limit) {
-    if (!Number.isFinite(value)) return 0;
-    const bound = Math.max(limit, 0);
-    if (!Number.isFinite(bound)) return 0;
-    return Math.min(Math.max(value, -bound), bound);
+  function panned(view2, dx, dy) {
+    return { zoom: view2.zoom, x: view2.x + dx, y: view2.y + dy };
   }
 
   // src/reader/takeover.ts
@@ -1701,7 +1691,7 @@
   NR.VIEW_MIN_ZOOM = VIEW_MIN_ZOOM;
   NR.VIEW_MAX_ZOOM = VIEW_MAX_ZOOM;
   NR.VIEW_STEP = VIEW_STEP;
-  NR.VIEW_SLOP = VIEW_SLOP;
+  NR.VIEW_CLICK_MS = VIEW_CLICK_MS;
   function fadeIn(element) {
     if (settings.fadeMs <= 0) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -1790,7 +1780,7 @@
     }
     view = fitView();
     pressed = null;
-    dragged = false;
+    held = false;
     if (root) {
       removeChrome(root);
       root.classList.remove(CLASS_TAKEOVER);
@@ -1910,8 +1900,8 @@
   function onSpreadClick(event) {
     const lightbox = root;
     if (!lightbox || !container) return;
-    if (dragged) {
-      dragged = false;
+    if (held) {
+      held = false;
       return;
     }
     const target = event.target;
@@ -1932,60 +1922,43 @@
   function onSpreadWheel(event) {
     if (!container) return;
     const wheel = event;
-    const box = boxOf(container);
-    const pages = contentOf(container);
     const up = wheel.deltaY < 0;
-    view = wheel.shiftKey ? panned(view, 0, up ? -VIEW_PAN_STEP : VIEW_PAN_STEP, pages, box) : panned(zoomed(view, up ? VIEW_STEP : 1 / VIEW_STEP), 0, 0, pages, box);
+    view = wheel.shiftKey ? panned(view, 0, up ? -VIEW_PAN_STEP : VIEW_PAN_STEP) : zoomed(view, up ? VIEW_STEP : 1 / VIEW_STEP);
     applyView();
     redrawChrome();
   }
   function onSpreadPress(event) {
     const press = event;
     if (press.button !== 0) return;
-    pressed = { x: press.clientX, y: press.clientY, moved: false };
-    dragged = false;
+    pressed = { x: press.clientX, y: press.clientY, at: press.timeStamp };
+    held = false;
     document.addEventListener("mousemove", onSpreadMove);
     document.addEventListener("mouseup", onSpreadRelease);
   }
   var pressed = null;
-  var dragged = false;
+  var held = false;
   function onSpreadMove(event) {
     if (!pressed || !container) return;
     const move = event;
     const dx = move.clientX - pressed.x;
     const dy = move.clientY - pressed.y;
-    if (!pressed.moved && Math.abs(dx) < VIEW_SLOP && Math.abs(dy) < VIEW_SLOP) {
-      return;
-    }
-    pressed.moved = true;
+    held = true;
     pressed.x = move.clientX;
     pressed.y = move.clientY;
-    view = panned(view, dx, dy, contentOf(container), boxOf(container));
+    view = panned(view, dx, dy);
     applyView();
   }
-  function onSpreadRelease() {
+  function onSpreadRelease(event) {
     document.removeEventListener("mousemove", onSpreadMove);
     document.removeEventListener("mouseup", onSpreadRelease);
-    if (pressed == null ? void 0 : pressed.moved) dragged = true;
+    const release = event;
+    if (pressed && release.timeStamp - pressed.at > VIEW_CLICK_MS) held = true;
     pressed = null;
   }
   function applyView() {
     if (!container) return;
     container.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
     container.classList.toggle(CLASS_ZOOMED, isZoomed(view));
-  }
-  function contentOf(host) {
-    let width = 0;
-    let height = 0;
-    for (const node of Array.from(host.querySelectorAll("img"))) {
-      const image = node;
-      width += image.offsetWidth || 0;
-      height = Math.max(height, image.offsetHeight || 0);
-    }
-    return { width, height };
-  }
-  function boxOf(host) {
-    return { width: host.clientWidth || 0, height: host.clientHeight || 0 };
   }
   function redrawChrome() {
     if (root) sync(root);
