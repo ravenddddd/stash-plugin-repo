@@ -557,9 +557,9 @@
 
   // src/reader/chapters-import.ts
   var CHAPTERS_QUERY_TEXT = [
-    "query MangaReaderChapterImports($field: String!, $perPage: Int!) {",
+    "query MangaReaderChapterImports($field: String!, $mark: Any!, $perPage: Int!) {",
     "  findGalleries(",
-    "    gallery_filter: { custom_fields: { value: [$field], modifier: EQUALS } }",
+    "    gallery_filter: { custom_fields: [{ field: $field, modifier: EQUALS, value: [$mark] }] }",
     "    filter: { per_page: $perPage }",
     "  ) {",
     "    count",
@@ -587,7 +587,11 @@
     if (!query) throw new Error("[mangaReader] no chapter import query document");
     const data = await requirePluginApi().utils.StashService.getClient().query({
       query,
-      variables: { field: NS.MANGA_FIELD_NAME, perPage: -1 },
+      variables: {
+        field: NS.MANGA_FIELD_NAME,
+        mark: NS.MANGA_VALUE,
+        perPage: -1
+      },
       fetchPolicy: "no-cache"
     }).then((res) => res == null ? void 0 : res.data);
     const galleries = ((_a2 = data == null ? void 0 : data.findGalleries) == null ? void 0 : _a2.galleries) || [];
@@ -641,6 +645,7 @@
     }
     return write(galleryId2, json);
   }
+  NR.CHAPTERS_QUERY_TEXT = CHAPTERS_QUERY_TEXT;
   NR.planChapterImports = planChapterImports;
   NR.runChapterImports = runChapterImports;
 
