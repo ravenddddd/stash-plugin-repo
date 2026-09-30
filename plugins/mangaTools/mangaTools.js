@@ -150,7 +150,7 @@
   NS.MANGA_FIELD_NAME = "plugin.mangaTools.manga";
   NS.TRANSLATION_GROUP_FIELD_NAME = "plugin.mangaTools.translationGroup";
   NS.translationGroupOf = (customFields) => NS.pickField(customFields, NS.TRANSLATION_GROUP_FIELD_NAME).trim();
-  NS.groupKey = (name2) => String(name2 != null ? name2 : "").trim().toLowerCase();
+  NS.groupKey = (name) => String(name != null ? name : "").trim().toLowerCase();
   NS.sameTranslationGroup = (a, b) => NS.groupKey(a) === NS.groupKey(b);
   NS.usualLanguageFor = (galleries, group) => {
     const key = NS.groupKey(group);
@@ -227,15 +227,15 @@
   NS.clearFields = (customFields) => {
     let next = customFields || {};
     if (!next || typeof next !== "object") next = {};
-    NS.fieldsToClear(next).forEach((name2) => {
-      next = NS.setField(next, name2, "");
+    NS.fieldsToClear(next).forEach((name) => {
+      next = NS.setField(next, name, "");
     });
     return next;
   };
-  NS.pickField = (customFields, name2) => {
+  NS.pickField = (customFields, name) => {
     if (!customFields || typeof customFields !== "object") return "";
     const map = customFields;
-    const key = name2.toLowerCase();
+    const key = name.toLowerCase();
     const keys = Object.keys(map);
     for (let i = 0; i < keys.length; i++) {
       if (keys[i].toLowerCase() === key) {
@@ -246,13 +246,13 @@
     }
     return "";
   };
-  NS.setField = (customFields, name2, value) => {
+  NS.setField = (customFields, name, value) => {
     const next = Object.assign({}, customFields || {});
-    const key = name2.toLowerCase();
+    const key = name.toLowerCase();
     Object.keys(next).forEach((k) => {
       if (k.toLowerCase() === key) delete next[k];
     });
-    if (value) next[name2] = value;
+    if (value) next[name] = value;
     return next;
   };
 
@@ -693,8 +693,8 @@
     var _a2;
     const chapter = chrome.querySelector("." + CLASS_CHAPTER);
     const counter = chrome.querySelector("." + CLASS_COUNTER);
-    const name2 = ((_a2 = state.chapter) == null ? void 0 : _a2.title) || "";
-    if (chapter.textContent !== name2) chapter.textContent = name2;
+    const name = ((_a2 = state.chapter) == null ? void 0 : _a2.title) || "";
+    if (chapter.textContent !== name) chapter.textContent = name;
     const count = state.number + " / " + state.total;
     if (counter.textContent !== count) counter.textContent = count;
     const chapterPanel = chrome.querySelector(
@@ -886,10 +886,10 @@
     if (opens !== "chapters") return "faCog";
     return open ? "faTimes" : "faBars";
   }
-  function setIcon(host, name2) {
-    if (host.dataset.icon === name2) return;
-    host.dataset.icon = name2;
-    drawIcon(host, name2);
+  function setIcon(host, name) {
+    if (host.dataset.icon === name) return;
+    host.dataset.icon = name;
+    drawIcon(host, name);
   }
   function panel(opens, extra) {
     const node = document.createElement("div");
@@ -901,12 +901,12 @@
     node.dataset.menu = opens;
     return node;
   }
-  function drawIcon(host, name2) {
+  function drawIcon(host, name) {
     var _a2;
     const api = requirePluginApi();
     const Solid = api.libraries.FontAwesomeSolid || {};
     const Icon = api.components.Icon;
-    const icon = Solid[name2];
+    const icon = Solid[name];
     const render2 = (_a2 = api.ReactDOM) == null ? void 0 : _a2.render;
     if (!Icon || !icon || !render2) return;
     render2(api.React.createElement(Icon, { icon }), host);
@@ -1325,8 +1325,8 @@
   function syncFooter(lightbox, image) {
     const link = lightbox.querySelector(".Lightbox-footer-center .image-link");
     if (!link || !image) return;
-    const name2 = titleOf(image);
-    if (link.textContent !== name2) link.textContent = name2;
+    const name = titleOf(image);
+    if (link.textContent !== name) link.textContent = name;
     const href = "/images/" + image.id;
     if (link.getAttribute("href") !== href) link.setAttribute("href", href);
     if (link.getAttribute(CLAIMED) === null) {
@@ -1380,7 +1380,7 @@
   var CLASS_LABEL = "manga-reader-progress-label";
   var CLASS_SCRUBBING = "is-scrubbing";
   var CLASS_IDLE = "is-idle";
-  var CLASS_NAMING = "is-naming";
+  var CLASS_SHOWING = "is-showing";
   var latest2 = null;
   var bar = null;
   var track = null;
@@ -1392,7 +1392,7 @@
   var nodes = null;
   var drawn = null;
   var labelWidth = 0;
-  var naming = null;
+  var bubble = null;
   var pointer = null;
   var target = 0;
   var lastJump = 0;
@@ -1421,7 +1421,7 @@
     nodes = null;
     drawn = null;
     latest2 = null;
-    naming = null;
+    bubble = null;
     pointer = null;
     pressed = false;
     labelWidth = 0;
@@ -1450,8 +1450,8 @@
     track.appendChild(thumb);
     track.appendChild(label);
     bar.appendChild(track);
-    bar.addEventListener("mousemove", onWake);
-    bar.addEventListener("mouseleave", onLeave);
+    bar.addEventListener("mousemove", onMoveOverBar);
+    bar.addEventListener("mouseleave", takeBubbleDown);
     track.addEventListener("mousedown", onPress);
     bar.addEventListener("click", (event) => event.stopPropagation());
     place(lightbox);
@@ -1468,34 +1468,33 @@
     if (!drawn || drawn.nodes !== key || drawn.total !== state.total) {
       drawNodes(state);
     }
-    const wanted2 = Math.round(state.width) + "px";
-    if (track.style.width !== wanted2) track.style.width = wanted2;
+    if (state.width > 0) {
+      const wanted2 = Math.round(state.width) + "px";
+      if (track.style.width !== wanted2) track.style.width = wanted2;
+    }
     const settled = fractionOfPage(state.at, state.total);
     const fraction = pointer === null ? settled : pointer;
     const where = (fraction * 100).toFixed(3) + "%";
     if (read.style.width !== where) read.style.width = where;
     if (thumb.style.left !== where) thumb.style.left = where;
-    const page = pointer === null ? state.at : target;
-    const words = naming ? { page: "", chapter: naming.words } : {
-      page: page + 1 + " / " + state.total,
-      chapter: state.chapterNameAt(page)
-    };
-    const place3 = naming ? naming.fraction : null;
-    if ((labelPage == null ? void 0 : labelPage.textContent) !== words.page) {
-      if (labelPage) labelPage.textContent = words.page;
-      labelWidth = label.offsetWidth;
-    }
-    if ((labelChapter == null ? void 0 : labelChapter.textContent) !== words.chapter) {
-      if (labelChapter) labelChapter.textContent = words.chapter;
-      labelWidth = label.offsetWidth;
+    if (bubble) {
+      if ((labelPage == null ? void 0 : labelPage.textContent) !== bubble.page) {
+        if (labelPage) labelPage.textContent = bubble.page;
+        labelWidth = label.offsetWidth;
+      }
+      if ((labelChapter == null ? void 0 : labelChapter.textContent) !== bubble.chapter) {
+        if (labelChapter) labelChapter.textContent = bubble.chapter;
+        labelWidth = label.offsetWidth;
+      }
     }
     const half = labelWidth / 2;
     const width = track.clientWidth || 0;
-    const at = place3 === null ? fraction : place3;
+    const at = bubble ? bubble.fraction : fraction;
     const px = Math.max(half, Math.min(at * width, width - half)).toFixed(0) + "px";
     if (label.style.left !== px) label.style.left = px;
     const moved = drawn !== null && (drawn.at !== state.at || drawn.total !== state.total);
     drawn = { nodes: key, at: state.at, total: state.total };
+    if (moved) takeBubbleDown();
     if (moved) wake();
   }
   function drawNodes(state) {
@@ -1511,17 +1510,37 @@
         latest2 == null ? void 0 : latest2.handlers.onSeek(node.at);
         wake();
       });
-      tick.addEventListener("mouseenter", () => name(node.name, node.fraction));
+      tick.dataset.name = node.name;
+      tick.dataset.fraction = String(node.fraction);
       nodes.appendChild(tick);
     }
   }
-  function onWake() {
+  function onMoveOverBar(event) {
+    var _a2, _b2, _c;
     wake();
+    const node = event.target;
+    const tick = ((_a2 = node == null ? void 0 : node.classList) == null ? void 0 : _a2.contains(CLASS_NODE)) ? node : null;
+    if (!tick) {
+      takeBubbleDown();
+      return;
+    }
+    const chapter = ((_b2 = tick.dataset) == null ? void 0 : _b2.name) || "";
+    if ((bubble == null ? void 0 : bubble.chapter) === chapter) return;
+    setBubble({
+      page: "",
+      chapter,
+      fraction: Number(((_c = tick.dataset) == null ? void 0 : _c.fraction) || 0)
+    });
+    redraw2();
   }
-  function onLeave() {
-    if (!naming) return;
-    naming = null;
-    bar == null ? void 0 : bar.classList.remove(CLASS_NAMING);
+  function setBubble(next) {
+    bubble = next;
+    bar == null ? void 0 : bar.classList.add(CLASS_SHOWING);
+  }
+  function takeBubbleDown() {
+    if (!bubble) return;
+    bubble = null;
+    bar == null ? void 0 : bar.classList.remove(CLASS_SHOWING);
     redraw2();
   }
   function wake() {
@@ -1539,12 +1558,6 @@
     idle = null;
     pending = null;
   }
-  function name(words, fraction) {
-    if (!bar) return;
-    naming = { words, fraction };
-    bar.classList.add(CLASS_NAMING);
-    redraw2();
-  }
   var pressed = false;
   function fractionAt(clientX) {
     if (!track) return 0;
@@ -1559,6 +1572,7 @@
     press.stopPropagation();
     pressed = true;
     bar == null ? void 0 : bar.classList.add(CLASS_SCRUBBING);
+    bubble = null;
     scrubTo(fractionAt(press.clientX));
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onRelease);
@@ -1575,9 +1589,14 @@
     settle();
   }
   function scrubTo(fraction) {
-    var _a2;
+    var _a2, _b2;
     pointer = fraction;
     target = pageAtFraction(fraction, (_a2 = latest2 == null ? void 0 : latest2.total) != null ? _a2 : 1);
+    setBubble({
+      page: target + 1 + " / " + ((_b2 = latest2 == null ? void 0 : latest2.total) != null ? _b2 : 1),
+      chapter: (latest2 == null ? void 0 : latest2.chapterNameAt(target)) || "",
+      fraction
+    });
     redraw2();
     if (!latest2 || target === latest2.at) return;
     const since = Date.now() - lastJump;
@@ -1989,6 +2008,13 @@
       container.addEventListener("click", onSpreadClick);
       container.addEventListener("wheel", onSpreadWheel);
       container.addEventListener("mousedown", onSpreadPress);
+      container.addEventListener(
+        "load",
+        () => {
+          if (root) sync(root);
+        },
+        true
+      );
     }
     display.style.position = "relative";
     display.appendChild(container);
@@ -2209,8 +2235,8 @@
   function navIcon(button) {
     var _a2;
     for (const child of Array.from(button.children)) {
-      const name2 = (_a2 = child.dataset) == null ? void 0 : _a2.icon;
-      if (name2) return name2;
+      const name = (_a2 = child.dataset) == null ? void 0 : _a2.icon;
+      if (name) return name;
     }
     return "";
   }
@@ -2368,19 +2394,19 @@
     "": "faChessBoard"
   };
   var missingIcons = {};
-  function noteMissingIcon(name2) {
-    if (missingIcons[name2]) return;
-    missingIcons[name2] = true;
+  function noteMissingIcon(name) {
+    if (missingIcons[name]) return;
+    missingIcons[name] = true;
     console.error(
-      "[mangaTools] this Stash's FontAwesome has no " + name2 + ", so that icon is drawn as nothing. Run this in the console to see which names it does have: window.PluginApi.libraries.FontAwesomeSolid." + name2
+      "[mangaTools] this Stash's FontAwesome has no " + name + ", so that icon is drawn as nothing. Run this in the console to see which names it does have: window.PluginApi.libraries.FontAwesomeSolid." + name
     );
   }
   NS.censorshipIcon = (value) => {
     const Solid = PluginApi.libraries.FontAwesomeSolid || {};
-    const name2 = ICONS[value] || ICONS[""];
-    const icon = Solid[name2];
+    const name = ICONS[value] || ICONS[""];
+    const icon = Solid[name];
     if (!icon) {
-      noteMissingIcon(name2);
+      noteMissingIcon(name);
       return null;
     }
     return icon;
@@ -4118,8 +4144,8 @@
       bump(1);
     }, []);
   }
-  function hasClass(el, name2) {
-    return !!el && (el.className || "").split(/\s+/).indexOf(name2) >= 0;
+  function hasClass(el, name) {
+    return !!el && (el.className || "").split(/\s+/).indexOf(name) >= 0;
   }
   function ensurePopoverSlot(galleryId2) {
     const anchor = document.querySelector(
@@ -4213,8 +4239,8 @@
     if (!store) return [];
     const seen = {};
     store.forEach((fields) => {
-      const name2 = NS.translationGroupOf(fields);
-      if (name2) seen[name2] = true;
+      const name = NS.translationGroupOf(fields);
+      if (name) seen[name] = true;
     });
     return Object.keys(seen).sort();
   }
@@ -4439,9 +4465,9 @@
       }
     });
     if (!isGalleryContext() || !Select || !host) return null;
-    const write = (name2, value) => {
+    const write = (name, value) => {
       if (props.onChange) {
-        props.onChange(NS.setField(props.values, name2, value));
+        props.onChange(NS.setField(props.values, name, value));
       }
     };
     const writeGroup = (value) => {
@@ -4564,13 +4590,13 @@
     const groupRaw = NS.pickField(props.values, TRANSLATION_GROUP_FIELD_NAME);
     const groupName = NS.translationGroupOf(props.values);
     const known = knownTranslationGroups();
-    const namesANewGroup = !!groupName && !known.some((name2) => NS.sameTranslationGroup(name2, groupName));
-    const usualOf = (name2) => usualLanguages[NS.groupKey(name2)];
-    const matchesNow = (name2) => {
-      const usualHere = usualOf(name2);
+    const namesANewGroup = !!groupName && !known.some((name) => NS.sameTranslationGroup(name, groupName));
+    const usualOf = (name) => usualLanguages[NS.groupKey(name)];
+    const matchesNow = (name) => {
+      const usualHere = usualOf(name);
       return !!current2 && !!usualHere && usualHere.code === current2.code;
     };
-    const ordered = known.filter(matchesNow).concat(known.filter((name2) => !matchesNow(name2)));
+    const ordered = known.filter(matchesNow).concat(known.filter((name) => !matchesNow(name)));
     const groupOptions = [
       ...namesANewGroup ? [
         {
@@ -4583,11 +4609,11 @@
           createLabel: t(intl, "mangaTools.translationGroup.create") + ' "' + groupName + '"'
         }
       ] : [],
-      ...ordered.map((name2) => {
-        const usualHere = usualOf(name2);
+      ...ordered.map((name) => {
+        const usualHere = usualOf(name);
         const described = usualHere ? NS.describe(usualHere.code, intl.locale) : null;
         const hint = described ? { flag: described.flag, name: described.name } : null;
-        return { value: name2, label: name2, hint };
+        return { value: name, label: name, hint };
       })
     ];
     const originalLabel = t(intl, "mangaTools.translationGroup.original");
