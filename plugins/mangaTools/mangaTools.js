@@ -1393,12 +1393,11 @@
   var watching = null;
   function ensureProgress(lightbox, state) {
     latest2 = state;
-    const display = lightbox.querySelector(".Lightbox-display");
-    if (!display) return bar;
+    if (!lightbox.querySelector(".Lightbox-footer")) return bar;
     if (state.total <= 1) return null;
-    if (!bar) build(display);
+    if (!bar) build(lightbox);
+    else if (bar.parentNode !== lightbox) place(lightbox);
     if (!bar || !track || !read || !thumb || !label || !nodes) return bar;
-    inset(lightbox);
     watch(lightbox);
     update2(state);
     return bar;
@@ -1422,7 +1421,7 @@
     pressed = false;
     labelWidth = 0;
   }
-  function build(display) {
+  function build(lightbox) {
     bar = document.createElement("div");
     bar.className = CLASS_BAR;
     label = document.createElement("div");
@@ -1442,7 +1441,13 @@
     bar.appendChild(track);
     track.addEventListener("mousedown", onPress);
     bar.addEventListener("click", (event) => event.stopPropagation());
-    display.appendChild(bar);
+    place(lightbox);
+  }
+  function place(lightbox) {
+    if (!bar) return;
+    const footer = lightbox.querySelector(".Lightbox-footer");
+    if (footer) lightbox.insertBefore(bar, footer);
+    else lightbox.appendChild(bar);
   }
   function update2(state) {
     if (!bar || !track || !read || !thumb || !label || !nodes) return;
@@ -1450,6 +1455,8 @@
     if (!drawn || drawn.nodes !== key || drawn.total !== state.total) {
       drawNodes(state);
     }
+    const wanted2 = Math.round(state.width) + "px";
+    if (track.style.width !== wanted2) track.style.width = wanted2;
     const settled = fractionOfPage(state.at, state.total);
     const fraction = pointer === null ? settled : pointer;
     const where = (fraction * 100).toFixed(3) + "%";
@@ -1470,16 +1477,6 @@
     const moved = !drawn || drawn.at !== state.at || drawn.total !== state.total;
     drawn = { nodes: key, at: state.at, total: state.total };
     if (moved) wake();
-  }
-  function inset(lightbox) {
-    if (!bar) return;
-    const button = lightbox.querySelector(
-      ".Lightbox-navbutton"
-    );
-    const width = (button == null ? void 0 : button.offsetWidth) || 0;
-    const value = width + "px";
-    if (bar.style.left !== value) bar.style.left = value;
-    if (bar.style.right !== value) bar.style.right = value;
   }
   function drawNodes(state) {
     if (!nodes) return;
@@ -1700,7 +1697,7 @@
   var clickRoot = null;
   var pending2 = null;
   var handedFor = null;
-  var place = -1;
+  var place2 = -1;
   function step() {
     syncChaptersTab();
     const lightbox = document.querySelector(SELECTOR_LIGHTBOX);
@@ -1713,7 +1710,7 @@
       root = lightbox;
       galleryId = null;
       shownAt = -1;
-      place = -1;
+      place2 = -1;
       reinsers = 0;
       logged = false;
       handedFor = null;
@@ -1780,7 +1777,7 @@
       language = answer.language;
       galleryId = id;
       shownAt = -1;
-      place = -1;
+      place2 = -1;
       step();
     }).catch((e) => {
       if (pending2 === id) pending2 = null;
@@ -1841,9 +1838,9 @@
       gallery.paired = settings.doublePage;
       shownAt = -1;
     }
-    if (place < 0) {
-      place = placeOf(gallery, lightbox);
-      if (place < 0 && gallery.pages.length > 1) {
+    if (place2 < 0) {
+      place2 = placeOf(gallery, lightbox);
+      if (place2 < 0 && gallery.pages.length > 1) {
         console.error(
           "[mangaReader] the lightbox is showing an image this plugin did not read, so the spread view cannot follow it \u2014 turning itself off"
         );
@@ -1868,10 +1865,12 @@
     draw(gallery.screens[at], at);
   }
   function progressState(gallery, at, lightbox) {
-    var _a2, _b2;
+    var _a2, _b2, _c;
+    const screen = gallery.screens[at];
     return {
       at: (_b2 = (_a2 = gallery.screens[at]) == null ? void 0 : _a2.start) != null ? _b2 : 0,
       total: gallery.pages.length,
+      width: pictureWidth((_c = screen == null ? void 0 : screen.pages.length) != null ? _c : 0),
       chapters: gallery.chapters,
       chapterNameAt: (page) => {
         var _a3, _b3;
@@ -1889,7 +1888,7 @@
     const pageId = at < 0 ? "" : ((_a2 = gallery.pages[gallery.screens[at].start]) == null ? void 0 : _a2.id) || "";
     return {
       image,
-      number: Math.max(place, 0) + 1,
+      number: Math.max(place2, 0) + 1,
       total: gallery.pages.length,
       chapter: chapterAt(gallery.chapters, pageId),
       chapters: gallery.chapters,
@@ -1905,7 +1904,7 @@
           sync(lightbox);
         },
         onChapter: (to) => {
-          place = to;
+          place2 = to;
           step();
         },
         onSetting: (next) => {
@@ -2063,8 +2062,8 @@
     }
   }
   function screenNow(gallery) {
-    if (place < 0) return -1;
-    return screenAt(gallery.screens, place);
+    if (place2 < 0) return -1;
+    return screenAt(gallery.screens, place2);
   }
   function deactivate() {
     if (container) {
@@ -2080,7 +2079,7 @@
       root.classList.remove(CLASS_TAKEOVER);
     }
     forgetOpenMenu();
-    place = -1;
+    place2 = -1;
     if (root) {
       root.classList.remove(CLASS_ACTIVE);
       const display = root.querySelector(SELECTOR_DISPLAY);
@@ -2090,7 +2089,7 @@
   }
   function closeLightbox() {
     handedFor = null;
-    place = -1;
+    place2 = -1;
     forgetOpenMenu();
     if (clickRoot) {
       clickRoot.removeEventListener("click", onNavClick, true);
@@ -2158,16 +2157,27 @@
     if (!gallery) return false;
     const at = screenNow(gallery);
     if (at < 0) return false;
-    const steps = stepsToAdjacent(gallery.screens, place, direction);
+    const steps = stepsToAdjacent(gallery.screens, place2, direction);
     if (steps === 0) return false;
-    place += steps;
+    place2 += steps;
     sync(lightbox);
     return true;
+  }
+  function pictureWidth(pages) {
+    if (!container || pages <= 0) return 0;
+    let left = Number.POSITIVE_INFINITY;
+    let right = 0;
+    for (const node of Array.from(container.querySelectorAll("img"))) {
+      const image = node;
+      left = Math.min(left, image.offsetLeft);
+      right = Math.max(right, image.offsetLeft + image.offsetWidth);
+    }
+    return right > left ? right - left : 0;
   }
   function seekTo(lightbox, at) {
     const gallery = current();
     if (!gallery) return;
-    place = Math.min(Math.max(at, 0), gallery.pages.length - 1);
+    place2 = Math.min(Math.max(at, 0), gallery.pages.length - 1);
     sync(lightbox);
   }
   function navIcon(button) {
