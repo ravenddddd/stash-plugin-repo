@@ -1487,11 +1487,14 @@
         labelWidth = label.offsetWidth;
       }
     }
-    const half = labelWidth / 2;
-    const width = track.clientWidth || 0;
-    const at = bubble ? bubble.fraction : fraction;
-    const px = Math.max(half, Math.min(at * width, width - half)).toFixed(0) + "px";
-    if (label.style.left !== px) label.style.left = px;
+    if (bubble) {
+      const half = labelWidth / 2;
+      const width = track.clientWidth || 0;
+      const px = Math.max(half, Math.min(bubble.fraction * width, width - half)).toFixed(
+        0
+      ) + "px";
+      if (label.style.left !== px) label.style.left = px;
+    }
     const moved = drawn !== null && (drawn.at !== state.at || drawn.total !== state.total);
     drawn = { nodes: key, at: state.at, total: state.total };
     if (moved) takeBubbleDown();
@@ -1518,6 +1521,7 @@
   function onMoveOverBar(event) {
     var _a2, _b2, _c;
     wake();
+    if (pressed) return;
     const node = event.target;
     const tick = ((_a2 = node == null ? void 0 : node.classList) == null ? void 0 : _a2.contains(CLASS_NODE)) ? node : null;
     if (!tick) {
@@ -1624,6 +1628,7 @@
     const wanted2 = target;
     pointer = null;
     latest2 == null ? void 0 : latest2.handlers.onSeek(wanted2);
+    takeBubbleDown();
     redraw2();
   }
   function redraw2() {
