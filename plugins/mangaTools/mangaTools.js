@@ -672,6 +672,7 @@
       }
       right.appendChild(closeButton());
       chrome.appendChild(right);
+      lightbox.addEventListener("click", onLightboxClick);
     }
     chromeNode = chrome;
     update(chrome, state);
@@ -680,7 +681,14 @@
   function removeChrome(lightbox) {
     const chrome = lightbox.querySelector("." + CLASS_CHROME);
     if (chrome) chrome.remove();
+    lightbox.removeEventListener("click", onLightboxClick);
     if (chrome === chromeNode) chromeNode = null;
+  }
+  function onLightboxClick(event) {
+    if (openMenu === null) return;
+    if (chromeNode == null ? void 0 : chromeNode.contains(event.target)) return;
+    openMenu = null;
+    redraw();
   }
   var latest = null;
   var chromeNode = null;
@@ -1431,6 +1439,10 @@
     const node = lightbox.querySelector("." + CLASS_BAR);
     if (node) node.remove();
     if (node !== bar) return;
+    if (pressed) {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onRelease);
+    }
     stopTimers();
     bar = null;
     track = null;
@@ -1472,7 +1484,6 @@
     track.addEventListener("mousemove", onMoveOverBar);
     track.addEventListener("mouseleave", onLeaveTrack);
     track.addEventListener("mousedown", onPress);
-    bar.addEventListener("click", (event) => event.stopPropagation());
     place(lightbox);
   }
   function place(lightbox) {
@@ -1602,7 +1613,7 @@
     return Math.min(Math.max((clientX - rect.left) / width, 0), 1);
   }
   function onPress(event) {
-    var _a2, _b2;
+    var _a2, _b2, _c;
     const press = event;
     if (press.button !== 0 || !track) return;
     press.preventDefault();
@@ -1611,9 +1622,11 @@
     bar == null ? void 0 : bar.classList.add(CLASS_SCRUBBING);
     const tick = tickUnder(press.target);
     if (tick) {
-      target = Number(((_a2 = tick.dataset) == null ? void 0 : _a2.at) || 0);
-      pointer = Number(((_b2 = tick.dataset) == null ? void 0 : _b2.fraction) || 0);
+      const fraction = Number(((_a2 = tick.dataset) == null ? void 0 : _a2.fraction) || 0);
+      target = Number(((_b2 = tick.dataset) == null ? void 0 : _b2.at) || 0);
+      pointer = fraction;
       lastJump = Date.now();
+      setBubble({ page: "", chapter: ((_c = tick.dataset) == null ? void 0 : _c.name) || "", fraction });
       latest2 == null ? void 0 : latest2.handlers.onSeek(target);
       redraw2();
     } else {
