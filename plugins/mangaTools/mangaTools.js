@@ -1113,6 +1113,13 @@
     "      paths {",
     "        image",
     "      }",
+    "      galleries {",
+    "        id",
+    "        title",
+    "        folder {",
+    "          path",
+    "        }",
+    "      }",
     "    }",
     "  }",
     "  byPath: findImages(",
@@ -1200,7 +1207,17 @@
             width: (sized == null ? void 0 : sized.width) || 0,
             height: (sized == null ? void 0 : sized.height) || 0
           }
-        ]
+        ],
+        // As they came, and always a list: Stash asks whether there are any, so an image
+        // with none and an image nobody asked about have to look the same to it.
+        galleries: (image.galleries || []).map((gallery) => {
+          var _a4, _b4;
+          return {
+            id: String(gallery.id),
+            title: String((_a4 = gallery.title) != null ? _a4 : ""),
+            folder: gallery.folder ? { path: String((_b4 = gallery.folder.path) != null ? _b4 : "") } : null
+          };
+        })
       };
     });
     return {
@@ -1797,6 +1814,7 @@
       if (marked === false) leaveUnmarked(lightbox);
       return;
     }
+    claim(lightbox);
     if (galleryId !== wantedId || !loaded.has(wantedId)) {
       loadGallery(wantedId);
       return;
@@ -1805,6 +1823,10 @@
     if (gallery) handOverChapters(lightbox, gallery);
     if (!wanted()) return;
     sync(lightbox);
+  }
+  function claim(lightbox) {
+    lightbox.classList.add(CLASS_ACTIVE);
+    lightbox.classList.add(CLASS_TAKEOVER);
   }
   function wanted() {
     const id = galleryIdFromPath(window.location.pathname);
