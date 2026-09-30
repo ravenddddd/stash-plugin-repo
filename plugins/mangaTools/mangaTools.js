@@ -150,7 +150,7 @@
   NS.MANGA_FIELD_NAME = "plugin.mangaTools.manga";
   NS.TRANSLATION_GROUP_FIELD_NAME = "plugin.mangaTools.translationGroup";
   NS.translationGroupOf = (customFields) => NS.pickField(customFields, NS.TRANSLATION_GROUP_FIELD_NAME).trim();
-  NS.groupKey = (name) => String(name != null ? name : "").trim().toLowerCase();
+  NS.groupKey = (name2) => String(name2 != null ? name2 : "").trim().toLowerCase();
   NS.sameTranslationGroup = (a, b) => NS.groupKey(a) === NS.groupKey(b);
   NS.usualLanguageFor = (galleries, group) => {
     const key = NS.groupKey(group);
@@ -227,15 +227,15 @@
   NS.clearFields = (customFields) => {
     let next = customFields || {};
     if (!next || typeof next !== "object") next = {};
-    NS.fieldsToClear(next).forEach((name) => {
-      next = NS.setField(next, name, "");
+    NS.fieldsToClear(next).forEach((name2) => {
+      next = NS.setField(next, name2, "");
     });
     return next;
   };
-  NS.pickField = (customFields, name) => {
+  NS.pickField = (customFields, name2) => {
     if (!customFields || typeof customFields !== "object") return "";
     const map = customFields;
-    const key = name.toLowerCase();
+    const key = name2.toLowerCase();
     const keys = Object.keys(map);
     for (let i = 0; i < keys.length; i++) {
       if (keys[i].toLowerCase() === key) {
@@ -246,13 +246,13 @@
     }
     return "";
   };
-  NS.setField = (customFields, name, value) => {
+  NS.setField = (customFields, name2, value) => {
     const next = Object.assign({}, customFields || {});
-    const key = name.toLowerCase();
+    const key = name2.toLowerCase();
     Object.keys(next).forEach((k) => {
       if (k.toLowerCase() === key) delete next[k];
     });
-    if (value) next[name] = value;
+    if (value) next[name2] = value;
     return next;
   };
 
@@ -693,8 +693,8 @@
     var _a2;
     const chapter = chrome.querySelector("." + CLASS_CHAPTER);
     const counter = chrome.querySelector("." + CLASS_COUNTER);
-    const name = ((_a2 = state.chapter) == null ? void 0 : _a2.title) || "";
-    if (chapter.textContent !== name) chapter.textContent = name;
+    const name2 = ((_a2 = state.chapter) == null ? void 0 : _a2.title) || "";
+    if (chapter.textContent !== name2) chapter.textContent = name2;
     const count = state.number + " / " + state.total;
     if (counter.textContent !== count) counter.textContent = count;
     const chapterPanel = chrome.querySelector(
@@ -886,10 +886,10 @@
     if (opens !== "chapters") return "faCog";
     return open ? "faTimes" : "faBars";
   }
-  function setIcon(host, name) {
-    if (host.dataset.icon === name) return;
-    host.dataset.icon = name;
-    drawIcon(host, name);
+  function setIcon(host, name2) {
+    if (host.dataset.icon === name2) return;
+    host.dataset.icon = name2;
+    drawIcon(host, name2);
   }
   function panel(opens, extra) {
     const node = document.createElement("div");
@@ -901,12 +901,12 @@
     node.dataset.menu = opens;
     return node;
   }
-  function drawIcon(host, name) {
+  function drawIcon(host, name2) {
     var _a2;
     const api = requirePluginApi();
     const Solid = api.libraries.FontAwesomeSolid || {};
     const Icon = api.components.Icon;
-    const icon = Solid[name];
+    const icon = Solid[name2];
     const render2 = (_a2 = api.ReactDOM) == null ? void 0 : _a2.render;
     if (!Icon || !icon || !render2) return;
     render2(api.React.createElement(Icon, { icon }), host);
@@ -1325,8 +1325,8 @@
   function syncFooter(lightbox, image) {
     const link = lightbox.querySelector(".Lightbox-footer-center .image-link");
     if (!link || !image) return;
-    const name = titleOf(image);
-    if (link.textContent !== name) link.textContent = name;
+    const name2 = titleOf(image);
+    if (link.textContent !== name2) link.textContent = name2;
     const href = "/images/" + image.id;
     if (link.getAttribute("href") !== href) link.setAttribute("href", href);
     if (link.getAttribute(CLAIMED) === null) {
@@ -1356,15 +1356,17 @@
   function progressNodes(chapters, total) {
     const nodes2 = [];
     const seen = /* @__PURE__ */ new Set();
-    for (const chapter of chapters) {
-      if (chapter.at < 0 || chapter.at >= total || seen.has(chapter.at)) continue;
+    chapters.forEach((chapter, index) => {
+      if (chapter.at < 0 || chapter.at >= total || seen.has(chapter.at)) return;
       seen.add(chapter.at);
       nodes2.push({
-        title: chapter.title,
+        // A chapter with no name is named by its place, which is what the header's own
+        // menu calls it too.
+        name: chapter.title || "#" + (index + 1),
         at: chapter.at,
         fraction: fractionOfPage(chapter.at, total)
       });
-    }
+    });
     return nodes2;
   }
   var CLASS_BAR = "manga-reader-progress";
@@ -1376,6 +1378,7 @@
   var CLASS_LABEL = "manga-reader-progress-label";
   var CLASS_SCRUBBING = "is-scrubbing";
   var CLASS_IDLE = "is-idle";
+  var CLASS_NAMING = "is-naming";
   var latest2 = null;
   var bar = null;
   var track = null;
@@ -1390,7 +1393,6 @@
   var lastJump = 0;
   var pending = null;
   var idle = null;
-  var watching = null;
   function ensureProgress(lightbox, state) {
     latest2 = state;
     if (!lightbox.querySelector(".Lightbox-footer")) return bar;
@@ -1398,7 +1400,6 @@
     if (!bar) build(lightbox);
     else if (bar.parentNode !== lightbox) place(lightbox);
     if (!bar || !track || !read || !thumb || !label || !nodes) return bar;
-    watch(lightbox);
     update2(state);
     return bar;
   }
@@ -1407,7 +1408,6 @@
     if (node) node.remove();
     if (node !== bar) return;
     stopTimers();
-    if (watching) watching.removeEventListener("mousemove", onWake);
     bar = null;
     track = null;
     read = null;
@@ -1416,7 +1416,6 @@
     nodes = null;
     drawn = null;
     latest2 = null;
-    watching = null;
     pointer = null;
     pressed = false;
     labelWidth = 0;
@@ -1437,8 +1436,10 @@
     track.appendChild(read);
     track.appendChild(nodes);
     track.appendChild(thumb);
-    bar.appendChild(label);
+    track.appendChild(label);
     bar.appendChild(track);
+    bar.addEventListener("mousemove", onWake);
+    bar.addEventListener("mouseleave", onLeave);
     track.addEventListener("mousedown", onPress);
     bar.addEventListener("click", (event) => event.stopPropagation());
     place(lightbox);
@@ -1463,8 +1464,8 @@
     if (read.style.width !== where) read.style.width = where;
     if (thumb.style.left !== where) thumb.style.left = where;
     const page = pointer === null ? state.at : target;
-    const name = state.chapterNameAt(page);
-    const words = page + 1 + " / " + state.total + (name ? " \xB7 " + name : "");
+    const name2 = state.chapterNameAt(page);
+    const words = page + 1 + " / " + state.total + (name2 ? " \xB7 " + name2 : "");
     if (label.textContent !== words) {
       label.textContent = words;
       labelWidth = label.offsetWidth;
@@ -1485,24 +1486,21 @@
       const tick = document.createElement("div");
       tick.className = CLASS_NODE;
       tick.style.left = (node.fraction * 100).toFixed(3) + "%";
-      if (node.title) tick.title = node.title;
       tick.addEventListener("mousedown", (event) => event.stopPropagation());
       tick.addEventListener("click", (event) => {
         event.stopPropagation();
         latest2 == null ? void 0 : latest2.handlers.onSeek(node.at);
         wake();
       });
+      tick.addEventListener("mouseenter", () => name(node.name, node.fraction));
       nodes.appendChild(tick);
     }
   }
-  function watch(lightbox) {
-    if (watching === lightbox) return;
-    if (watching) watching.removeEventListener("mousemove", onWake);
-    lightbox.addEventListener("mousemove", onWake);
-    watching = lightbox;
-  }
   function onWake() {
     wake();
+  }
+  function onLeave() {
+    bar == null ? void 0 : bar.classList.remove(CLASS_NAMING);
   }
   function wake() {
     if (!bar) return;
@@ -1518,6 +1516,17 @@
     if (pending !== null) window.clearTimeout(pending);
     idle = null;
     pending = null;
+  }
+  function name(words, fraction) {
+    if (!bar || !label || !track) return;
+    if (label.textContent !== words) {
+      label.textContent = words;
+      labelWidth = label.offsetWidth;
+    }
+    const half = labelWidth / 2;
+    const width = track.clientWidth || 0;
+    label.style.left = Math.max(half, Math.min(fraction * width, width - half)).toFixed(0) + "px";
+    bar.classList.add(CLASS_NAMING);
   }
   var pressed = false;
   function fractionAt(clientX) {
@@ -2183,8 +2192,8 @@
   function navIcon(button) {
     var _a2;
     for (const child of Array.from(button.children)) {
-      const name = (_a2 = child.dataset) == null ? void 0 : _a2.icon;
-      if (name) return name;
+      const name2 = (_a2 = child.dataset) == null ? void 0 : _a2.icon;
+      if (name2) return name2;
     }
     return "";
   }
@@ -2342,19 +2351,19 @@
     "": "faChessBoard"
   };
   var missingIcons = {};
-  function noteMissingIcon(name) {
-    if (missingIcons[name]) return;
-    missingIcons[name] = true;
+  function noteMissingIcon(name2) {
+    if (missingIcons[name2]) return;
+    missingIcons[name2] = true;
     console.error(
-      "[mangaTools] this Stash's FontAwesome has no " + name + ", so that icon is drawn as nothing. Run this in the console to see which names it does have: window.PluginApi.libraries.FontAwesomeSolid." + name
+      "[mangaTools] this Stash's FontAwesome has no " + name2 + ", so that icon is drawn as nothing. Run this in the console to see which names it does have: window.PluginApi.libraries.FontAwesomeSolid." + name2
     );
   }
   NS.censorshipIcon = (value) => {
     const Solid = PluginApi.libraries.FontAwesomeSolid || {};
-    const name = ICONS[value] || ICONS[""];
-    const icon = Solid[name];
+    const name2 = ICONS[value] || ICONS[""];
+    const icon = Solid[name2];
     if (!icon) {
-      noteMissingIcon(name);
+      noteMissingIcon(name2);
       return null;
     }
     return icon;
@@ -4092,8 +4101,8 @@
       bump(1);
     }, []);
   }
-  function hasClass(el, name) {
-    return !!el && (el.className || "").split(/\s+/).indexOf(name) >= 0;
+  function hasClass(el, name2) {
+    return !!el && (el.className || "").split(/\s+/).indexOf(name2) >= 0;
   }
   function ensurePopoverSlot(galleryId2) {
     const anchor = document.querySelector(
@@ -4187,8 +4196,8 @@
     if (!store) return [];
     const seen = {};
     store.forEach((fields) => {
-      const name = NS.translationGroupOf(fields);
-      if (name) seen[name] = true;
+      const name2 = NS.translationGroupOf(fields);
+      if (name2) seen[name2] = true;
     });
     return Object.keys(seen).sort();
   }
@@ -4413,9 +4422,9 @@
       }
     });
     if (!isGalleryContext() || !Select || !host) return null;
-    const write = (name, value) => {
+    const write = (name2, value) => {
       if (props.onChange) {
-        props.onChange(NS.setField(props.values, name, value));
+        props.onChange(NS.setField(props.values, name2, value));
       }
     };
     const writeGroup = (value) => {
@@ -4538,13 +4547,13 @@
     const groupRaw = NS.pickField(props.values, TRANSLATION_GROUP_FIELD_NAME);
     const groupName = NS.translationGroupOf(props.values);
     const known = knownTranslationGroups();
-    const namesANewGroup = !!groupName && !known.some((name) => NS.sameTranslationGroup(name, groupName));
-    const usualOf = (name) => usualLanguages[NS.groupKey(name)];
-    const matchesNow = (name) => {
-      const usualHere = usualOf(name);
+    const namesANewGroup = !!groupName && !known.some((name2) => NS.sameTranslationGroup(name2, groupName));
+    const usualOf = (name2) => usualLanguages[NS.groupKey(name2)];
+    const matchesNow = (name2) => {
+      const usualHere = usualOf(name2);
       return !!current2 && !!usualHere && usualHere.code === current2.code;
     };
-    const ordered = known.filter(matchesNow).concat(known.filter((name) => !matchesNow(name)));
+    const ordered = known.filter(matchesNow).concat(known.filter((name2) => !matchesNow(name2)));
     const groupOptions = [
       ...namesANewGroup ? [
         {
@@ -4557,11 +4566,11 @@
           createLabel: t(intl, "mangaTools.translationGroup.create") + ' "' + groupName + '"'
         }
       ] : [],
-      ...ordered.map((name) => {
-        const usualHere = usualOf(name);
+      ...ordered.map((name2) => {
+        const usualHere = usualOf(name2);
         const described = usualHere ? NS.describe(usualHere.code, intl.locale) : null;
         const hint = described ? { flag: described.flag, name: described.name } : null;
-        return { value: name, label: name, hint };
+        return { value: name2, label: name2, hint };
       })
     ];
     const originalLabel = t(intl, "mangaTools.translationGroup.original");
