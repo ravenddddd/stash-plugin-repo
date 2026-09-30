@@ -29,8 +29,11 @@ plugin, change its source and let this rebuild:
 | Plugin | Source |
 |---|---|
 | external-player-launcher | https://github.com/ravenddddd/external-player-launcher (a fork of [esumaka's](https://github.com/esumaka/external-player-launcher)) |
-| mangaReader | https://github.com/ravenddddd/mangaReader |
 | mangaTools | https://github.com/ravenddddd/mangaTools |
+
+Manga Reader used to be a third plugin here. It was folded into Manga Tools —
+the reading half is part of that bundle now — and is no longer built or
+published, so an installed copy is not offered an update.
 
 The workflow lists the sources it builds, one per line, in its `SOURCES`
 variable. Adding a plugin is a line there and nothing else — the last path
