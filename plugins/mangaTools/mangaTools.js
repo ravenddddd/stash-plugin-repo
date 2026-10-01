@@ -3066,13 +3066,43 @@
     const forward = !width || click.offsetX >= width / 2;
     if (turnBy(lightbox, forward ? 1 : -1)) event.stopPropagation();
   }
+  var WHEEL_TURN = 100;
+  var WHEEL_REST_MS = 250;
+  NR.WHEEL_TURN = WHEEL_TURN;
+  NR.WHEEL_REST_MS = WHEEL_REST_MS;
+  var wheelRun = 0;
+  var wheelRest = null;
   function onSpreadWheel(event) {
-    if (!container) return;
+    const lightbox = root;
+    if (!lightbox || !container) return;
     const wheel = event;
-    const up = wheel.deltaY < 0;
-    view = wheel.shiftKey ? panned(view, 0, up ? -VIEW_PAN_STEP : VIEW_PAN_STEP) : zoomed(view, up ? VIEW_STEP : 1 / VIEW_STEP);
-    applyView();
-    redrawChrome();
+    wheel.preventDefault();
+    if (wheel.ctrlKey || wheel.metaKey) {
+      view = zoomed(view, wheel.deltaY < 0 ? VIEW_STEP : 1 / VIEW_STEP);
+      applyView();
+      redrawChrome();
+      return;
+    }
+    if (wheel.shiftKey) {
+      view = panned(view, 0, wheel.deltaY < 0 ? -VIEW_PAN_STEP : VIEW_PAN_STEP);
+      applyView();
+      redrawChrome();
+      return;
+    }
+    wheelRun += wheel.deltaY;
+    if (wheelRest !== null) window.clearTimeout(wheelRest);
+    wheelRest = window.setTimeout(() => {
+      wheelRest = null;
+      wheelRun = 0;
+    }, WHEEL_REST_MS);
+    while (Math.abs(wheelRun) >= WHEEL_TURN) {
+      const forward = wheelRun > 0;
+      wheelRun -= forward ? WHEEL_TURN : -WHEEL_TURN;
+      if (!turnBy(lightbox, forward ? 1 : -1)) {
+        wheelRun = 0;
+        break;
+      }
+    }
   }
   function onSpreadPress(event) {
     const press = event;
