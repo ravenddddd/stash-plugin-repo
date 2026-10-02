@@ -1380,6 +1380,29 @@
     );
     drawChapters(chapterPanel, state);
     drawSettings(settingsPanel, state);
+    if (openMenu === "chapters") fitMenu(chapterPanel);
+    else if (openMenu === "settings") fitMenu(settingsPanel);
+  }
+  var MENU_MARGIN = 8;
+  function fitShift(left, width, viewport, margin) {
+    const over = left + width + margin - viewport;
+    if (over > 0) {
+      return Math.max(-over, margin - left);
+    }
+    if (left < margin) return margin - left;
+    return 0;
+  }
+  function fitMenu(panel2) {
+    if (typeof panel2.getBoundingClientRect !== "function") return;
+    const viewport = window.innerWidth;
+    if (!viewport) return;
+    const rect = panel2.getBoundingClientRect();
+    if (!rect.width) return;
+    const had = Number(panel2.dataset.shift || 0);
+    const shift = fitShift(rect.left - had, rect.width, viewport, MENU_MARGIN);
+    if (shift === had) return;
+    panel2.dataset.shift = String(shift);
+    panel2.style.transform = shift === 0 ? "" : "translateX(" + shift + "px)";
   }
   function drawChapters(panel2, state) {
     var _a2, _b2, _c;
@@ -1706,6 +1729,7 @@
   function forgetOpenMenu() {
     openMenu = null;
   }
+  NR.fitShift = fitShift;
 
   // src/reader/chapters-tab.ts
   var SEL_PANEL = ".container";
