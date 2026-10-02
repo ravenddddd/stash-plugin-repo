@@ -6064,13 +6064,25 @@
       host
     );
   }
+  function sampleLanguageCode(uiLocale) {
+    const parts2 = String(uiLocale || "").split(/[-_]/);
+    for (let n = parts2.length; n > 0; n--) {
+      const canonical = NS.findCanonical(parts2.slice(0, n).join("-"));
+      if (canonical) return canonical;
+    }
+    if ((parts2[0] || "").toLowerCase() === "zh") {
+      const region = (parts2[1] || "").toUpperCase();
+      return region === "TW" || region === "HK" || region === "MO" ? "zh-Hant" : "zh-Hans";
+    }
+    return "";
+  }
   function HelpExampleCard(props) {
     const intl = PluginApi5.libraries.Intl.useIntl();
     const Solid = PluginApi5.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi5.components.Icon;
     const locale = intl.locale;
-    const own = NS.describe(locale, locale);
-    const sample = ((own == null ? void 0 : own.known) ? own : NS.describe("en", locale)) || void 0;
+    const code = sampleLanguageCode(locale);
+    const sample = (code ? NS.describe(code, locale) : null) || NS.describe("en", locale) || void 0;
     const lit = (which) => props.highlight === which ? " manga-tools-help-lit" : "";
     const count = (cls, icon, n) => /* @__PURE__ */ React5.createElement("span", { className: cls }, /* @__PURE__ */ React5.createElement("button", { type: "button", tabIndex: -1, className: "minimal btn btn-primary" }, icon ? /* @__PURE__ */ React5.createElement(Icon, { icon }) : null, /* @__PURE__ */ React5.createElement("span", null, n)));
     return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-help-card", "aria-hidden": "true" }, /* @__PURE__ */ React5.createElement(
