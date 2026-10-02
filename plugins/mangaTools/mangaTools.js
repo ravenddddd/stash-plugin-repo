@@ -3033,6 +3033,7 @@
     lightbox.classList.add(CLASS_ACTIVE);
   }
   var columnFor = null;
+  var columnIn = null;
   var scrollTo = null;
   function ensureColumn(lightbox, gallery) {
     ensureContainer(lightbox);
@@ -3042,9 +3043,10 @@
     container.style.transform = "";
     view = fitView();
     let built = false;
-    if (columnFor !== gallery.id) {
+    if (columnFor !== gallery.id || columnIn !== container) {
       buildColumn(container, gallery.pages, (page) => pageUrl(page));
       columnFor = gallery.id;
+      columnIn = container;
       built = true;
       awaiting = -1;
       setColumnZoom(1);
@@ -3058,6 +3060,7 @@
   function removeColumn() {
     if (columnFor === null) return;
     columnFor = null;
+    columnIn = null;
     scrollTo = null;
     view = fitView();
     setColumnZoom(1);
@@ -3395,9 +3398,14 @@
       if (!wheel.ctrlKey && !wheel.metaKey) return;
       wheel.preventDefault();
       const was = columnZoom();
-      setColumnZoom(zoomedBy(was, wheel.deltaY < 0 ? VIEW_STEP : 1 / VIEW_STEP));
-      if (columnZoom() === was) return;
-      scrollTo = Math.max(place2, 0);
+      const next = zoomedBy(was, wheel.deltaY < 0 ? VIEW_STEP : 1 / VIEW_STEP);
+      if (next === was) return;
+      const wasAt = container ? { top: container.scrollTop || 0, left: container.scrollLeft || 0 } : null;
+      setColumnZoom(next);
+      if (container && wasAt) {
+        container.scrollTop = wasAt.top * (next / was);
+        container.scrollLeft = wasAt.left * (next / was);
+      }
       sync(lightbox);
       return;
     }
