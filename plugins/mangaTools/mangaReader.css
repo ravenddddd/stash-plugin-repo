@@ -385,7 +385,14 @@
  * control rather than sharing its line with one.
  */
 .manga-reader-group-label {
-  margin-bottom: 0.6rem;
+  /*
+   * A block, and that is the whole of why this rule has a `display` in it: the heading
+   * is a `span`, a span is inline, and **a vertical margin on an inline box does
+   * nothing at all** — which is what "the number changed and nothing moved" was. The
+   * space under it is this margin, so it has to be a box that has one.
+   */
+  display: block;
+  margin-bottom: 0.85rem;
   color: #f5f8fa; /* Stash's $text-color */
   font-size: 1rem;
   letter-spacing: 0.06em;
@@ -700,6 +707,19 @@
   width: 16px;
   height: auto;
   z-index: 5;
+}
+
+/*
+ * And the next-page chevron steps inboard of it.
+ *
+ * The chevron is Stash's own button, sitting against the right edge of the picture
+ * area because that is where its own lightbox puts it — which is exactly where this
+ * bar now is. Two controls in one place is a control the reader cannot use and a bar
+ * they cannot see, so the one that is optional moves: the arrow still turns a page,
+ * and the keyboard's own arrow does the same without moving a pixel.
+ */
+.manga-reader-position-scrolling .Lightbox-navbutton:last-of-type {
+  margin-right: 2rem;
 }
 
 /* The aim, and what it is a fraction of: the height of the picture area. Written

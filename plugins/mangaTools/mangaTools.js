@@ -2579,6 +2579,7 @@
   // src/reader/scroll.ts
   var CLASS_SCROLL = "is-scroll";
   var CLASS_SCROLL_PAGE = "manga-reader-scroll-page";
+  var CLASS_SCROLLING = "manga-reader-position-scrolling";
   function pageAtTop(rows, edge) {
     for (let i = 0; i < rows.length; i++) {
       if (rows[i].bottom > edge) return i;
@@ -3012,6 +3013,7 @@
     ensureContainer(lightbox);
     if (!container) return;
     container.classList.add(CLASS_SCROLL);
+    lightbox.classList.add(CLASS_SCROLLING);
     container.style.transform = "";
     view = fitView();
     let built = false;
@@ -3034,6 +3036,7 @@
     view = fitView();
     shownAt = -1;
     container == null ? void 0 : container.classList.remove(CLASS_SCROLL);
+    root == null ? void 0 : root.classList.remove(CLASS_SCROLLING);
   }
   function columnPageAt(column) {
     const rows = Array.from(column.querySelectorAll("." + CLASS_SCROLL_PAGE)).map(
@@ -3360,8 +3363,11 @@
   function onSpreadWheel(event) {
     const lightbox = root;
     if (!lightbox || !container) return;
-    if (settings.readingMode === "scroll") return;
     const wheel = event;
+    if (settings.readingMode === "scroll") {
+      if (wheel.ctrlKey || wheel.metaKey) wheel.preventDefault();
+      return;
+    }
     wheel.preventDefault();
     if (wheel.ctrlKey || wheel.metaKey) {
       view = zoomed(view, wheel.deltaY < 0 ? VIEW_STEP : 1 / VIEW_STEP);
