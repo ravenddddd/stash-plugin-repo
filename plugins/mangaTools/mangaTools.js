@@ -198,6 +198,14 @@
   NS.ORIGINAL_VALUE = NS.MANGA_VALUE;
   NS.isOriginal = (customFields) => NS.pickField(customFields, NS.ORIGINAL_FIELD_NAME) !== "";
   NS.CHAPTER_FIELD_NAME = "plugin.mangaTools.chapters";
+  NS.fieldShowing = (field2) => {
+    if (!NS.fields) return false;
+    if (field2 === "language") return NS.fieldLanguage;
+    if (field2 === "censorship") return NS.fieldCensorship;
+    if (field2 === "translationGroup") return NS.fieldTranslationGroup;
+    return NS.fieldOriginal;
+  };
+  NS.anyFieldShowing = () => NS.fieldShowing("language") || NS.fieldShowing("censorship") || NS.fieldShowing("translationGroup") || NS.fieldShowing("original");
   NS.ownField = (key) => {
     const k = String(key != null ? key : "").trim().toLowerCase();
     if (k === "") return "";
@@ -222,7 +230,8 @@
     const map = customFields || {};
     if (!map || typeof map !== "object") return [NS.MANGA_FIELD_NAME];
     const keys = Object.keys(map).filter((key) => NS.isOwnField(key));
-    return keys.length ? keys : [NS.MANGA_FIELD_NAME];
+    const mine = keys.length ? keys : [NS.MANGA_FIELD_NAME];
+    return NS.deleteOnUnmark ? mine : mine.filter((key) => NS.ownField(key) === NS.MANGA_FIELD_NAME);
   };
   NS.clearFields = (customFields) => {
     let next = customFields || {};
@@ -867,6 +876,15 @@
     "mangaReader.reimportReplace": "Replace",
     "mangaReader.reimportCancel": "Cancel",
     "mangaTools.select.placeholder": "Select language\u2026",
+    "mangaTools.settings.readerTakeover.heading": "Take over Stash's lightbox",
+    "mangaTools.settings.readerTakeover.description": "A gallery marked as manga is read in this plugin's own lightbox, redesigned from the ground up. Nothing about Stash's own lightbox settings is changed.",
+    "mangaTools.settings.readerTakeover.note": "The lightbox's own settings are adjusted on the lightbox page, not here.",
+    "mangaTools.settings.manageChapters.heading": "Take over the Chapters tab",
+    "mangaTools.settings.manageChapters.description": "Creating and editing chapters is this plugin's job, and writing them stores this plugin's own chapter field. Stash's existing chapters are brought over quietly, and are never modified.",
+    "mangaTools.settings.manageChapters.warning": "From here on, editing chapters does not touch Stash's own chapter rows.",
+    "mangaTools.settings.fields.heading": "Custom fields",
+    "mangaTools.settings.fields.description": "The plugin's fields are written as custom fields, so none of Stash's own data is touched. Turning one off does not clear the values already on your galleries.",
+    "mangaTools.settings.field.description": "Turned off, this field leaves every page it appears on: the cover badge, the detail row, the edit row, the bulk dialog and the filters. The values already on your galleries are kept.",
     "mangaTools.settings.enabledLanguages.heading": "Enabled languages",
     "mangaTools.settings.enabledLanguages.description": "Only these languages appear in the edit-page dropdown. Display (badge and detail row) is unaffected. Leave empty to show every language.",
     "mangaTools.settings.enabledLanguages.placeholder": "All languages",
@@ -874,24 +892,22 @@
     "mangaTools.settings.showFlags.description": "Draw the flag beside the language name. Turn this off to show the name on its own.",
     "mangaTools.settings.showCoverBadge.heading": "Show the language on gallery covers",
     "mangaTools.settings.showCoverBadge.description": "The badge in the bottom-right of a gallery's cover. With flags turned off it shows the language name instead of a flag.",
-    "mangaTools.settings.openDetailsBlock.heading": "Start the details block expanded",
+    "mangaTools.settings.showCoverBadge.help": "This is only about drawing the badge: turned off, a cover carries no language. Nothing is cleared from the gallery, which keeps the value and shows it again the moment this is back on.",
+    "mangaTools.settings.display.heading": "How the manga info is shown",
+    "mangaTools.settings.openDetailsBlock.heading": "Start the manga info section expanded",
     "mangaTools.settings.openDetailsBlock.description": "The Manga info section in a gallery's details tab. Collapsed, its heading is what says the section is there. This decides the state a block opens in, not whether it can be opened.",
-    "mangaTools.settings.openEditBlock.heading": "Start the edit block expanded",
+    "mangaTools.settings.openEditBlock.heading": "Start the manga info block expanded",
     "mangaTools.settings.openEditBlock.description": "The Manga info block in a gallery's edit form, where its language, censorship and translation group are set. This decides the state a block opens in, not whether it can be opened.",
-    "mangaTools.settings.hidePerformers.heading": "Hide the performers field on a manga gallery",
+    "mangaTools.settings.hidePerformers.heading": "Hide the performers field on the edit page",
     "mangaTools.settings.hidePerformers.description": "A manga gallery rarely has performers, so its edit page leaves the field out. Only the field is hidden \u2014 whatever a gallery already has stays on the gallery and is kept when it is saved. The bulk edit dialog and the details tab are unaffected.",
-    "mangaTools.settings.chapters.heading": "Import chapters from Stash",
-    "mangaTools.settings.chapters.description": "Copies every marked gallery's Stash chapters into this plugin's own chapters field \u2014 the one the reader prefers, and the one nothing has ever written. Nothing of Stash's is changed. Galleries that already have a list of this plugin's own are left alone unless you ask to replace them.",
-    "mangaTools.settings.chapters.check": "Check what would be imported",
-    "mangaTools.settings.chapters.checking": "Checking\u2026",
-    "mangaTools.settings.chapters.toImport": "Galleries to import",
-    "mangaTools.settings.chapters.owned": "Already imported",
-    "mangaTools.settings.chapters.replace": "Also replace the ones already imported",
-    "mangaTools.settings.chapters.start": "Import",
-    "mangaTools.settings.chapters.progress": "Imported",
-    "mangaTools.settings.chapters.of": "of",
-    "mangaTools.settings.chapters.skipped": "Skipped, nothing to bring over",
-    "mangaTools.settings.chapters.failed": "Failed",
+    "mangaTools.settings.mark.heading": "The manga mark",
+    "mangaTools.settings.confirmUnmark.heading": "Ask before unmarking",
+    "mangaTools.settings.confirmUnmark.description": "A gallery stops being manga only after a confirmation.",
+    "mangaTools.settings.deleteOnUnmark.heading": "Remove this plugin's fields when unmarking",
+    "mangaTools.settings.deleteOnUnmark.description": "On, unmarking a gallery takes its language, censorship, translation group and raw values off with the mark. Off, the values stay on the gallery \u2014 hidden, and back if it is marked again.",
+    "mangaTools.settings.coverIcon.heading": "Show the manga icon on gallery covers",
+    "mangaTools.settings.coverIcon.description": "The icon at the end of a cover's info row \u2014 the row that appears on hover, with the image count and the tag count. Turned off, the cover carries no mark, and the gallery is still managed.",
+    "mangaTools.settings.coverIcon.help": "Not the same thing as the language badge: this one says the gallery is one the plugin manages, which is not a value anyone scans a cover for.",
     "mangaTools.manga.mark": "Mark as manga",
     "mangaTools.manga.marked": "Manga",
     "mangaTools.manga.isManga": "Is manga",
@@ -954,31 +970,38 @@
     "mangaReader.reimportReplace": "\u66FF\u6362",
     "mangaReader.reimportCancel": "\u53D6\u6D88",
     "mangaTools.select.placeholder": "\u9009\u62E9\u8BED\u8A00\u2026",
+    "mangaTools.settings.readerTakeover.heading": "\u63A5\u7BA1 Stash \u539F\u751F\u706F\u7BB1",
+    "mangaTools.settings.readerTakeover.description": "\u6807\u8BB0\u4E3A\u6F2B\u753B\u7684\u753B\u5ECA\uFF0C\u706F\u7BB1\u7531\u672C\u63D2\u4EF6\u91CD\u65B0\u8BBE\u8BA1\uFF0C\u4E0D\u4F1A\u66F4\u6539\u539F\u751F\u706F\u7BB1\u8BBE\u7F6E\u3002",
+    "mangaTools.settings.readerTakeover.note": "\u63D2\u4EF6\u706F\u7BB1\u76F8\u5173\u8BBE\u7F6E\u5728\u706F\u7BB1\u9875\u9762\u8BBE\u7F6E\u4E2D\u8C03\u6574\u3002",
+    "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u8282\u7CFB\u7EDF",
+    "mangaTools.settings.manageChapters.description": "\u6807\u7B7E\u9875\u7684\u521B\u5EFA\u548C\u7F16\u8F91\u7531\u63D2\u4EF6\u63A5\u7BA1\uFF0C\u5199\u5165\u63D2\u4EF6\u81EA\u5DF1\u7684\u7AE0\u8282\u5B57\u6BB5\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u8282\u4F1A\u88AB\u9759\u9ED8\u5BFC\u5165\uFF0C\u4F46\u4E0D\u4F1A\u88AB\u4FEE\u6539\u3002",
+    "mangaTools.settings.manageChapters.warning": "\u5F00\u542F\u540E\uFF0C\u5BF9\u7AE0\u8282\u7684\u4EFB\u4F55\u7F16\u8F91\u90FD\u4E0D\u4F1A\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u8282\u3002",
+    "mangaTools.settings.fields.heading": "\u81EA\u5B9A\u4E49\u5B57\u6BB5",
+    "mangaTools.settings.fields.description": "\u63D2\u4EF6\u7684\u5B57\u6BB5\u901A\u8FC7\u5199\u5165 custom fields \u6DFB\u52A0\uFF0C\u4E0D\u5F71\u54CD\u539F\u751F\u6570\u636E\uFF1B\u5173\u6389\u4EFB\u4F55\u4E00\u4E2A\uFF0C\u90FD\u4E0D\u4F1A\u6E05\u9664\u753B\u5ECA\u4E0A\u5DF2\u6709\u7684\u503C\u3002",
+    "mangaTools.settings.field.description": "\u5173\u95ED\u540E\uFF0C\u8FD9\u4E2A\u5B57\u6BB5\u4ECE\u5B83\u51FA\u73B0\u7684\u6BCF\u4E00\u5904\u6D88\u5931\uFF1A\u5C01\u9762\u5FBD\u7AE0\u3001\u8BE6\u60C5\u884C\u3001\u7F16\u8F91\u884C\u3001\u6279\u91CF\u7F16\u8F91\u548C\u7B5B\u9009\u5668\u3002\u753B\u5ECA\u4E0A\u5DF2\u6709\u7684\u503C\u4F1A\u4FDD\u7559\u3002",
     "mangaTools.settings.enabledLanguages.heading": "\u542F\u7528\u7684\u8BED\u8A00",
     "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u8FD9\u4E9B\u8BED\u8A00\u4F1A\u51FA\u73B0\u5728\u7F16\u8F91\u9875\u7684\u4E0B\u62C9\u6846\u91CC\u3002\u663E\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8BE6\u60C5\u9875\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u54CD\u3002\u7559\u7A7A\u8868\u793A\u663E\u793A\u5168\u90E8\u8BED\u8A00\u3002",
     "mangaTools.settings.enabledLanguages.placeholder": "\u5168\u90E8\u8BED\u8A00",
     "mangaTools.settings.showFlags.heading": "\u663E\u793A\u56FD\u65D7",
     "mangaTools.settings.showFlags.description": "\u5728\u8BED\u8A00\u540D\u79F0\u65C1\u753B\u51FA\u56FD\u65D7\u3002\u5173\u6389\u540E\u53EA\u663E\u793A\u540D\u79F0\u3002",
-    "mangaTools.settings.showCoverBadge.heading": "\u5728\u5C01\u9762\u663E\u793A\u8BED\u8A00",
+    "mangaTools.settings.showCoverBadge.heading": "\u5728\u5C01\u9762\u4E0A\u663E\u793A\u8BED\u8A00",
     "mangaTools.settings.showCoverBadge.description": "\u753B\u5ECA\u5C01\u9762\u53F3\u4E0B\u89D2\u7684\u5FBD\u7AE0\u3002\u5173\u6389\u56FD\u65D7\u65F6\u663E\u793A\u8BED\u8A00\u540D\u79F0\u800C\u4E0D\u662F\u56FD\u65D7\u3002",
-    "mangaTools.settings.openDetailsBlock.heading": "\u7B80\u4ECB\u7684\u6F2B\u753B\u4FE1\u606F\u9ED8\u8BA4\u5C55\u5F00",
+    "mangaTools.settings.showCoverBadge.help": "\u53EA\u51B3\u5B9A\u753B\u4E0D\u753B\uFF1A\u5173\u6389\u540E\u5C01\u9762\u4E0D\u5E26\u8BED\u8A00\u3002\u753B\u5ECA\u4E0A\u7684\u503C\u4E00\u4E2A\u90FD\u4E0D\u4F1A\u5C11\uFF0C\u91CD\u65B0\u6253\u5F00\u5C31\u8FD8\u5728\u3002",
+    "mangaTools.settings.display.heading": "\u6F2B\u753B\u4FE1\u606F\u7684\u663E\u793A",
+    "mangaTools.settings.openDetailsBlock.heading": "\u6F2B\u753B\u4FE1\u606F\u8BE6\u60C5\u9ED8\u8BA4\u5C55\u5F00",
     "mangaTools.settings.openDetailsBlock.description": "\u753B\u5ECA\u7B80\u4ECB\u9875\u91CC\u7684\u90A3\u4E00\u8282\u3002\u6536\u8D77\u65F6\uFF0C\u90A3\u4E00\u884C\u6807\u9898\u5C31\u662F\u300C\u8FD9\u91CC\u6709\u4E00\u8282\u300D\u7684\u8BF4\u660E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00\u3002",
-    "mangaTools.settings.openEditBlock.heading": "\u7F16\u8F91\u9875\u7684\u6F2B\u753B\u4FE1\u606F\u9ED8\u8BA4\u5C55\u5F00",
-    "mangaTools.settings.openEditBlock.description": "\u753B\u5ECA\u7F16\u8F91\u8868\u5355\u91CC\u7684\u90A3\u4E00\u5757\uFF0C\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5728\u90A3\u91CC\u8BBE\u7F6E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00.",
-    "mangaTools.settings.hidePerformers.heading": "\u5728\u6F2B\u753B\u7684\u7F16\u8F91\u9875\u9690\u85CF\u300C\u6F14\u5458\u300D",
-    "mangaTools.settings.hidePerformers.description": "\u6F2B\u753B\u4E00\u822C\u6CA1\u6709\u6F14\u5458\uFF0C\u6240\u4EE5\u7F16\u8F91\u9875\u4E0D\u663E\u793A\u8FD9\u4E00\u680F\u3002\u53EA\u662F\u9690\u85CF\uFF1A\u753B\u5ECA\u5DF2\u6709\u7684\u6F14\u5458\u4ECD\u7136\u7559\u5728\u753B\u5ECA\u4E0A\uFF0C\u4FDD\u5B58\u65F6\u4E5F\u4E0D\u4F1A\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7F16\u8F91\u5BF9\u8BDD\u6846\u548C\u7B80\u4ECB\u9875\u4E0D\u53D7\u5F71\u54CD\u3002",
-    "mangaTools.settings.chapters.heading": "\u4ECE Stash \u5BFC\u5165\u7AE0\u8282",
-    "mangaTools.settings.chapters.description": "\u628A\u6BCF\u672C\u5DF2\u6807\u8BB0\u6F2B\u753B\u7684 Stash \u7AE0\u8282\u6284\u8FDB\u63D2\u4EF6\u81EA\u5DF1\u7684\u7AE0\u8282\u5B57\u6BB5 \u2014\u2014 \u9605\u8BFB\u534A\u8FB9\u4F18\u5148\u8BFB\u7684\u5C31\u662F\u5B83\uFF0C\u800C\u5B83\u4ECE\u6765\u8FD8\u6CA1\u6709\u88AB\u5199\u8FC7\u3002Stash \u90A3\u8FB9\u4E00\u4E2A\u5B57\u8282\u90FD\u4E0D\u6539\u3002\u5DF2\u6709\u63D2\u4EF6\u7AE0\u8282\u7684\u753B\u5ECA\u9ED8\u8BA4\u4E0D\u52A8\uFF0C\u9664\u975E\u4F60\u8981\u6C42\u8986\u76D6\u3002",
-    "mangaTools.settings.chapters.check": "\u5148\u770B\u770B\u4F1A\u5BFC\u5165\u54EA\u4E9B",
-    "mangaTools.settings.chapters.checking": "\u6B63\u5728\u68C0\u67E5\u2026",
-    "mangaTools.settings.chapters.toImport": "\u5C06\u5BFC\u5165",
-    "mangaTools.settings.chapters.owned": "\u5DF2\u5BFC\u5165",
-    "mangaTools.settings.chapters.replace": "\u540C\u65F6\u8986\u76D6\u5DF2\u5BFC\u5165\u7684\u90A3\u4E9B",
-    "mangaTools.settings.chapters.start": "\u5BFC\u5165",
-    "mangaTools.settings.chapters.progress": "\u5DF2\u5BFC\u5165",
-    "mangaTools.settings.chapters.of": "/",
-    "mangaTools.settings.chapters.skipped": "\u8DF3\u8FC7\uFF08\u6CA1\u6709\u53EF\u642C\u7684\uFF09",
-    "mangaTools.settings.chapters.failed": "\u5931\u8D25",
+    "mangaTools.settings.openEditBlock.heading": "\u6F2B\u753B\u4FE1\u606F\u7F16\u8F91\u9ED8\u8BA4\u5C55\u5F00",
+    "mangaTools.settings.openEditBlock.description": "\u753B\u5ECA\u7F16\u8F91\u8868\u5355\u91CC\u7684\u90A3\u4E00\u5757\uFF0C\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5728\u90A3\u91CC\u8BBE\u7F6E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00\u3002",
+    "mangaTools.settings.hidePerformers.heading": "\u7F16\u8F91\u9875\u9690\u85CF\u6F14\u51FA\u8005",
+    "mangaTools.settings.hidePerformers.description": "\u6F2B\u753B\u4E00\u822C\u6CA1\u6709\u6F14\u51FA\u8005\uFF0C\u6240\u4EE5\u7F16\u8F91\u9875\u4E0D\u663E\u793A\u8FD9\u4E00\u680F\u3002\u53EA\u662F\u9690\u85CF\uFF1A\u753B\u5ECA\u5DF2\u6709\u7684\u6F14\u51FA\u8005\u4ECD\u7136\u7559\u5728\u753B\u5ECA\u4E0A\uFF0C\u4FDD\u5B58\u65F6\u4E5F\u4E0D\u4F1A\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7F16\u8F91\u5BF9\u8BDD\u6846\u548C\u7B80\u4ECB\u9875\u4E0D\u53D7\u5F71\u54CD\u3002",
+    "mangaTools.settings.mark.heading": "\u6F2B\u753B\u6807\u8BB0",
+    "mangaTools.settings.confirmUnmark.heading": "\u53D6\u6D88\u6F2B\u753B\u6807\u8BB0\u65F6\u786E\u8BA4",
+    "mangaTools.settings.confirmUnmark.description": "\u53D6\u6D88\u6807\u8BB0\u4E4B\u524D\u5148\u95EE\u4E00\u6B21\u3002",
+    "mangaTools.settings.deleteOnUnmark.heading": "\u53D6\u6D88\u6F2B\u753B\u6807\u8BB0\u65F6\u6E05\u9664\u63D2\u4EF6\u5B57\u6BB5",
+    "mangaTools.settings.deleteOnUnmark.description": "\u5F00\u542F\u65F6\uFF0C\u53D6\u6D88\u6807\u8BB0\u4F1A\u8FDE\u540C\u8BED\u8A00\u3001\u4FEE\u6B63\u3001\u7FFB\u8BD1\u7EC4\u548C\u751F\u8089\u7684\u503C\u4E00\u8D77\u6E05\u9664\u3002\u5173\u95ED\u65F6\u8FD9\u4E9B\u503C\u7559\u5728\u753B\u5ECA\u4E0A\u2014\u2014\u53EA\u662F\u4E0D\u518D\u663E\u793A\uFF0C\u91CD\u65B0\u6807\u8BB0\u5C31\u4F1A\u56DE\u6765\u3002",
+    "mangaTools.settings.coverIcon.heading": "\u5728\u5C01\u9762\u4FE1\u606F\u680F\u663E\u793A\u6F2B\u753B\u56FE\u6807",
+    "mangaTools.settings.coverIcon.description": "\u5C01\u9762\u4FE1\u606F\u680F\u672B\u5C3E\u7684\u90A3\u4E2A\u56FE\u6807\u2014\u2014\u5C31\u662F\u60AC\u505C\u65F6\u51FA\u73B0\u3001\u5E26\u56FE\u7247\u6570\u548C\u6807\u7B7E\u6570\u7684\u90A3\u4E00\u884C\u3002\u5173\u6389\u540E\u5C01\u9762\u4E0D\u5E26\u6807\u8BB0\uFF0C\u753B\u5ECA\u4F9D\u7136\u7531\u63D2\u4EF6\u7BA1\u7406\u3002",
+    "mangaTools.settings.coverIcon.help": "\u548C\u8BED\u8A00\u5FBD\u7AE0\u4E0D\u662F\u4E00\u56DE\u4E8B\uFF1A\u5B83\u8BF4\u7684\u662F\u300C\u8FD9\u672C\u5F52\u63D2\u4EF6\u7BA1\u7406\u300D\uFF0C\u800C\u8FD9\u4E0D\u662F\u4E00\u4E2A\u4F1A\u5728\u5C01\u9762\u4E0A\u53BB\u626B\u7684\u503C\u3002",
     "mangaTools.manga.mark": "\u6807\u8BB0\u4E3A\u6F2B\u753B",
     "mangaTools.manga.marked": "\u6F2B\u753B",
     "mangaTools.manga.isManga": "\u662F\u5426\u4E3A\u6F2B\u753B",
@@ -1041,6 +1064,15 @@
     "mangaReader.reimportReplace": "\u53D6\u4EE3",
     "mangaReader.reimportCancel": "\u53D6\u6D88",
     "mangaTools.select.placeholder": "\u9078\u64C7\u8A9E\u8A00\u2026",
+    "mangaTools.settings.readerTakeover.heading": "\u63A5\u7BA1 Stash \u539F\u751F\u71C8\u7BB1",
+    "mangaTools.settings.readerTakeover.description": "\u6A19\u8A18\u70BA\u6F2B\u756B\u7684\u756B\u5ECA\uFF0C\u71C8\u7BB1\u7531\u672C\u5916\u639B\u91CD\u65B0\u8A2D\u8A08\uFF0C\u4E0D\u6703\u66F4\u6539\u539F\u751F\u71C8\u7BB1\u8A2D\u5B9A\u3002",
+    "mangaTools.settings.readerTakeover.note": "\u5916\u639B\u71C8\u7BB1\u76F8\u95DC\u8A2D\u5B9A\u5728\u71C8\u7BB1\u9801\u9762\u8A2D\u5B9A\u4E2D\u8ABF\u6574\u3002",
+    "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u7BC0\u7CFB\u7D71",
+    "mangaTools.settings.manageChapters.description": "\u5206\u9801\u7684\u5EFA\u7ACB\u548C\u7DE8\u8F2F\u7531\u5916\u639B\u63A5\u7BA1\uFF0C\u5BEB\u5165\u5916\u639B\u81EA\u5DF1\u7684\u7AE0\u7BC0\u6B04\u4F4D\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u7BC0\u6703\u88AB\u975C\u9ED8\u532F\u5165\uFF0C\u4F46\u4E0D\u6703\u88AB\u4FEE\u6539\u3002",
+    "mangaTools.settings.manageChapters.warning": "\u958B\u555F\u5F8C\uFF0C\u5C0D\u7AE0\u7BC0\u7684\u4EFB\u4F55\u7DE8\u8F2F\u90FD\u4E0D\u6703\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u7BC0\u3002",
+    "mangaTools.settings.fields.heading": "\u81EA\u8A02\u6B04\u4F4D",
+    "mangaTools.settings.fields.description": "\u5916\u639B\u7684\u6B04\u4F4D\u900F\u904E\u5BEB\u5165 custom fields \u52A0\u5165\uFF0C\u4E0D\u5F71\u97FF\u539F\u751F\u8CC7\u6599\uFF1B\u95DC\u6389\u4EFB\u4F55\u4E00\u500B\uFF0C\u90FD\u4E0D\u6703\u6E05\u9664\u756B\u5ECA\u4E0A\u5DF2\u6709\u7684\u503C\u3002",
+    "mangaTools.settings.field.description": "\u95DC\u9589\u5F8C\uFF0C\u9019\u500B\u6B04\u4F4D\u5F9E\u5B83\u51FA\u73FE\u7684\u6BCF\u4E00\u8655\u6D88\u5931\uFF1A\u5C01\u9762\u5FBD\u7AE0\u3001\u8A73\u7D30\u884C\u3001\u7DE8\u8F2F\u884C\u3001\u6279\u91CF\u7DE8\u8F2F\u548C\u7BE9\u9078\u5668\u3002\u756B\u5ECA\u4E0A\u5DF2\u6709\u7684\u503C\u6703\u4FDD\u7559\u3002",
     "mangaTools.settings.enabledLanguages.heading": "\u555F\u7528\u7684\u8A9E\u8A00",
     "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u9019\u4E9B\u8A9E\u8A00\u6703\u51FA\u73FE\u5728\u7DE8\u8F2F\u9801\u7684\u4E0B\u62C9\u9078\u55AE\u88E1\u3002\u986F\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8A73\u7D30\u9801\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u97FF\u3002\u7559\u7A7A\u8868\u793A\u986F\u793A\u5168\u90E8\u8A9E\u8A00\u3002",
     "mangaTools.settings.enabledLanguages.placeholder": "\u5168\u90E8\u8A9E\u8A00",
@@ -1048,24 +1080,22 @@
     "mangaTools.settings.showFlags.description": "\u5728\u8A9E\u8A00\u540D\u7A31\u65C1\u756B\u51FA\u570B\u65D7\u3002\u95DC\u6389\u5F8C\u53EA\u986F\u793A\u540D\u7A31\u3002",
     "mangaTools.settings.showCoverBadge.heading": "\u5728\u5C01\u9762\u986F\u793A\u8A9E\u8A00",
     "mangaTools.settings.showCoverBadge.description": "\u756B\u5ECA\u5C01\u9762\u53F3\u4E0B\u89D2\u7684\u5FBD\u7AE0\u3002\u95DC\u6389\u570B\u65D7\u6642\u986F\u793A\u8A9E\u8A00\u540D\u7A31\u800C\u4E0D\u662F\u570B\u65D7\u3002",
-    "mangaTools.settings.openDetailsBlock.heading": "\u7C21\u4ECB\u7684\u6F2B\u756B\u8CC7\u8A0A\u9810\u8A2D\u5C55\u958B",
+    "mangaTools.settings.showCoverBadge.help": "\u53EA\u6C7A\u5B9A\u756B\u4E0D\u756B\uFF1A\u95DC\u6389\u5F8C\u5C01\u9762\u4E0D\u5E36\u8A9E\u8A00\u3002\u756B\u5ECA\u4E0A\u7684\u503C\u4E00\u500B\u90FD\u4E0D\u6703\u5C11\uFF0C\u91CD\u65B0\u6253\u958B\u5C31\u9084\u5728\u3002",
+    "mangaTools.settings.display.heading": "\u6F2B\u756B\u8CC7\u8A0A\u7684\u986F\u793A",
+    "mangaTools.settings.openDetailsBlock.heading": "\u6F2B\u756B\u8CC7\u8A0A\u8A73\u60C5\u9810\u8A2D\u5C55\u958B",
     "mangaTools.settings.openDetailsBlock.description": "\u756B\u5ECA\u7C21\u4ECB\u9801\u88E1\u7684\u90A3\u4E00\u7BC0\u3002\u6536\u8D77\u6642\uFF0C\u90A3\u4E00\u884C\u6A19\u984C\u5C31\u662F\u300C\u9019\u88E1\u6709\u4E00\u7BC0\u300D\u7684\u8AAA\u660E\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B\u3002",
-    "mangaTools.settings.openEditBlock.heading": "\u7DE8\u8F2F\u9801\u7684\u6F2B\u756B\u8CC7\u8A0A\u9810\u8A2D\u5C55\u958B",
-    "mangaTools.settings.openEditBlock.description": "\u756B\u5ECA\u7DE8\u8F2F\u8868\u55AE\u88E1\u7684\u90A3\u4E00\u584A\uFF0C\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u5728\u90A3\u88E1\u8A2D\u5B9A\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B.",
-    "mangaTools.settings.hidePerformers.heading": "\u5728\u6F2B\u756B\u7684\u7DE8\u8F2F\u9801\u96B1\u85CF\u300C\u6F14\u54E1\u300D",
-    "mangaTools.settings.hidePerformers.description": "\u6F2B\u756B\u4E00\u822C\u6C92\u6709\u6F14\u54E1\uFF0C\u6240\u4EE5\u7DE8\u8F2F\u9801\u4E0D\u986F\u793A\u9019\u4E00\u6B04\u3002\u53EA\u662F\u96B1\u85CF\uFF1A\u756B\u5ECA\u5DF2\u6709\u7684\u6F14\u54E1\u4ECD\u7136\u7559\u5728\u756B\u5ECA\u4E0A\uFF0C\u5132\u5B58\u6642\u4E5F\u4E0D\u6703\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7DE8\u8F2F\u5C0D\u8A71\u6846\u548C\u7C21\u4ECB\u9801\u4E0D\u53D7\u5F71\u97FF\u3002",
-    "mangaTools.settings.chapters.heading": "\u5F9E Stash \u532F\u5165\u7AE0\u7BC0",
-    "mangaTools.settings.chapters.description": "\u628A\u6BCF\u672C\u5DF2\u6A19\u8A18\u6F2B\u756B\u7684 Stash \u7AE0\u7BC0\u6284\u9032\u5916\u639B\u81EA\u5DF1\u7684\u7AE0\u7BC0\u6B04\u4F4D \u2014\u2014 \u95B1\u8B80\u534A\u908A\u512A\u5148\u8B80\u7684\u5C31\u662F\u5B83\uFF0C\u800C\u5B83\u5F9E\u4F86\u9084\u6C92\u6709\u88AB\u5BEB\u904E\u3002Stash \u90A3\u908A\u4E00\u500B\u4F4D\u5143\u7D44\u90FD\u4E0D\u6539\u3002\u5DF2\u6709\u5916\u639B\u7AE0\u7BC0\u7684\u756B\u5ECA\u9810\u8A2D\u4E0D\u52D5\uFF0C\u9664\u975E\u4F60\u8981\u6C42\u8986\u84CB\u3002",
-    "mangaTools.settings.chapters.check": "\u5148\u770B\u770B\u6703\u532F\u5165\u54EA\u4E9B",
-    "mangaTools.settings.chapters.checking": "\u6B63\u5728\u6AA2\u67E5\u2026",
-    "mangaTools.settings.chapters.toImport": "\u5C07\u532F\u5165",
-    "mangaTools.settings.chapters.owned": "\u5DF2\u532F\u5165",
-    "mangaTools.settings.chapters.replace": "\u540C\u6642\u8986\u84CB\u5DF2\u532F\u5165\u7684\u90A3\u4E9B",
-    "mangaTools.settings.chapters.start": "\u532F\u5165",
-    "mangaTools.settings.chapters.progress": "\u5DF2\u532F\u5165",
-    "mangaTools.settings.chapters.of": "/",
-    "mangaTools.settings.chapters.skipped": "\u8DF3\u904E\uFF08\u6C92\u6709\u53EF\u642C\u7684\uFF09",
-    "mangaTools.settings.chapters.failed": "\u5931\u6557",
+    "mangaTools.settings.openEditBlock.heading": "\u6F2B\u756B\u8CC7\u8A0A\u7DE8\u8F2F\u9810\u8A2D\u5C55\u958B",
+    "mangaTools.settings.openEditBlock.description": "\u756B\u5ECA\u7DE8\u8F2F\u8868\u55AE\u88E1\u7684\u90A3\u4E00\u584A\uFF0C\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u5728\u90A3\u88E1\u8A2D\u5B9A\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B\u3002",
+    "mangaTools.settings.hidePerformers.heading": "\u7DE8\u8F2F\u9801\u96B1\u85CF\u6F14\u51FA\u8005",
+    "mangaTools.settings.hidePerformers.description": "\u6F2B\u756B\u4E00\u822C\u6C92\u6709\u6F14\u51FA\u8005\uFF0C\u6240\u4EE5\u7DE8\u8F2F\u9801\u4E0D\u986F\u793A\u9019\u4E00\u6B04\u3002\u53EA\u662F\u96B1\u85CF\uFF1A\u756B\u5ECA\u5DF2\u6709\u7684\u6F14\u51FA\u8005\u4ECD\u7136\u7559\u5728\u756B\u5ECA\u4E0A\uFF0C\u5132\u5B58\u6642\u4E5F\u4E0D\u6703\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7DE8\u8F2F\u5C0D\u8A71\u6846\u548C\u7C21\u4ECB\u9801\u4E0D\u53D7\u5F71\u97FF\u3002",
+    "mangaTools.settings.mark.heading": "\u6F2B\u756B\u6A19\u8A18",
+    "mangaTools.settings.confirmUnmark.heading": "\u53D6\u6D88\u6F2B\u756B\u6A19\u8A18\u6642\u78BA\u8A8D",
+    "mangaTools.settings.confirmUnmark.description": "\u53D6\u6D88\u6A19\u8A18\u4E4B\u524D\u5148\u554F\u4E00\u6B21\u3002",
+    "mangaTools.settings.deleteOnUnmark.heading": "\u53D6\u6D88\u6F2B\u756B\u6A19\u8A18\u6642\u6E05\u9664\u5916\u639B\u6B04\u4F4D",
+    "mangaTools.settings.deleteOnUnmark.description": "\u958B\u555F\u6642\uFF0C\u53D6\u6D88\u6A19\u8A18\u6703\u9023\u540C\u8A9E\u8A00\u3001\u4FEE\u6B63\u3001\u7FFB\u8B6F\u7D44\u548C\u751F\u8089\u7684\u503C\u4E00\u8D77\u6E05\u9664\u3002\u95DC\u9589\u6642\u9019\u4E9B\u503C\u7559\u5728\u756B\u5ECA\u4E0A\u2014\u2014\u53EA\u662F\u4E0D\u518D\u986F\u793A\uFF0C\u91CD\u65B0\u6A19\u8A18\u5C31\u6703\u56DE\u4F86\u3002",
+    "mangaTools.settings.coverIcon.heading": "\u5728\u5C01\u9762\u8CC7\u8A0A\u6B04\u986F\u793A\u6F2B\u756B\u5716\u793A",
+    "mangaTools.settings.coverIcon.description": "\u5C01\u9762\u8CC7\u8A0A\u6B04\u672B\u5C3E\u7684\u90A3\u500B\u5716\u793A\u2014\u2014\u5C31\u662F\u61F8\u505C\u6642\u51FA\u73FE\u3001\u5E36\u5716\u7247\u6578\u548C\u6A19\u7C64\u6578\u7684\u90A3\u4E00\u884C\u3002\u95DC\u6389\u5F8C\u5C01\u9762\u4E0D\u5E36\u6A19\u8A18\uFF0C\u756B\u5ECA\u4F9D\u7136\u7531\u5916\u639B\u7BA1\u7406\u3002",
+    "mangaTools.settings.coverIcon.help": "\u548C\u8A9E\u8A00\u5FBD\u7AE0\u4E0D\u662F\u4E00\u56DE\u4E8B\uFF1A\u5B83\u8AAA\u7684\u662F\u300C\u9019\u672C\u6B78\u5916\u639B\u7BA1\u7406\u300D\uFF0C\u800C\u9019\u4E0D\u662F\u4E00\u500B\u6703\u5728\u5C01\u9762\u4E0A\u53BB\u6383\u7684\u503C\u3002",
     "mangaTools.manga.mark": "\u6A19\u8A18\u70BA\u6F2B\u756B",
     "mangaTools.manga.marked": "\u6F2B\u756B",
     "mangaTools.manga.isManga": "\u662F\u5426\u70BA\u6F2B\u756B",
@@ -1633,7 +1663,7 @@
   var confirming = false;
   function syncChaptersTab() {
     const id = galleryIdFromPath(window.location.pathname);
-    if (!id) {
+    if (!id || !NS.manageChapters) {
       forgetChaptersTab();
       return;
     }
@@ -2748,6 +2778,10 @@
       if (marked === false) leaveUnmarked(lightbox);
       return;
     }
+    if (!NS.readerTakeover) {
+      leaveUnmarked(lightbox);
+      return;
+    }
     claim(lightbox);
     if (galleryId !== wantedId || !loaded.has(wantedId)) {
       loadGallery(wantedId);
@@ -2763,6 +2797,7 @@
     lightbox.classList.add(CLASS_TAKEOVER);
   }
   function wanted() {
+    if (!NS.readerTakeover) return false;
     const id = galleryIdFromPath(window.location.pathname);
     return root !== null && id !== null && NS.markedInStore(id) === true;
   }
@@ -3532,6 +3567,10 @@
     (_c = (_b2 = NS).watchReaderSettings) == null ? void 0 : _c.call(_b2, () => {
       if (NS.readerSettingsRaw === null) return;
       settings = readSettings();
+      if (!NS.readerTakeover) {
+        if (root) deactivate();
+        return;
+      }
       if (root) sync(root);
     });
     step();
@@ -5158,6 +5197,17 @@
     });
     return inFlight;
   }
+  var FEATURE_ON_BY_DEFAULT = true;
+  NS.readerTakeover = FEATURE_ON_BY_DEFAULT;
+  NS.manageChapters = FEATURE_ON_BY_DEFAULT;
+  NS.fields = FEATURE_ON_BY_DEFAULT;
+  NS.fieldLanguage = FEATURE_ON_BY_DEFAULT;
+  NS.fieldCensorship = FEATURE_ON_BY_DEFAULT;
+  NS.fieldTranslationGroup = FEATURE_ON_BY_DEFAULT;
+  NS.fieldOriginal = FEATURE_ON_BY_DEFAULT;
+  NS.coverIcon = FEATURE_ON_BY_DEFAULT;
+  NS.confirmUnmark = FEATURE_ON_BY_DEFAULT;
+  NS.deleteOnUnmark = FEATURE_ON_BY_DEFAULT;
   var SETTINGS_QUERY = null;
   function getSettingsQuery() {
     if (SETTINGS_QUERY) return SETTINGS_QUERY;
@@ -5185,6 +5235,46 @@
       const pluginCfg = plugins == null ? void 0 : plugins[PLUGIN_ID];
       NS.enabledLanguages = NS.parseEnabledLanguages(
         pluginCfg ? pluginCfg.enabledLanguages : null
+      );
+      NS.readerTakeover = NS.parseFlag(
+        pluginCfg ? pluginCfg.readerTakeover : null,
+        FEATURE_ON_BY_DEFAULT
+      );
+      NS.manageChapters = NS.parseFlag(
+        pluginCfg ? pluginCfg.manageChapters : null,
+        FEATURE_ON_BY_DEFAULT
+      );
+      NS.fields = NS.parseFlag(
+        pluginCfg ? pluginCfg.fields : null,
+        FEATURE_ON_BY_DEFAULT
+      );
+      NS.fieldLanguage = NS.parseFlag(
+        pluginCfg ? pluginCfg.fieldLanguage : null,
+        FEATURE_ON_BY_DEFAULT
+      );
+      NS.fieldCensorship = NS.parseFlag(
+        pluginCfg ? pluginCfg.fieldCensorship : null,
+        FEATURE_ON_BY_DEFAULT
+      );
+      NS.fieldTranslationGroup = NS.parseFlag(
+        pluginCfg ? pluginCfg.fieldTranslationGroup : null,
+        FEATURE_ON_BY_DEFAULT
+      );
+      NS.fieldOriginal = NS.parseFlag(
+        pluginCfg ? pluginCfg.fieldOriginal : null,
+        FEATURE_ON_BY_DEFAULT
+      );
+      NS.coverIcon = NS.parseFlag(
+        pluginCfg ? pluginCfg.coverIcon : null,
+        FEATURE_ON_BY_DEFAULT
+      );
+      NS.confirmUnmark = NS.parseFlag(
+        pluginCfg ? pluginCfg.confirmUnmark : null,
+        FEATURE_ON_BY_DEFAULT
+      );
+      NS.deleteOnUnmark = NS.parseFlag(
+        pluginCfg ? pluginCfg.deleteOnUnmark : null,
+        FEATURE_ON_BY_DEFAULT
       );
       NS.showFlags = NS.parseFlag(pluginCfg ? pluginCfg.showFlags : null, true);
       NS.showCoverBadge = NS.parseFlag(
@@ -5348,7 +5438,7 @@
     const intl = PluginApi5.libraries.Intl.useIntl();
     const manga = storedIsManga(props.galleryId);
     const slot = manga ? ensurePopoverSlot(props.galleryId) : null;
-    if (!manga) return null;
+    if (!manga || !NS.coverIcon) return null;
     return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement("span", { className: POPOVER_ANCHOR_CLASS, "data-gallery": props.galleryId }), slot ? PluginApi5.ReactDOM.createPortal(
       /* @__PURE__ */ React5.createElement(
         "button",
@@ -5435,110 +5525,6 @@
       props.resetsForm ? /* @__PURE__ */ React5.createElement("div", null, t(intl, "mangaTools.manga.confirmResetsForm")) : null
     );
   }
-  var chapterJob = { phase: "idle" };
-  function readerChapters() {
-    const reader = window.MangaReader;
-    if (!reader || typeof reader.planChapterImports !== "function" || typeof reader.runChapterImports !== "function") {
-      return null;
-    }
-    return reader;
-  }
-  function ChapterImportSetting(props) {
-    const intl = props.intl;
-    const Bootstrap = PluginApi5.libraries.Bootstrap;
-    const Button = Bootstrap == null ? void 0 : Bootstrap.Button;
-    const job = chapterJob;
-    function plan() {
-      const reader = readerChapters();
-      if (!reader) {
-        console.error(
-          "[mangaTools] the reader half is not running, so its chapter import cannot be asked for"
-        );
-        return;
-      }
-      chapterJob = { phase: "planning" };
-      emit();
-      reader.planChapterImports().then(
-        (next) => {
-          chapterJob = next.toImport.length > 0 || next.owned.length > 0 ? { phase: "confirming", plan: next, replace: false } : { phase: "done", outcome: emptyRun() };
-          emit();
-        },
-        (e) => {
-          console.error("[mangaTools] could not work out what to import:", e);
-          chapterJob = { phase: "idle" };
-          emit();
-        }
-      );
-    }
-    function run(plan2, replace) {
-      const reader = readerChapters();
-      if (!reader) return;
-      const total = replace ? plan2.toImport.length + plan2.owned.length : plan2.toImport.length;
-      chapterJob = { phase: "running", plan: plan2, replace, done: 0, total };
-      emit();
-      reader.runChapterImports(plan2, {
-        reimport: replace,
-        onProgress: (done, total2) => {
-          chapterJob = { phase: "running", plan: plan2, replace, done, total: total2 };
-          emit();
-        }
-      }).then(
-        (outcome) => {
-          chapterJob = { phase: "done", outcome };
-          emit();
-        },
-        (e) => {
-          console.error("[mangaTools] the chapter import did not finish:", e);
-          chapterJob = { phase: "idle" };
-          emit();
-        }
-      );
-    }
-    if (!Button) return null;
-    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React5.createElement("h3", null, t(intl, "mangaTools.settings.chapters.heading")), /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.chapters.description")), /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-control" }, job.phase === "running" ? /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-settings-progress" }, t(intl, "mangaTools.settings.chapters.progress"), " ", job.done, " ", t(intl, "mangaTools.settings.chapters.of"), " ", job.total) : /* @__PURE__ */ React5.createElement(
-      Button,
-      {
-        variant: "secondary",
-        disabled: job.phase === "planning",
-        onClick: plan
-      },
-      t(
-        intl,
-        job.phase === "planning" ? "mangaTools.settings.chapters.checking" : "mangaTools.settings.chapters.check"
-      )
-    )), job.phase === "done" ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.chapters.progress"), " ", job.outcome.written.length, " \xB7", " ", t(intl, "mangaTools.settings.chapters.skipped"), " ", job.outcome.skippedEmpty.length, " \xB7", " ", t(intl, "mangaTools.settings.chapters.failed"), " ", job.outcome.failed.length) : null)), job.phase === "confirming" ? /* @__PURE__ */ React5.createElement(
-      ConfirmDialog,
-      {
-        variant: "danger",
-        confirmLabel: t(intl, "mangaTools.settings.chapters.start"),
-        cancelLabel: t(intl, "mangaTools.manga.confirmCancel"),
-        onCancel: () => {
-          chapterJob = { phase: "idle" };
-          emit();
-        },
-        onConfirm: () => run(job.plan, job.replace)
-      },
-      /* @__PURE__ */ React5.createElement("div", null, t(intl, "mangaTools.settings.chapters.toImport"), " ", job.plan.toImport.length, " \xB7", " ", t(intl, "mangaTools.settings.chapters.owned"), " ", job.plan.owned.length),
-      /* @__PURE__ */ React5.createElement("label", { className: "manga-tools-settings-check" }, /* @__PURE__ */ React5.createElement(
-        "input",
-        {
-          type: "checkbox",
-          checked: job.replace,
-          onChange: () => {
-            chapterJob = {
-              phase: "confirming",
-              plan: job.plan,
-              replace: !job.replace
-            };
-            emit();
-          }
-        }
-      ), " ", t(intl, "mangaTools.settings.chapters.replace"))
-    ) : null);
-  }
-  function emptyRun() {
-    return { written: [], failed: [], skippedEmpty: [] };
-  }
   var editForm = null;
   function editFormFor(galleryId2) {
     return editForm && editForm.galleryId === galleryId2 ? editForm : null;
@@ -5555,6 +5541,16 @@
     var _a2;
     return {
       enabledLanguages: NS.enabledLanguages ? NS.serializeEnabledLanguages(NS.enabledLanguages) : "",
+      readerTakeover: NS.readerTakeover,
+      manageChapters: NS.manageChapters,
+      fields: NS.fields,
+      fieldLanguage: NS.fieldLanguage,
+      fieldCensorship: NS.fieldCensorship,
+      fieldTranslationGroup: NS.fieldTranslationGroup,
+      fieldOriginal: NS.fieldOriginal,
+      coverIcon: NS.coverIcon,
+      confirmUnmark: NS.confirmUnmark,
+      deleteOnUnmark: NS.deleteOnUnmark,
       showFlags: NS.showFlags,
       showCoverBadge: NS.showCoverBadge,
       openDetailsBlock: NS.openDetailsBlock,
@@ -5689,6 +5685,10 @@
         mark();
         return;
       }
+      if (!NS.confirmUnmark) {
+        onConfirmUnmark();
+        return;
+      }
       setConfirming(true);
     };
     const mark = () => {
@@ -5803,7 +5803,10 @@
     const Button = (_a2 = PluginApi5.libraries.Bootstrap) == null ? void 0 : _a2.Button;
     const host = isGalleryContext() ? ensureFieldHost() : null;
     if (host) {
-      host.classList.toggle("hide-performers", NS.hidePerformers);
+      host.classList.toggle(
+        "hide-performers",
+        NS.hidePerformers && NS.anyFieldShowing()
+      );
     }
     const bump = React5.useState(0)[1];
     React5.useLayoutEffect(() => {
@@ -5811,7 +5814,9 @@
         bump((v) => v + 1);
       }
     });
-    if (!isGalleryContext() || !Select || !host) return null;
+    if (!isGalleryContext() || !Select || !host || !NS.anyFieldShowing()) {
+      return null;
+    }
     const write2 = (name, value) => {
       if (props.onChange) {
         props.onChange(NS.setField(props.values, name, value));
@@ -5963,6 +5968,9 @@
         return { value: name, label: name, hint };
       })
     ];
+    const showGroup = NS.fieldShowing("translationGroup");
+    const showOriginal = NS.fieldShowing("original");
+    const rawShown = showOriginal && isOriginal;
     const originalLabel = t(intl, "mangaTools.translationGroup.original");
     const originalChip = /* @__PURE__ */ React5.createElement(
       "button",
@@ -5979,32 +5987,50 @@
       },
       /* @__PURE__ */ React5.createElement(SteakIcon, { raw: isOriginal })
     );
-    const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement("div", { className: cls.control + " manga-tools-chip-row" }, /* @__PURE__ */ React5.createElement(
-      Select,
+    const originalRow = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_original" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_original" }, originalLabel), /* @__PURE__ */ React5.createElement("div", { className: cls.control }, /* @__PURE__ */ React5.createElement("div", { className: "form-check form-switch" }, /* @__PURE__ */ React5.createElement(
+      "input",
       {
-        className: "manga-tools-select manga-tools-group-select",
-        classNamePrefix: "react-select",
-        inputId: "manga_tools_translation_group",
-        isClearable: true,
-        isDisabled: isOriginal,
-        placeholder: t(
-          intl,
-          isOriginal ? "mangaTools.translationGroup.originalDetail" : "mangaTools.translationGroup.placeholder"
-        ),
-        value: groupRaw ? { value: groupRaw, label: groupName } : null,
-        options: groupOptions,
-        formatOptionLabel: formatGroupOption,
-        components: { IndicatorSeparator: () => null },
-        onMenuOpen: () => refreshForSuggestions(),
-        onInputChange: (text2, meta) => {
-          if ((meta == null ? void 0 : meta.action) !== "input-change") return;
-          writeGroup(text2.trim() ? text2 : "");
-        },
-        onChange: (opt) => {
-          writeGroup(opt ? opt.value : "");
-        }
+        className: "form-check-input",
+        type: "checkbox",
+        role: "switch",
+        id: "manga_tools_original",
+        checked: isOriginal,
+        onChange: toggleOriginal
       }
-    ), originalChip));
+    ))));
+    const groupField = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement(
+      "div",
+      {
+        className: cls.control + (showOriginal ? " manga-tools-chip-row" : "")
+      },
+      /* @__PURE__ */ React5.createElement(
+        Select,
+        {
+          className: "manga-tools-select manga-tools-group-select",
+          classNamePrefix: "react-select",
+          inputId: "manga_tools_translation_group",
+          isClearable: true,
+          isDisabled: rawShown,
+          placeholder: t(
+            intl,
+            rawShown ? "mangaTools.translationGroup.originalDetail" : "mangaTools.translationGroup.placeholder"
+          ),
+          value: groupRaw ? { value: groupRaw, label: groupName } : null,
+          options: groupOptions,
+          formatOptionLabel: formatGroupOption,
+          components: { IndicatorSeparator: () => null },
+          onMenuOpen: () => refreshForSuggestions(),
+          onInputChange: (text2, meta) => {
+            if ((meta == null ? void 0 : meta.action) !== "input-change") return;
+            writeGroup(text2.trim() ? text2 : "");
+          },
+          onChange: (opt) => {
+            writeGroup(opt ? opt.value : "");
+          }
+        }
+      ),
+      showOriginal ? originalChip : null
+    ));
     return PluginApi5.ReactDOM.createPortal(
       /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React5.createElement("div", { className: cls.group }, /* @__PURE__ */ React5.createElement("div", { className: "col-12" }, /* @__PURE__ */ React5.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React5.createElement(
         Button,
@@ -6021,9 +6047,15 @@
           }
         ),
         /* @__PURE__ */ React5.createElement("span", null, t(intl, "mangaTools.panel.heading"))
-      ) : null))), open ? markField : null, open ? languageField : null, open ? groupField : null),
+      ) : null))), open && NS.fieldShowing("censorship") ? markField : null, open && NS.fieldShowing("language") ? languageField : null, open && showGroup ? groupField : null, open && showOriginal && !showGroup ? originalRow : null),
       host
     );
+  }
+  function HelpIcon(props) {
+    const Solid = PluginApi5.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi5.components.Icon;
+    const icon = Solid.faQuestionCircle || null;
+    return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-help", title: props.text }, icon ? /* @__PURE__ */ React5.createElement(Icon, { icon }) : "?");
   }
   function BooleanSetting(props) {
     const Bootstrap = PluginApi5.libraries.Bootstrap;
@@ -6033,7 +6065,7 @@
       );
       return null;
     }
-    return /* @__PURE__ */ React5.createElement("div", { className: "setting" }, /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement("h3", null, props.heading), /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading)), /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement(
+    return /* @__PURE__ */ React5.createElement("div", { className: "setting" }, /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement("h3", null, props.help ? /* @__PURE__ */ React5.createElement(React5.Fragment, null, props.heading, /* @__PURE__ */ React5.createElement(HelpIcon, { text: props.help })) : props.heading), props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null), /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement(
       Bootstrap.Form.Switch,
       {
         id: props.id,
@@ -6044,6 +6076,22 @@
       }
     )));
   }
+  function SettingSwitch(props) {
+    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(
+      BooleanSetting,
+      {
+        id: props.id,
+        heading: props.heading,
+        subHeading: props.subHeading,
+        help: props.help,
+        checked: props.checked,
+        onChange: props.onChange
+      }
+    ), props.checked && props.children ? /* @__PURE__ */ React5.createElement("div", { className: "setting-group manga-tools-settings-group" }, props.children) : null);
+  }
+  function SettingsHeading(props) {
+    return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-heading" }, /* @__PURE__ */ React5.createElement("h3", null, props.heading), props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null);
+  }
   function MangaToolsSettings() {
     useGlobalVersion();
     const intl = PluginApi5.libraries.Intl.useIntl();
@@ -6051,99 +6099,231 @@
     function persist() {
       saveSettings();
     }
+    function writeFlag(into) {
+      return (next) => {
+        into(next);
+        emit();
+        persist();
+      };
+    }
     const options = NS.languageOptions(intl.locale);
     const enabled = NS.enabledLanguages;
     const value = enabled ? options.filter((o) => enabled == null ? void 0 : enabled.has(o.value)) : [];
     if (!Select) return null;
-    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React5.createElement("h3", null, t(intl, "mangaTools.settings.enabledLanguages.heading")), /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.enabledLanguages.description")), /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-control" }, /* @__PURE__ */ React5.createElement(
-      Select,
+    const fieldDescription = t(intl, "mangaTools.settings.field.description");
+    const field2 = (id, heading, showing, set) => /* @__PURE__ */ React5.createElement(
+      BooleanSetting,
       {
-        className: "manga-tools-settings-select",
-        classNamePrefix: "react-select",
-        isMulti: true,
-        isClearable: true,
-        menuPlacement: "auto",
-        placeholder: t(
-          intl,
-          "mangaTools.settings.enabledLanguages.placeholder"
+        id,
+        heading,
+        subHeading: fieldDescription,
+        checked: showing(),
+        onChange: writeFlag(set)
+      }
+    );
+    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(
+      SettingSwitch,
+      {
+        id: "mangaTools-readerTakeover",
+        heading: t(intl, "mangaTools.settings.readerTakeover.heading"),
+        subHeading: t(intl, "mangaTools.settings.readerTakeover.description"),
+        checked: NS.readerTakeover,
+        onChange: writeFlag((next) => {
+          NS.readerTakeover = next;
+        })
+      },
+      /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-note" }, t(intl, "mangaTools.settings.readerTakeover.note"))
+    ), /* @__PURE__ */ React5.createElement(
+      SettingSwitch,
+      {
+        id: "mangaTools-manageChapters",
+        heading: t(intl, "mangaTools.settings.manageChapters.heading"),
+        subHeading: t(intl, "mangaTools.settings.manageChapters.description"),
+        checked: NS.manageChapters,
+        onChange: writeFlag((next) => {
+          NS.manageChapters = next;
+        })
+      },
+      /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-warning", role: "alert" }, t(intl, "mangaTools.settings.manageChapters.warning"))
+    ), /* @__PURE__ */ React5.createElement(
+      SettingSwitch,
+      {
+        id: "mangaTools-fields",
+        heading: t(intl, "mangaTools.settings.fields.heading"),
+        subHeading: t(intl, "mangaTools.settings.fields.description"),
+        checked: NS.fields,
+        onChange: writeFlag((next) => {
+          NS.fields = next;
+        })
+      },
+      /* @__PURE__ */ React5.createElement(
+        SettingSwitch,
+        {
+          id: "mangaTools-fieldLanguage",
+          heading: fieldLabel2(intl),
+          subHeading: fieldDescription,
+          checked: NS.fieldLanguage,
+          onChange: writeFlag((next) => {
+            NS.fieldLanguage = next;
+          })
+        },
+        /* @__PURE__ */ React5.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React5.createElement("h3", null, t(intl, "mangaTools.settings.enabledLanguages.heading")), /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.enabledLanguages.description")), /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-control" }, /* @__PURE__ */ React5.createElement(
+          Select,
+          {
+            className: "manga-tools-settings-select",
+            classNamePrefix: "react-select",
+            isMulti: true,
+            isClearable: true,
+            menuPlacement: "auto",
+            placeholder: t(
+              intl,
+              "mangaTools.settings.enabledLanguages.placeholder"
+            ),
+            value,
+            options,
+            formatOptionLabel: formatLanguageOption,
+            components: { IndicatorSeparator: () => null },
+            onChange: (selected) => {
+              const codes = (selected || []).map((o) => o.value);
+              NS.enabledLanguages = NS.parseEnabledLanguages(
+                NS.serializeEnabledLanguages(codes)
+              );
+              emit();
+              persist();
+            }
+          }
+        )))),
+        /* @__PURE__ */ React5.createElement(
+          BooleanSetting,
+          {
+            id: "mangaTools-showFlags",
+            heading: t(intl, "mangaTools.settings.showFlags.heading"),
+            subHeading: t(intl, "mangaTools.settings.showFlags.description"),
+            checked: NS.showFlags,
+            onChange: writeFlag((next) => {
+              NS.showFlags = next;
+            })
+          }
         ),
-        value,
-        options,
-        formatOptionLabel: formatLanguageOption,
-        components: { IndicatorSeparator: () => null },
-        onChange: (selected) => {
-          const codes = (selected || []).map((o) => o.value);
-          NS.enabledLanguages = NS.parseEnabledLanguages(
-            NS.serializeEnabledLanguages(codes)
-          );
-          emit();
-          persist();
+        /* @__PURE__ */ React5.createElement(
+          BooleanSetting,
+          {
+            id: "mangaTools-showCoverBadge",
+            heading: t(intl, "mangaTools.settings.showCoverBadge.heading"),
+            subHeading: t(
+              intl,
+              "mangaTools.settings.showCoverBadge.description"
+            ),
+            help: t(intl, "mangaTools.settings.showCoverBadge.help"),
+            checked: NS.showCoverBadge,
+            onChange: writeFlag((next) => {
+              NS.showCoverBadge = next;
+            })
+          }
+        )
+      ),
+      field2(
+        "mangaTools-fieldCensorship",
+        t(intl, "mangaTools.censorship.heading"),
+        () => NS.fieldCensorship,
+        (next) => {
+          NS.fieldCensorship = next;
         }
-      }
-    )))), /* @__PURE__ */ React5.createElement(
+      ),
+      field2(
+        "mangaTools-fieldTranslationGroup",
+        t(intl, "mangaTools.translationGroup.heading"),
+        () => NS.fieldTranslationGroup,
+        (next) => {
+          NS.fieldTranslationGroup = next;
+        }
+      ),
+      field2(
+        "mangaTools-fieldOriginal",
+        t(intl, "mangaTools.translationGroup.original"),
+        () => NS.fieldOriginal,
+        (next) => {
+          NS.fieldOriginal = next;
+        }
+      ),
+      /* @__PURE__ */ React5.createElement(
+        SettingsHeading,
+        {
+          heading: t(intl, "mangaTools.settings.display.heading")
+        }
+      ),
+      /* @__PURE__ */ React5.createElement(
+        BooleanSetting,
+        {
+          id: "mangaTools-openDetailsBlock",
+          heading: t(intl, "mangaTools.settings.openDetailsBlock.heading"),
+          subHeading: t(
+            intl,
+            "mangaTools.settings.openDetailsBlock.description"
+          ),
+          checked: NS.openDetailsBlock,
+          onChange: writeFlag((next) => {
+            NS.openDetailsBlock = next;
+          })
+        }
+      ),
+      /* @__PURE__ */ React5.createElement(
+        BooleanSetting,
+        {
+          id: "mangaTools-openEditBlock",
+          heading: t(intl, "mangaTools.settings.openEditBlock.heading"),
+          subHeading: t(intl, "mangaTools.settings.openEditBlock.description"),
+          checked: NS.openEditBlock,
+          onChange: writeFlag((next) => {
+            NS.openEditBlock = next;
+          })
+        }
+      ),
+      /* @__PURE__ */ React5.createElement(
+        BooleanSetting,
+        {
+          id: "mangaTools-hidePerformers",
+          heading: t(intl, "mangaTools.settings.hidePerformers.heading"),
+          subHeading: t(intl, "mangaTools.settings.hidePerformers.description"),
+          checked: NS.hidePerformers,
+          onChange: writeFlag((next) => {
+            NS.hidePerformers = next;
+          })
+        }
+      )
+    ), /* @__PURE__ */ React5.createElement(SettingsHeading, { heading: t(intl, "mangaTools.settings.mark.heading") }), /* @__PURE__ */ React5.createElement(
       BooleanSetting,
       {
-        id: "mangaTools-showFlags",
-        heading: t(intl, "mangaTools.settings.showFlags.heading"),
-        subHeading: t(intl, "mangaTools.settings.showFlags.description"),
-        checked: NS.showFlags,
-        onChange: (next) => {
-          NS.showFlags = next;
-          emit();
-          persist();
-        }
+        id: "mangaTools-confirmUnmark",
+        heading: t(intl, "mangaTools.settings.confirmUnmark.heading"),
+        subHeading: t(intl, "mangaTools.settings.confirmUnmark.description"),
+        checked: NS.confirmUnmark,
+        onChange: writeFlag((next) => {
+          NS.confirmUnmark = next;
+        })
       }
     ), /* @__PURE__ */ React5.createElement(
       BooleanSetting,
       {
-        id: "mangaTools-showCoverBadge",
-        heading: t(intl, "mangaTools.settings.showCoverBadge.heading"),
-        subHeading: t(intl, "mangaTools.settings.showCoverBadge.description"),
-        checked: NS.showCoverBadge,
-        onChange: (next) => {
-          NS.showCoverBadge = next;
-          emit();
-          persist();
-        }
+        id: "mangaTools-deleteOnUnmark",
+        heading: t(intl, "mangaTools.settings.deleteOnUnmark.heading"),
+        subHeading: t(intl, "mangaTools.settings.deleteOnUnmark.description"),
+        checked: NS.deleteOnUnmark,
+        onChange: writeFlag((next) => {
+          NS.deleteOnUnmark = next;
+        })
       }
     ), /* @__PURE__ */ React5.createElement(
       BooleanSetting,
       {
-        id: "mangaTools-openDetailsBlock",
-        heading: t(intl, "mangaTools.settings.openDetailsBlock.heading"),
-        subHeading: t(intl, "mangaTools.settings.openDetailsBlock.description"),
-        checked: NS.openDetailsBlock,
-        onChange: (next) => {
-          NS.openDetailsBlock = next;
-          emit();
-          persist();
-        }
-      }
-    ), /* @__PURE__ */ React5.createElement(
-      BooleanSetting,
-      {
-        id: "mangaTools-openEditBlock",
-        heading: t(intl, "mangaTools.settings.openEditBlock.heading"),
-        subHeading: t(intl, "mangaTools.settings.openEditBlock.description"),
-        checked: NS.openEditBlock,
-        onChange: (next) => {
-          NS.openEditBlock = next;
-          emit();
-          persist();
-        }
-      }
-    ), /* @__PURE__ */ React5.createElement(ChapterImportSetting, { intl }), /* @__PURE__ */ React5.createElement(
-      BooleanSetting,
-      {
-        id: "mangaTools-hidePerformers",
-        heading: t(intl, "mangaTools.settings.hidePerformers.heading"),
-        subHeading: t(intl, "mangaTools.settings.hidePerformers.description"),
-        checked: NS.hidePerformers,
-        onChange: (next) => {
-          NS.hidePerformers = next;
-          emit();
-          persist();
-        }
+        id: "mangaTools-coverIcon",
+        heading: t(intl, "mangaTools.settings.coverIcon.heading"),
+        subHeading: t(intl, "mangaTools.settings.coverIcon.description"),
+        help: t(intl, "mangaTools.settings.coverIcon.help"),
+        checked: NS.coverIcon,
+        onChange: writeFlag((next) => {
+          NS.coverIcon = next;
+        })
       }
     ));
   }
@@ -6414,7 +6594,7 @@
       }
     )));
     return PluginApi5.ReactDOM.createPortal(
-      /* @__PURE__ */ React5.createElement(React5.Fragment, null, tri === false && aggregate !== "none" ? /* @__PURE__ */ React5.createElement("div", { className: "alert alert-warning", role: "alert" }, t(intl, "mangaTools.bulk.unmarkWarning")) : null, mangaRow, tri === true ? languageRow : null, tri === true ? censorshipRow : null),
+      /* @__PURE__ */ React5.createElement(React5.Fragment, null, tri === false && aggregate !== "none" ? /* @__PURE__ */ React5.createElement("div", { className: "alert alert-warning", role: "alert" }, t(intl, "mangaTools.bulk.unmarkWarning")) : null, mangaRow, tri === true && NS.fieldShowing("language") ? languageRow : null, tri === true && NS.fieldShowing("censorship") ? censorshipRow : null),
       host
     );
   }
@@ -6454,10 +6634,10 @@
     const state = React5.useState(NS.openDetailsBlock);
     const open = state[0];
     const setOpen = state[1];
-    const language2 = NS.describe(pickLanguage(props.values), intl.locale);
-    const mark = censorshipOf(props.values);
-    const group = NS.translationGroupOf(props.values);
-    const original = NS.isOriginal(props.values);
+    const language2 = NS.fieldShowing("language") ? NS.describe(pickLanguage(props.values), intl.locale) : null;
+    const mark = NS.fieldShowing("censorship") ? censorshipOf(props.values) : "";
+    const group = NS.fieldShowing("translationGroup") ? NS.translationGroupOf(props.values) : "";
+    const original = NS.fieldShowing("original") && NS.isOriginal(props.values);
     const Solid = PluginApi5.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi5.components.Icon;
     const Button = (_a2 = PluginApi5.libraries.Bootstrap) == null ? void 0 : _a2.Button;
@@ -6472,10 +6652,14 @@
       // the same shape on every gallery rather than picked from a list.
       /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.heading") + ": ", group)
     ) : null, original && !language2 ? (
-      // Raw with no language to carry the mark, so it stands on its own — and
-      // without the group's label, for the reason above. The wording carries the
-      // rest: a bare "原文" under that label would read like a group called that,
-      // which is why the string says what it does.
+      // Raw with no language row to carry the mark, so it stands on its own —
+      // and without the group's label, for the reason above. The wording carries
+      // the rest: a bare "原文" under that label would read like a group called
+      // that, which is why the string says what it does.
+      //
+      // "No language row" rather than "no language set": with the language field
+      // turned off there is no row to ride on whatever the gallery holds, and a
+      // raw mark with no way of being shown is worse than one shown plainly.
       /* @__PURE__ */ React5.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.originalDetail"))
     ) : null);
     return PluginApi5.ReactDOM.createPortal(
@@ -6505,7 +6689,8 @@
     noteFired("GalleryCard.Overlays");
     const id = (_a2 = props.gallery) == null ? void 0 : _a2.id;
     const value = id ? pickLanguage(store == null ? void 0 : store.get(String(id))) : "";
-    if (!value || !NS.showCoverBadge) return result;
+    if (!value || !NS.showCoverBadge || !NS.fieldShowing("language"))
+      return result;
     return /* @__PURE__ */ React5.createElement(React5.Fragment, null, result, /* @__PURE__ */ React5.createElement(LanguageBadge, { galleryId: id }));
   });
   registerPatch("after", "GalleryCard.Popovers", (...args) => {
@@ -6653,7 +6838,7 @@
     noteFired("FilteredGalleryList.SidebarSections");
     const filter = currentSidebarFilter();
     if (!filter) return result;
-    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(SidebarLanguageFilter, { filter }), /* @__PURE__ */ React5.createElement(SidebarCensorshipFilter, { filter }), /* @__PURE__ */ React5.createElement(SidebarMangaFilter, { filter }), result);
+    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, NS.fieldShowing("language") ? /* @__PURE__ */ React5.createElement(SidebarLanguageFilter, { filter }) : null, NS.fieldShowing("censorship") ? /* @__PURE__ */ React5.createElement(SidebarCensorshipFilter, { filter }) : null, /* @__PURE__ */ React5.createElement(SidebarMangaFilter, { filter }), result);
   });
   registerPatch("after", "FilteredGalleryList", (...args) => {
     const result = resultFrom(args);
@@ -6671,8 +6856,10 @@
     const props = args[0];
     const Original = originalFrom(args);
     noteFired("GalleryList.filter");
-    if (props.filter) registerLanguageCriterionOption(props.filter);
-    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(DialogLanguageFilter, { filter: props.filter }), /* @__PURE__ */ React5.createElement(Original, { ...props }));
+    if (props.filter && NS.fieldShowing("language")) {
+      registerLanguageCriterionOption(props.filter);
+    }
+    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, NS.fieldShowing("language") ? /* @__PURE__ */ React5.createElement(DialogLanguageFilter, { filter: props.filter }) : null, /* @__PURE__ */ React5.createElement(Original, { ...props }));
   });
   registerPatch("after", "RatingSystem", (...args) => {
     noteFired("RatingSystem");
