@@ -845,10 +845,7 @@
     "mangaReader.doublePage": "Double page",
     "mangaReader.coverAlone": "Cover on a page of its own",
     "mangaReader.detectSpreads": "Detect spreads automatically",
-    "mangaReader.detectSpreadsHint": "Decides which two pages belong together from their shape.",
-    "mangaReader.groupGallery": "This gallery",
     "mangaReader.offset": "Shift the pairing by one page",
-    "mangaReader.offsetHint": "Only for this gallery \u2014 for a pairing that came out wrong.",
     "mangaReader.groupAnimation": "Animation",
     "mangaReader.fade": "Fade in",
     "mangaReader.fadeOff": "None",
@@ -934,10 +931,7 @@
     "mangaReader.doublePage": "\u53CC\u9875",
     "mangaReader.coverAlone": "\u5C01\u9762\u5355\u72EC\u4E00\u9875",
     "mangaReader.detectSpreads": "\u81EA\u52A8\u68C0\u6D4B\u8DE8\u9875",
-    "mangaReader.detectSpreadsHint": "\u6309\u9875\u9762\u6BD4\u4F8B\u5224\u65AD\u54EA\u4E24\u9875\u5E94\u8BE5\u62FC\u5728\u4E00\u8D77\u3002",
-    "mangaReader.groupGallery": "\u672C\u753B\u5ECA",
     "mangaReader.offset": "\u914D\u5BF9\u504F\u79FB\u4E00\u9875",
-    "mangaReader.offsetHint": "\u53EA\u5BF9\u8FD9\u672C\u751F\u6548\uFF0C\u7528\u6765\u4FEE\u62FC\u9519\u7684\u5BF9\u3002",
     "mangaReader.groupAnimation": "\u52A8\u753B",
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.fadeOff": "\u65E0",
@@ -1023,10 +1017,7 @@
     "mangaReader.doublePage": "\u96D9\u9801",
     "mangaReader.coverAlone": "\u5C01\u9762\u55AE\u7368\u4E00\u9801",
     "mangaReader.detectSpreads": "\u81EA\u52D5\u5075\u6E2C\u8DE8\u9801",
-    "mangaReader.detectSpreadsHint": "\u4F9D\u9801\u9762\u6BD4\u4F8B\u5224\u65B7\u54EA\u5169\u9801\u61C9\u8A72\u62FC\u5728\u4E00\u8D77\u3002",
-    "mangaReader.groupGallery": "\u672C\u756B\u5ECA",
     "mangaReader.offset": "\u914D\u5C0D\u504F\u79FB\u4E00\u9801",
-    "mangaReader.offsetHint": "\u53EA\u5C0D\u9019\u672C\u751F\u6548\uFF0C\u7528\u4F86\u4FEE\u62FC\u932F\u7684\u5C0D\u3002",
     "mangaReader.groupAnimation": "\u52D5\u756B",
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.fadeOff": "\u7121",
@@ -1172,9 +1163,7 @@
   var CLASS_GROUP_LABEL = "manga-reader-group-label";
   var CLASS_DIVIDER = "manga-reader-divider";
   var CLASS_ROW = "manga-reader-row";
-  var CLASS_ROW_WORDS = "manga-reader-row-words";
   var CLASS_ROW_LABEL = "manga-reader-row-label";
-  var CLASS_HINT = "manga-reader-hint";
   var CLASS_PAGES = "manga-reader-pages";
   var CLASS_SEGMENT = "manga-reader-segment";
   var CLASS_CHAPTER_TOGGLE = "minimal Lightbox-header-chapter-button dropdown-toggle btn btn-primary";
@@ -1386,21 +1375,13 @@
         body.appendChild(line);
         return line;
       };
-      const row2 = (id, textId, control2, hintId) => {
+      const row2 = (id, textId, control2) => {
         const node = text(CLASS_ROW, "div");
-        const words = text(CLASS_ROW_WORDS);
         const name = document.createElement("label");
         name.className = CLASS_ROW_LABEL;
         name.htmlFor = id;
         labels[textId] = name;
-        words.appendChild(name);
-        if (hintId) {
-          const hint = text(CLASS_HINT);
-          hint.className = CLASS_HINT + " form-text text-muted";
-          labels[hintId] = hint;
-          words.appendChild(hint);
-        }
-        node.appendChild(words);
+        node.appendChild(name);
         node.appendChild(control2);
         return node;
       };
@@ -1457,20 +1438,15 @@
         switchAt(
           SPREAD_ID,
           (on) => latest == null ? void 0 : latest.handlers.onSetting({ detectSpreads: on })
-        ),
-        "mangaReader.detectSpreadsHint"
-      );
-      reading.appendChild(parts.spreadsRow);
-      parts.galleryRule = rule();
-      parts.galleryGroup = group("mangaReader.groupGallery");
-      parts.galleryGroup.appendChild(
-        row2(
-          OFFSET_ID,
-          "mangaReader.offset",
-          switchAt(OFFSET_ID, (on) => latest == null ? void 0 : latest.handlers.onOffset(on)),
-          "mangaReader.offsetHint"
         )
       );
+      reading.appendChild(parts.spreadsRow);
+      parts.offsetRow = row2(
+        OFFSET_ID,
+        "mangaReader.offset",
+        switchAt(OFFSET_ID, (on) => latest == null ? void 0 : latest.handlers.onOffset(on))
+      );
+      reading.appendChild(parts.offsetRow);
       rule();
       const animation = group("mangaReader.groupAnimation");
       animation.appendChild(
@@ -1492,7 +1468,6 @@
     };
     say("mangaReader.options");
     say("mangaReader.groupReading");
-    say("mangaReader.groupGallery");
     say("mangaReader.groupAnimation");
     say("mangaReader.singlePage");
     say("mangaReader.doublePage");
@@ -1511,14 +1486,11 @@
     set(OFFSET_ID, state.settings.offset);
     say("mangaReader.coverAlone");
     say("mangaReader.detectSpreads");
-    say("mangaReader.detectSpreadsHint");
     say("mangaReader.offset");
-    say("mangaReader.offsetHint");
     const paired = state.settings.doublePage;
     showWhen(parts.coverRow, paired);
     showWhen(parts.spreadsRow, paired);
-    showWhen(parts.galleryGroup, paired);
-    showWhen(parts.galleryRule, paired);
+    showWhen(parts.offsetRow, paired);
   }
   var SINGLE_PAGE_ID = "manga-reader-single-page";
   var DOUBLE_PAGE_ID = "manga-reader-double-page";
