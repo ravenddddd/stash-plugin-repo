@@ -1929,8 +1929,8 @@
     label2.setAttribute("for", name);
     label2.textContent = stringFor(locale, labelId);
     group.appendChild(label2);
-    const column = document.createElement("div");
-    column.className = "col-sm-9";
+    const column2 = document.createElement("div");
+    column2.className = "col-sm-9";
     const input = document.createElement("input");
     input.className = "text-input form-control";
     input.setAttribute("name", name);
@@ -1938,11 +1938,11 @@
     input.type = type;
     input.placeholder = stringFor(locale, labelId);
     input.value = value;
-    column.appendChild(input);
+    column2.appendChild(input);
     const error = document.createElement("div");
     error.className = "invalid-feedback";
-    column.appendChild(error);
-    group.appendChild(column);
+    column2.appendChild(error);
+    group.appendChild(column2);
     parent.appendChild(group);
     return { input, error };
   }
@@ -2576,22 +2576,69 @@
   NR.readSettings = readSettings;
   NR.FADE_MS = FADE_MS;
 
+  // src/reader/zoom.ts
+  var VIEW_MIN_ZOOM = 0.1;
+  var VIEW_MAX_ZOOM = 8;
+  var VIEW_STEP = 1.1;
+  var VIEW_PAN_STEP = 75;
+  var VIEW_SNAP = 0.015;
+  var VIEW_CLICK_MS = 200;
+  function fitView() {
+    return { zoom: 1, x: 0, y: 0 };
+  }
+  function centred(view2) {
+    return { zoom: view2.zoom, x: 0, y: 0 };
+  }
+  function isZoomed(view2) {
+    return view2.zoom !== 1;
+  }
+  function zoomed(view2, factor) {
+    const wanted2 = Math.min(
+      Math.max(view2.zoom * factor, VIEW_MIN_ZOOM),
+      VIEW_MAX_ZOOM
+    );
+    const zoom2 = Math.abs(wanted2 - 1) < VIEW_SNAP ? 1 : wanted2;
+    return { ...view2, zoom: zoom2 };
+  }
+  function panned(view2, dx, dy) {
+    return { zoom: view2.zoom, x: view2.x + dx, y: view2.y + dy };
+  }
+
   // src/reader/scroll.ts
   var CLASS_SCROLL = "is-scroll";
   var CLASS_SCROLL_PAGE = "manga-reader-scroll-page";
   var CLASS_SCROLLING = "manga-reader-position-scrolling";
+  var zoom = 1;
+  function columnZoom() {
+    return zoom;
+  }
+  function zoomedBy(current2, factor) {
+    return Math.min(Math.max(current2 * factor, VIEW_MIN_ZOOM), VIEW_MAX_ZOOM);
+  }
+  function setColumnZoom(next) {
+    zoom = next;
+    column == null ? void 0 : column.querySelectorAll("." + CLASS_SCROLL_PAGE).forEach((row2) => {
+      const node = row2;
+      const natural = Number(node.dataset.width || 0);
+      node.style.width = zoom * 100 + "%";
+      if (natural > 0) node.style.maxWidth = zoom * natural + "px";
+    });
+    return zoom;
+  }
+  var column = null;
   function pageAtTop(rows, edge) {
     for (let i = 0; i < rows.length; i++) {
       if (rows[i].bottom > edge) return i;
     }
     return rows.length > 0 ? rows.length - 1 : -1;
   }
-  function buildColumn(column, pages, urlOf) {
-    column.textContent = "";
+  function buildColumn(into, pages, urlOf) {
+    column = into;
+    into.textContent = "";
     pages.forEach((page, index) => {
       const row2 = document.createElement("div");
       row2.className = CLASS_SCROLL_PAGE;
-      if (page.width > 0) row2.style.maxWidth = page.width + "px";
+      row2.dataset.width = String(page.width > 0 ? page.width : 0);
       if (page.width > 0 && page.height > 0) {
         row2.style.aspectRatio = page.width + " / " + page.height;
       }
@@ -2602,14 +2649,16 @@
       image.loading = "lazy";
       image.draggable = false;
       row2.appendChild(image);
-      column.appendChild(row2);
+      into.appendChild(row2);
     });
+    setColumnZoom(zoom);
   }
-  function rowOffset(column, index) {
-    const row2 = column.querySelectorAll("." + CLASS_SCROLL_PAGE)[index];
+  function rowOffset(into, index) {
+    const row2 = into.querySelectorAll("." + CLASS_SCROLL_PAGE)[index];
     return row2 ? row2.offsetTop : null;
   }
   NR.pageAtTop = pageAtTop;
+  NR.zoomedBy = zoomedBy;
 
   // src/reader/spreads.ts
   var DEFAULT_SPREAD_OPTIONS = {
@@ -2668,34 +2717,6 @@
   NR.layout = layout;
   NR.screenAt = screenAt;
   NR.stepsToAdjacent = stepsToAdjacent;
-
-  // src/reader/zoom.ts
-  var VIEW_MIN_ZOOM = 0.1;
-  var VIEW_MAX_ZOOM = 8;
-  var VIEW_STEP = 1.1;
-  var VIEW_PAN_STEP = 75;
-  var VIEW_SNAP = 0.015;
-  var VIEW_CLICK_MS = 200;
-  function fitView() {
-    return { zoom: 1, x: 0, y: 0 };
-  }
-  function centred(view2) {
-    return { zoom: view2.zoom, x: 0, y: 0 };
-  }
-  function isZoomed(view2) {
-    return view2.zoom !== 1;
-  }
-  function zoomed(view2, factor) {
-    const wanted2 = Math.min(
-      Math.max(view2.zoom * factor, VIEW_MIN_ZOOM),
-      VIEW_MAX_ZOOM
-    );
-    const zoom = Math.abs(wanted2 - 1) < VIEW_SNAP ? 1 : wanted2;
-    return { ...view2, zoom };
-  }
-  function panned(view2, dx, dy) {
-    return { zoom: view2.zoom, x: view2.x + dx, y: view2.y + dy };
-  }
 
   // src/reader/takeover.ts
   var CLASS_SINGLE = "is-single";
@@ -2939,10 +2960,14 @@
       placed: gallery.chapters,
       settings,
       locale: language,
-      zoomed: isZoomed(view),
+      zoomed: zoomedNow(),
       handlers: {
         onResetZoom: () => {
           view = fitView();
+          if (settings.readingMode === "scroll") {
+            setColumnZoom(1);
+            scrollTo = Math.max(place2, 0);
+          }
           applyView();
           sync(lightbox);
         },
@@ -3022,6 +3047,7 @@
       columnFor = gallery.id;
       built = true;
       awaiting = -1;
+      setColumnZoom(1);
     }
     const to = built ? place2 : scrollTo;
     scrollTo = null;
@@ -3034,17 +3060,18 @@
     columnFor = null;
     scrollTo = null;
     view = fitView();
+    setColumnZoom(1);
     shownAt = -1;
     container == null ? void 0 : container.classList.remove(CLASS_SCROLL);
     root == null ? void 0 : root.classList.remove(CLASS_SCROLLING);
   }
-  function columnPageAt(column) {
-    const rows = Array.from(column.querySelectorAll("." + CLASS_SCROLL_PAGE)).map(
+  function columnPageAt(column2) {
+    const rows = Array.from(column2.querySelectorAll("." + CLASS_SCROLL_PAGE)).map(
       (row2) => row2.getBoundingClientRect()
     );
     return NR.pageAtTop(
       rows.map((rect) => ({ top: rect.top, bottom: rect.bottom })),
-      column.getBoundingClientRect().top
+      column2.getBoundingClientRect().top
     );
   }
   function onColumnScroll() {
@@ -3365,7 +3392,13 @@
     if (!lightbox || !container) return;
     const wheel = event;
     if (settings.readingMode === "scroll") {
-      if (wheel.ctrlKey || wheel.metaKey) wheel.preventDefault();
+      if (!wheel.ctrlKey && !wheel.metaKey) return;
+      wheel.preventDefault();
+      const was = columnZoom();
+      setColumnZoom(zoomedBy(was, wheel.deltaY < 0 ? VIEW_STEP : 1 / VIEW_STEP));
+      if (columnZoom() === was) return;
+      scrollTo = Math.max(place2, 0);
+      sync(lightbox);
       return;
     }
     wheel.preventDefault();
@@ -3397,18 +3430,41 @@
     }
   }
   function onSpreadPress(event) {
-    if (settings.readingMode === "scroll") return;
     const press = event;
     if (press.button !== 0) return;
+    if (settings.readingMode === "scroll") {
+      if (!container) return;
+      dragFrom = {
+        x: press.clientX,
+        y: press.clientY,
+        left: container.scrollLeft || 0,
+        top: container.scrollTop || 0,
+        at: press.timeStamp
+      };
+      held = false;
+      press.preventDefault();
+      document.addEventListener("mousemove", onSpreadMove);
+      document.addEventListener("mouseup", onSpreadRelease);
+      return;
+    }
     pressed2 = { x: press.clientX, y: press.clientY, at: press.timeStamp };
     held = false;
     document.addEventListener("mousemove", onSpreadMove);
     document.addEventListener("mouseup", onSpreadRelease);
   }
+  var dragFrom = null;
   var pressed2 = null;
   var held = false;
   function onSpreadMove(event) {
-    if (!pressed2 || !container) return;
+    if (!container) return;
+    if (dragFrom) {
+      const drag = event;
+      container.scrollLeft = dragFrom.left - (drag.clientX - dragFrom.x);
+      container.scrollTop = dragFrom.top - (drag.clientY - dragFrom.y);
+      held = true;
+      return;
+    }
+    if (!pressed2) return;
     const move = event;
     const dx = move.clientX - pressed2.x;
     const dy = move.clientY - pressed2.y;
@@ -3422,13 +3478,21 @@
     document.removeEventListener("mousemove", onSpreadMove);
     document.removeEventListener("mouseup", onSpreadRelease);
     const release = event;
-    if (pressed2 && release.timeStamp - pressed2.at > VIEW_CLICK_MS) held = true;
+    const from = dragFrom || pressed2;
+    if (from && release.timeStamp - from.at > VIEW_CLICK_MS) held = true;
+    dragFrom = null;
     pressed2 = null;
   }
   function applyView() {
     if (!container) return;
-    container.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
-    container.classList.toggle(CLASS_ZOOMED, isZoomed(view));
+    if (settings.readingMode !== "scroll") {
+      container.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
+    }
+    container.classList.toggle(CLASS_ZOOMED, zoomedNow());
+  }
+  function zoomedNow() {
+    if (settings.readingMode === "scroll") return columnZoom() !== 1;
+    return isZoomed(view);
   }
   function redrawChrome() {
     if (root) sync(root);
