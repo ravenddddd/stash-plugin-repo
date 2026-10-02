@@ -330,12 +330,15 @@
     const placed = [];
     for (const chapter of chapters) {
       let at = -1;
+      let to = -1;
       for (const id of chapter.images) {
         const index = position.get(id);
-        if (index !== void 0 && (at < 0 || index < at)) at = index;
+        if (index === void 0) continue;
+        if (at < 0 || index < at) at = index;
+        if (index > to) to = index;
       }
       if (at < 0) continue;
-      placed.push({ title: chapter.title, images: chapter.images, at });
+      placed.push({ title: chapter.title, images: chapter.images, at, to });
     }
     placed.sort((a, b) => a.at - b.at);
     return placed;
@@ -833,10 +836,21 @@
 
   // src/messages/en.json
   var en_default = {
-    "mangaReader.options": "Options",
+    "mangaReader.chapters": "Chapters",
+    "mangaReader.chapterCount": "{n} chapters",
+    "mangaReader.chapterNumber": "Chapter {n}",
+    "mangaReader.options": "Reading options",
+    "mangaReader.groupReading": "Reading",
+    "mangaReader.singlePage": "Single page",
     "mangaReader.doublePage": "Double page",
-    "mangaReader.fade": "Fade in",
+    "mangaReader.coverAlone": "Cover on a page of its own",
+    "mangaReader.detectSpreads": "Detect spreads automatically",
+    "mangaReader.detectSpreadsHint": "Decides which two pages belong together from their shape.",
+    "mangaReader.groupGallery": "This gallery",
     "mangaReader.offset": "Shift the pairing by one page",
+    "mangaReader.offsetHint": "Only for this gallery \u2014 for a pairing that came out wrong.",
+    "mangaReader.groupAnimation": "Animation",
+    "mangaReader.fade": "Fade in",
     "mangaReader.importChapters": "Import Stash's chapters",
     "mangaReader.reimportChapters": "Re-import Stash's chapters",
     "mangaReader.importingChapters": "Importing\u2026",
@@ -910,10 +924,21 @@
 
   // src/messages/zh-Hans.json
   var zh_Hans_default = {
-    "mangaReader.options": "\u9009\u9879",
-    "mangaReader.doublePage": "\u53CC\u9875\u9605\u8BFB",
+    "mangaReader.chapters": "\u7AE0\u8282",
+    "mangaReader.chapterCount": "{n} \u7AE0",
+    "mangaReader.chapterNumber": "\u7B2C {n} \u7AE0",
+    "mangaReader.options": "\u9605\u8BFB\u9009\u9879",
+    "mangaReader.groupReading": "\u9605\u8BFB",
+    "mangaReader.singlePage": "\u5355\u9875",
+    "mangaReader.doublePage": "\u53CC\u9875",
+    "mangaReader.coverAlone": "\u5C01\u9762\u5355\u72EC\u4E00\u9875",
+    "mangaReader.detectSpreads": "\u81EA\u52A8\u68C0\u6D4B\u8DE8\u9875",
+    "mangaReader.detectSpreadsHint": "\u6309\u9875\u9762\u6BD4\u4F8B\u5224\u65AD\u54EA\u4E24\u9875\u5E94\u8BE5\u62FC\u5728\u4E00\u8D77\u3002",
+    "mangaReader.groupGallery": "\u672C\u753B\u5ECA",
+    "mangaReader.offset": "\u914D\u5BF9\u504F\u79FB\u4E00\u9875",
+    "mangaReader.offsetHint": "\u53EA\u5BF9\u8FD9\u672C\u751F\u6548\uFF0C\u7528\u6765\u4FEE\u62FC\u9519\u7684\u5BF9\u3002",
+    "mangaReader.groupAnimation": "\u52A8\u753B",
     "mangaReader.fade": "\u6DE1\u5165",
-    "mangaReader.offset": "\u914D\u5BF9\u504F\u79FB\u4E00\u683C",
     "mangaReader.importChapters": "\u5BFC\u5165 Stash \u7684\u7AE0\u8282",
     "mangaReader.reimportChapters": "\u91CD\u65B0\u5BFC\u5165 Stash \u7684\u7AE0\u8282",
     "mangaReader.importingChapters": "\u6B63\u5728\u5BFC\u5165\u2026",
@@ -987,10 +1012,21 @@
 
   // src/messages/zh-Hant.json
   var zh_Hant_default = {
-    "mangaReader.options": "\u9078\u9805",
-    "mangaReader.doublePage": "\u96D9\u9801\u95B1\u8B80",
+    "mangaReader.chapters": "\u7AE0\u7BC0",
+    "mangaReader.chapterCount": "{n} \u7AE0",
+    "mangaReader.chapterNumber": "\u7B2C {n} \u7AE0",
+    "mangaReader.options": "\u95B1\u8B80\u9078\u9805",
+    "mangaReader.groupReading": "\u95B1\u8B80",
+    "mangaReader.singlePage": "\u55AE\u9801",
+    "mangaReader.doublePage": "\u96D9\u9801",
+    "mangaReader.coverAlone": "\u5C01\u9762\u55AE\u7368\u4E00\u9801",
+    "mangaReader.detectSpreads": "\u81EA\u52D5\u5075\u6E2C\u8DE8\u9801",
+    "mangaReader.detectSpreadsHint": "\u4F9D\u9801\u9762\u6BD4\u4F8B\u5224\u65B7\u54EA\u5169\u9801\u61C9\u8A72\u62FC\u5728\u4E00\u8D77\u3002",
+    "mangaReader.groupGallery": "\u672C\u756B\u5ECA",
+    "mangaReader.offset": "\u914D\u5C0D\u504F\u79FB\u4E00\u9801",
+    "mangaReader.offsetHint": "\u53EA\u5C0D\u9019\u672C\u751F\u6548\uFF0C\u7528\u4F86\u4FEE\u62FC\u932F\u7684\u5C0D\u3002",
+    "mangaReader.groupAnimation": "\u52D5\u756B",
     "mangaReader.fade": "\u6DE1\u5165",
-    "mangaReader.offset": "\u914D\u5C0D\u504F\u79FB\u4E00\u683C",
     "mangaReader.importChapters": "\u532F\u5165 Stash \u7684\u7AE0\u7BC0",
     "mangaReader.reimportChapters": "\u91CD\u65B0\u532F\u5165 Stash \u7684\u7AE0\u7BC0",
     "mangaReader.importingChapters": "\u6B63\u5728\u532F\u5165\u2026",
@@ -1097,6 +1133,9 @@
   function stringFor(locale, id) {
     var _a2, _b2;
     return (_b2 = (_a2 = catalogFor(locale != null ? locale : "")[id]) != null ? _a2 : CATALOGS.en[id]) != null ? _b2 : id;
+  }
+  function numbered(locale, id, n) {
+    return stringFor(locale, id).replace("{n}", String(n));
   }
   NS.t = t;
   NS.stringFor = stringFor;
@@ -1224,6 +1263,21 @@
   var CLASS_SETTINGS = "manga-reader-settings";
   var CLASS_MENU_CHAPTERS = "manga-reader-menu-chapters";
   var CLASS_MENU_SETTINGS = "manga-reader-menu-settings";
+  var CLASS_MENU_HEAD = "manga-reader-menu-head";
+  var CLASS_MENU_HEADING = "manga-reader-menu-heading";
+  var CLASS_MENU_COUNT = "manga-reader-menu-count";
+  var CLASS_MENU_LIST = "manga-reader-chapter-list";
+  var CLASS_CHAPTER_NAME = "manga-reader-chapter-name";
+  var CLASS_CHAPTER_RANGE = "manga-reader-chapter-range";
+  var CLASS_GROUP = "manga-reader-group";
+  var CLASS_GROUP_LABEL = "manga-reader-group-label";
+  var CLASS_DIVIDER = "manga-reader-divider";
+  var CLASS_ROW = "manga-reader-row";
+  var CLASS_ROW_WORDS = "manga-reader-row-words";
+  var CLASS_ROW_LABEL = "manga-reader-row-label";
+  var CLASS_HINT = "manga-reader-hint";
+  var CLASS_PAGES = "manga-reader-pages";
+  var CLASS_SEGMENT = "manga-reader-segment";
   var CLASS_CHAPTER_TOGGLE = "minimal Lightbox-header-chapter-button dropdown-toggle btn btn-primary";
   var CLASS_ICON_BUTTON = "btn btn-link";
   function ensureChrome(lightbox, state) {
@@ -1328,27 +1382,57 @@
     drawSettings(settingsPanel, state);
   }
   function drawChapters(panel2, state) {
-    var _a2, _b2;
-    const key = state.placed.map((c) => c.at + ":" + c.title).join("|");
+    var _a2, _b2, _c;
+    const rows = state.placed.map((chapter, index) => ({
+      chapter,
+      // A chapter with no name is named by its place, which is what the reader sees in
+      // the list — the same number the jump goes to.
+      name: chapter.title || numbered(state.locale, "mangaReader.chapterNumber", index + 1),
+      range: chapter.at + 1 + "\u2013" + (chapter.to + 1)
+    }));
+    const key = [
+      (_a2 = state.locale) != null ? _a2 : "",
+      String(rows.length),
+      ...rows.map((row2) => row2.chapter.at + ":" + row2.name + ":" + row2.range)
+    ].join("|");
     if (panel2.getAttribute("data-drawn") !== key) {
       panel2.setAttribute("data-drawn", key);
       panel2.textContent = "";
-      for (const chapter of state.placed) {
+      const head = text(CLASS_MENU_HEAD);
+      const heading = text(CLASS_MENU_HEADING);
+      heading.textContent = stringFor(state.locale, "mangaReader.chapters");
+      const count = text(CLASS_MENU_COUNT);
+      count.textContent = numbered(
+        state.locale,
+        "mangaReader.chapterCount",
+        rows.length
+      );
+      head.appendChild(heading);
+      head.appendChild(count);
+      panel2.appendChild(head);
+      const list = text(CLASS_MENU_LIST, "div");
+      for (const row2 of rows) {
         const item = document.createElement("button");
         item.type = "button";
         item.className = "dropdown-item " + CLASS_MENU_ITEM;
-        item.dataset.at = String(chapter.at);
-        item.textContent = chapter.title || "#" + (state.placed.indexOf(chapter) + 1);
+        item.dataset.at = String(row2.chapter.at);
+        const name = text(CLASS_CHAPTER_NAME);
+        name.textContent = row2.name;
+        const range = text(CLASS_CHAPTER_RANGE);
+        range.textContent = row2.range;
+        item.appendChild(name);
+        item.appendChild(range);
         item.addEventListener("click", () => {
           openMenu = null;
-          state.handlers.onChapter(chapter.at);
+          state.handlers.onChapter(row2.chapter.at);
         });
-        panel2.appendChild(item);
+        list.appendChild(item);
       }
+      panel2.appendChild(list);
     }
     for (const item of panel2.querySelectorAll("." + CLASS_MENU_ITEM)) {
-      const mine = item.dataset.at === String((_b2 = (_a2 = state.chapter) == null ? void 0 : _a2.at) != null ? _b2 : -1);
-      item.classList.toggle("active", mine);
+      const mine = item.dataset.at === String((_c = (_b2 = state.chapter) == null ? void 0 : _b2.at) != null ? _c : -1);
+      item.classList.toggle("is-current", mine);
     }
   }
   function drawSettings(panel2, state) {
@@ -1357,59 +1441,124 @@
       panel2.setAttribute("data-built", "yes");
       panel2.classList.add(CLASS_SETTINGS);
       panel2.textContent = "";
-      const heading2 = document.createElement("div");
-      heading2.className = "popover-header";
-      labels.options = heading2;
-      panel2.appendChild(heading2);
+      const heading = document.createElement("div");
+      heading.className = "popover-header";
+      labels["mangaReader.options"] = heading;
+      panel2.appendChild(heading);
       const body = document.createElement("div");
       body.className = "popover-body";
       panel2.appendChild(body);
-      const pageGroup = document.createElement("div");
-      pageGroup.className = "form-group";
-      const wrap = document.createElement("div");
-      wrap.className = "form-check";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.className = "form-check-input";
-      input.id = DOUBLE_PAGE_ID;
-      input.addEventListener("change", () => {
-        latest == null ? void 0 : latest.handlers.onSetting({ doublePage: input.checked });
-      });
-      const box = document.createElement("label");
-      box.className = "form-check-label";
-      box.htmlFor = DOUBLE_PAGE_ID;
-      labels.doublePage = box;
-      wrap.appendChild(input);
-      wrap.appendChild(box);
-      pageGroup.appendChild(wrap);
-      body.appendChild(pageGroup);
-      const shiftGroup = document.createElement("div");
-      shiftGroup.className = "form-group";
-      const shift = document.createElement("div");
-      shift.className = "form-check";
-      const shiftInput = document.createElement("input");
-      shiftInput.type = "checkbox";
-      shiftInput.className = "form-check-input";
-      shiftInput.id = OFFSET_ID;
-      shiftInput.addEventListener("change", () => {
-        latest == null ? void 0 : latest.handlers.onOffset(shiftInput.checked ? 1 : 0);
-      });
-      const shiftLabel = document.createElement("label");
-      shiftLabel.className = "form-check-label";
-      shiftLabel.htmlFor = OFFSET_ID;
-      labels.offset = shiftLabel;
-      shift.appendChild(shiftInput);
-      shift.appendChild(shiftLabel);
-      shiftGroup.appendChild(shift);
-      body.appendChild(shiftGroup);
-      const fade = document.createElement("div");
-      fade.className = "form-group";
+      const group = (labelId) => {
+        const node = document.createElement("div");
+        node.className = "form-group " + CLASS_GROUP;
+        const title = text(CLASS_GROUP_LABEL);
+        labels[labelId] = title;
+        node.appendChild(title);
+        body.appendChild(node);
+        return node;
+      };
+      const rule = () => {
+        const line = document.createElement("hr");
+        line.className = CLASS_DIVIDER;
+        body.appendChild(line);
+      };
+      const row2 = (id, textId, control2, hintId) => {
+        const node = text(CLASS_ROW, "div");
+        const words = text(CLASS_ROW_WORDS);
+        const name = document.createElement("label");
+        name.className = CLASS_ROW_LABEL;
+        name.htmlFor = id;
+        labels[textId] = name;
+        words.appendChild(name);
+        if (hintId) {
+          const hint = text(CLASS_HINT);
+          hint.className = CLASS_HINT + " form-text text-muted";
+          labels[hintId] = hint;
+          words.appendChild(hint);
+        }
+        node.appendChild(words);
+        node.appendChild(control2);
+        return node;
+      };
+      const switchAt = (id, onChange) => {
+        const wrap = document.createElement("div");
+        wrap.className = "custom-control custom-switch";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.className = "custom-control-input";
+        input.id = id;
+        input.addEventListener("change", () => {
+          onChange(input.checked);
+        });
+        const empty = document.createElement("label");
+        empty.className = "custom-control-label";
+        empty.htmlFor = id;
+        wrap.appendChild(input);
+        wrap.appendChild(empty);
+        return wrap;
+      };
+      const reading = group("mangaReader.groupReading");
+      const pages = text(CLASS_PAGES, "div");
+      const segment = (id, textId) => {
+        const button2 = document.createElement("button");
+        button2.type = "button";
+        button2.id = id;
+        button2.className = "btn minimal " + CLASS_SEGMENT;
+        button2.addEventListener("click", () => {
+          if (button2.classList.contains("is-on")) return;
+          latest == null ? void 0 : latest.handlers.onSetting({ doublePage: id === DOUBLE_PAGE_ID });
+        });
+        labels[textId] = button2;
+        pages.appendChild(button2);
+      };
+      segment(SINGLE_PAGE_ID, "mangaReader.singlePage");
+      segment(DOUBLE_PAGE_ID, "mangaReader.doublePage");
+      reading.appendChild(pages);
+      reading.appendChild(
+        row2(
+          COVER_ID,
+          "mangaReader.coverAlone",
+          switchAt(
+            COVER_ID,
+            (on) => latest == null ? void 0 : latest.handlers.onSetting({ coverAlone: on })
+          )
+        )
+      );
+      reading.appendChild(
+        row2(
+          SPREAD_ID,
+          "mangaReader.detectSpreads",
+          switchAt(
+            SPREAD_ID,
+            (on) => latest == null ? void 0 : latest.handlers.onSetting({ detectSpreads: on })
+          ),
+          "mangaReader.detectSpreadsHint"
+        )
+      );
+      rule();
+      const gallery = group("mangaReader.groupGallery");
+      gallery.appendChild(
+        row2(
+          OFFSET_ID,
+          "mangaReader.offset",
+          switchAt(OFFSET_ID, (on) => latest == null ? void 0 : latest.handlers.onOffset(on ? 1 : 0)),
+          "mangaReader.offsetHint"
+        )
+      );
+      rule();
+      const animation = group("mangaReader.groupAnimation");
+      const fade = text(CLASS_ROW, "div");
       const fadeLabel = document.createElement("label");
+      fadeLabel.className = CLASS_ROW_LABEL;
       fadeLabel.htmlFor = FADE_ID;
-      labels.fade = fadeLabel;
+      labels["mangaReader.fade"] = fadeLabel;
+      const readout2 = text("manga-reader-readout");
+      fade.appendChild(fadeLabel);
+      fade.appendChild(readout2);
+      animation.appendChild(fade);
       const range2 = document.createElement("input");
       range2.type = "range";
-      range2.className = "form-range";
+      range2.className = "custom-range";
       range2.id = FADE_ID;
       range2.min = "0";
       range2.max = String(FADE_MAX_MS);
@@ -1417,36 +1566,35 @@
       range2.addEventListener("input", () => {
         latest == null ? void 0 : latest.handlers.onSetting({ fadeMs: Number(range2.value) });
       });
-      const readout2 = text("manga-reader-readout");
-      fade.appendChild(fadeLabel);
-      fade.appendChild(range2);
-      fade.appendChild(readout2);
-      body.appendChild(fade);
+      animation.appendChild(range2);
     }
-    const heading = label2("mangaReader.options");
-    if (labels.options && labels.options.textContent !== heading) {
-      labels.options.textContent = heading;
-    }
-    const check = panel2.querySelector(
-      "#" + DOUBLE_PAGE_ID
-    );
-    if (check && check.checked !== state.settings.doublePage) {
-      check.checked = state.settings.doublePage;
-    }
-    const doubleName = label2("mangaReader.doublePage");
-    if (labels.doublePage && labels.doublePage.textContent !== doubleName) {
-      labels.doublePage.textContent = doubleName;
-    }
-    const offset2 = panel2.querySelector(
-      "#" + OFFSET_ID
-    );
-    if (offset2 && offset2.checked !== (state.offset === 1)) {
-      offset2.checked = state.offset === 1;
-    }
-    const offsetName = label2("mangaReader.offset");
-    if (labels.offset && labels.offset.textContent !== offsetName) {
-      labels.offset.textContent = offsetName;
-    }
+    const say = (id) => {
+      const node = labels[id];
+      const words = label2(id);
+      if (node && node.textContent !== words) node.textContent = words;
+    };
+    const set = (id, on) => {
+      const box = panel2.querySelector("#" + id);
+      if (box && box.checked !== on) box.checked = on;
+    };
+    say("mangaReader.options");
+    say("mangaReader.groupReading");
+    say("mangaReader.groupGallery");
+    say("mangaReader.groupAnimation");
+    say("mangaReader.singlePage");
+    say("mangaReader.doublePage");
+    const single = panel2.querySelector("#" + SINGLE_PAGE_ID);
+    const double = panel2.querySelector("#" + DOUBLE_PAGE_ID);
+    if (single) single.classList.toggle("is-on", !state.settings.doublePage);
+    if (double) double.classList.toggle("is-on", state.settings.doublePage);
+    set(COVER_ID, state.settings.coverAlone);
+    set(SPREAD_ID, state.settings.detectSpreads);
+    set(OFFSET_ID, state.offset === 1);
+    say("mangaReader.coverAlone");
+    say("mangaReader.detectSpreads");
+    say("mangaReader.detectSpreadsHint");
+    say("mangaReader.offset");
+    say("mangaReader.offsetHint");
     const range = panel2.querySelector("#" + FADE_ID);
     if (range && range.value !== String(state.settings.fadeMs)) {
       range.value = String(state.settings.fadeMs);
@@ -1454,12 +1602,12 @@
     const readout = panel2.querySelector(".manga-reader-readout");
     const shown = state.settings.fadeMs + " ms";
     if (readout && readout.textContent !== shown) readout.textContent = shown;
-    const fadeName = label2("mangaReader.fade");
-    if (labels.fade && labels.fade.textContent !== fadeName) {
-      labels.fade.textContent = fadeName;
-    }
+    say("mangaReader.fade");
   }
+  var SINGLE_PAGE_ID = "manga-reader-single-page";
   var DOUBLE_PAGE_ID = "manga-reader-double-page";
+  var COVER_ID = "manga-reader-cover-alone";
+  var SPREAD_ID = "manga-reader-detect-spreads";
   var OFFSET_ID = "manga-reader-offset";
   var FADE_ID = "manga-reader-fade";
   function text(className, tag = "span") {
@@ -2083,16 +2231,17 @@
     const page = Math.round(fraction * total);
     return Math.min(Math.max(page, 0), total - 1);
   }
-  function progressNodes(chapters, total) {
+  function progressNodes(chapters, total, locale) {
     const nodes2 = [];
     const seen = /* @__PURE__ */ new Set();
     chapters.forEach((chapter, index) => {
       if (chapter.at < 0 || chapter.at >= total || seen.has(chapter.at)) return;
       seen.add(chapter.at);
       nodes2.push({
-        // A chapter with no name is named by its place, which is what the header's own
-        // menu calls it too.
-        name: chapter.title || "#" + (index + 1),
+        // A chapter with no name is named by its place, through the one helper the
+        // header's menu also names it with: the two must not be able to disagree about
+        // what an unnamed chapter is called.
+        name: chapter.title || numbered(locale, "mangaReader.chapterNumber", index + 1),
         at: chapter.at,
         fraction: fractionOfPage(chapter.at, total)
       });
@@ -2243,7 +2392,7 @@
   function drawNodes(state) {
     if (!nodes) return;
     nodes.textContent = "";
-    for (const node of progressNodes(state.chapters, state.total)) {
+    for (const node of progressNodes(state.chapters, state.total, state.locale)) {
       const tick = document.createElement("div");
       tick.className = CLASS_NODE;
       tick.style.left = (node.fraction * 100).toFixed(3) + "%";
@@ -2691,6 +2840,7 @@
         var _a3, _b3;
         return ((_b3 = chapterAt(gallery.chapters, ((_a3 = gallery.pages[page]) == null ? void 0 : _a3.id) || "")) == null ? void 0 : _b3.title) || "";
       },
+      locale: language,
       handlers: {
         onSeek: (to) => seekTo(lightbox, to)
       }
@@ -2724,7 +2874,8 @@
         },
         onSetting: (next) => {
           settings = writeSettings(next);
-          if (next.doublePage === void 0) return;
+          const relaid = next.doublePage !== void 0 || next.coverAlone !== void 0 || next.detectSpreads !== void 0;
+          if (!relaid) return;
           if (galleryId && loaded.has(galleryId)) {
             remember(galleryId, {
               ...gallery,
