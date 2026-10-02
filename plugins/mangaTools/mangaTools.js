@@ -2501,15 +2501,6 @@
   }
 
   // src/reader/settings.ts
-  var STORAGE_KEY = "plugin.mangaTools.settings";
-  var LEGACY_STORAGE_KEY = "mangaReader.settings";
-  function storedValue(key, legacyKey) {
-    const current2 = window.localStorage.getItem(key);
-    if (current2 !== null) return current2;
-    const legacy = window.localStorage.getItem(legacyKey);
-    if (legacy !== null) window.localStorage.setItem(key, legacy);
-    return legacy;
-  }
   var FADE_MS = 200;
   var DEFAULT_SETTINGS = {
     readingMode: "single",
@@ -2531,30 +2522,19 @@
     const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
     const readingMode = () => {
       const value = stored.readingMode;
-      if (value === "single" || value === "double" || value === "scroll") {
-        return value;
-      }
-      if (typeof stored.doublePage === "boolean") {
-        return stored.doublePage ? "double" : "single";
-      }
-      return DEFAULT_SETTINGS.readingMode;
-    };
-    const fade = () => {
-      if (typeof stored.fade === "boolean") return stored.fade;
-      if (typeof stored.fadeMs === "number") return stored.fadeMs > 0;
-      return DEFAULT_SETTINGS.fade;
+      return value === "single" || value === "double" || value === "scroll" ? value : DEFAULT_SETTINGS.readingMode;
     };
     return {
       readingMode: readingMode(),
       coverAlone: flag("coverAlone"),
       detectSpreads: flag("detectSpreads"),
-      fade: fade(),
+      fade: flag("fade"),
       offset: flag("offset")
     };
   }
   function readSettings() {
     try {
-      return parseSettings(storedValue(STORAGE_KEY, LEGACY_STORAGE_KEY));
+      return parseSettings(NS.readerSettingsRaw);
     } catch (e) {
       console.error(
         "[mangaReader] settings are not readable, using defaults:",
@@ -2564,9 +2544,10 @@
     }
   }
   function writeSettings(next) {
+    var _a2, _b2;
     const merged = { ...readSettings(), ...next };
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      (_b2 = (_a2 = NS).writeReaderSettings) == null ? void 0 : _b2.call(_a2, JSON.stringify(merged));
     } catch (e) {
       console.error("[mangaReader] settings are not writable:", e);
     }
@@ -3522,7 +3503,7 @@
     if (moved && root) pressEscape();
   }
   function install() {
-    var _a2;
+    var _a2, _b2, _c;
     if (!document.body) {
       document.addEventListener("DOMContentLoaded", install);
       return;
@@ -3548,6 +3529,11 @@
     }
     installBridge();
     NS.watchStore(() => step());
+    (_c = (_b2 = NS).watchReaderSettings) == null ? void 0 : _c.call(_b2, () => {
+      if (NS.readerSettingsRaw === null) return;
+      settings = readSettings();
+      if (root) sync(root);
+    });
     step();
   }
 
@@ -5217,6 +5203,7 @@
         pluginCfg ? pluginCfg.hidePerformers : null,
         HIDE_PERFORMERS_BY_DEFAULT
       );
+      NS.readerSettingsRaw = pluginCfg && typeof pluginCfg.readerSettings === "string" && pluginCfg.readerSettings ? pluginCfg.readerSettings : null;
       emit();
     }).catch((e) => {
       console.error("[mangaTools] failed to fetch plugin settings:", e);
@@ -5563,6 +5550,47 @@
   }
   NS.markedInStore = (galleryId2) => store === null || !galleryId2 ? null : storedIsManga(galleryId2);
   NS.watchStore = (fn) => subscribe(fn);
+  NS.readerSettingsRaw = null;
+  function settingsInput() {
+    var _a2;
+    return {
+      enabledLanguages: NS.enabledLanguages ? NS.serializeEnabledLanguages(NS.enabledLanguages) : "",
+      showFlags: NS.showFlags,
+      showCoverBadge: NS.showCoverBadge,
+      openDetailsBlock: NS.openDetailsBlock,
+      openEditBlock: NS.openEditBlock,
+      hidePerformers: NS.hidePerformers,
+      // Absent reads as a library that has never been written to, which is what puts the
+      // browser's own remembered value back in force — see readSettings in the reader.
+      readerSettings: (_a2 = NS.readerSettingsRaw) != null ? _a2 : ""
+    };
+  }
+  function saveSettings() {
+    const client = stashClient();
+    if (!client) {
+      console.error("[mangaTools] no Apollo client, the settings were not saved");
+      return;
+    }
+    client.mutate({
+      mutation: gqlDoc(
+        [
+          "mutation MangaToolsSettings($plugin_id: ID!, $input: Map!) {",
+          "  configurePlugin(plugin_id: $plugin_id, input: $input)",
+          "}"
+        ].join("\n"),
+        "write settings"
+      ),
+      variables: { plugin_id: PLUGIN_ID, input: settingsInput() }
+    }).catch((e) => {
+      console.error("[mangaTools] failed to save plugin settings:", e);
+    });
+  }
+  NS.writeReaderSettings = (raw) => {
+    if (NS.readerSettingsRaw === raw) return;
+    NS.readerSettingsRaw = raw;
+    saveSettings();
+  };
+  NS.watchReaderSettings = (fn) => subscribe(fn);
   function editFormIsDirty() {
     const save = document.querySelector(".edit-buttons-container .edit-button");
     return !!save && save.disabled !== true;
@@ -6016,27 +6044,12 @@
       }
     )));
   }
-  function MangaToolsSettings(props) {
+  function MangaToolsSettings() {
     useGlobalVersion();
     const intl = PluginApi5.libraries.Intl.useIntl();
     const Select = resolveSelect();
-    const savePlugin = PluginApi5.utils.StashService.useConfigurePlugin()[0];
     function persist() {
-      savePlugin({
-        variables: {
-          plugin_id: props.pluginID,
-          input: {
-            enabledLanguages: NS.enabledLanguages ? NS.serializeEnabledLanguages(NS.enabledLanguages) : "",
-            showFlags: NS.showFlags,
-            showCoverBadge: NS.showCoverBadge,
-            openDetailsBlock: NS.openDetailsBlock,
-            openEditBlock: NS.openEditBlock,
-            hidePerformers: NS.hidePerformers
-          }
-        }
-      }).catch((e) => {
-        console.error("[mangaTools] failed to save plugin settings:", e);
-      });
+      saveSettings();
     }
     const options = NS.languageOptions(intl.locale);
     const enabled = NS.enabledLanguages;
@@ -6625,7 +6638,7 @@
     const Original = originalFrom(args);
     noteFired("PluginSettings");
     if (props.pluginID === PLUGIN_ID) {
-      return /* @__PURE__ */ React5.createElement(MangaToolsSettings, { pluginID: props.pluginID });
+      return /* @__PURE__ */ React5.createElement(MangaToolsSettings, null);
     }
     return /* @__PURE__ */ React5.createElement(Original, { ...props });
   });
