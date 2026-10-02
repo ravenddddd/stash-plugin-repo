@@ -909,9 +909,8 @@
     "mangaTools.settings.coverIcon.description": "The icon at the end of a cover's info row \u2014 the row that appears on hover, with the image count and the tag count. Turned off, the cover carries no mark, and the gallery is still managed.",
     "mangaTools.settings.coverIcon.help": "Not the same thing as the language badge: this one says the gallery is one the plugin manages, which is not a value anyone scans a cover for.",
     "mangaTools.settings.help.cover": "Cover",
-    "mangaTools.settings.help.card.title": "A manga title, over two lines",
+    "mangaTools.settings.help.card.title": "A sample manga title",
     "mangaTools.settings.help.card.date": "2026-09-30",
-    "mangaTools.settings.help.card.description": "And the line or two of description a card shows under it.",
     "mangaTools.manga.mark": "Mark as manga",
     "mangaTools.manga.marked": "Manga",
     "mangaTools.manga.isManga": "Is manga",
@@ -1007,9 +1006,8 @@
     "mangaTools.settings.coverIcon.description": "\u5C01\u9762\u4FE1\u606F\u680F\u672B\u5C3E\u7684\u90A3\u4E2A\u56FE\u6807\u2014\u2014\u5C31\u662F\u60AC\u505C\u65F6\u51FA\u73B0\u3001\u5E26\u56FE\u7247\u6570\u548C\u6807\u7B7E\u6570\u7684\u90A3\u4E00\u884C\u3002\u5173\u6389\u540E\u5C01\u9762\u4E0D\u5E26\u6807\u8BB0\uFF0C\u753B\u5ECA\u4F9D\u7136\u7531\u63D2\u4EF6\u7BA1\u7406\u3002",
     "mangaTools.settings.coverIcon.help": "\u548C\u8BED\u8A00\u5FBD\u7AE0\u4E0D\u662F\u4E00\u56DE\u4E8B\uFF1A\u5B83\u8BF4\u7684\u662F\u300C\u8FD9\u672C\u5F52\u63D2\u4EF6\u7BA1\u7406\u300D\uFF0C\u800C\u8FD9\u4E0D\u662F\u4E00\u4E2A\u4F1A\u5728\u5C01\u9762\u4E0A\u53BB\u626B\u7684\u503C\u3002",
     "mangaTools.settings.help.cover": "\u5C01\u9762",
-    "mangaTools.settings.help.card.title": "\u793A\u4F8B\u6F2B\u753B\u6807\u9898\uFF0C\u5360\u4E24\u884C",
+    "mangaTools.settings.help.card.title": "\u793A\u4F8B\u6F2B\u753B\u6807\u9898",
     "mangaTools.settings.help.card.date": "2026-09-30",
-    "mangaTools.settings.help.card.description": "\u518D\u4E0B\u9762\u662F\u8FD9\u4E00\u672C\u7684\u7B80\u4ECB\uFF0C\u5361\u7247\u4E0A\u5360\u4E09\u884C\u3002",
     "mangaTools.manga.mark": "\u6807\u8BB0\u4E3A\u6F2B\u753B",
     "mangaTools.manga.marked": "\u6F2B\u753B",
     "mangaTools.manga.isManga": "\u662F\u5426\u4E3A\u6F2B\u753B",
@@ -1105,9 +1103,8 @@
     "mangaTools.settings.coverIcon.description": "\u5C01\u9762\u8CC7\u8A0A\u6B04\u672B\u5C3E\u7684\u90A3\u500B\u5716\u793A\u2014\u2014\u5C31\u662F\u61F8\u505C\u6642\u51FA\u73FE\u3001\u5E36\u5716\u7247\u6578\u548C\u6A19\u7C64\u6578\u7684\u90A3\u4E00\u884C\u3002\u95DC\u6389\u5F8C\u5C01\u9762\u4E0D\u5E36\u6A19\u8A18\uFF0C\u756B\u5ECA\u4F9D\u7136\u7531\u5916\u639B\u7BA1\u7406\u3002",
     "mangaTools.settings.coverIcon.help": "\u548C\u8A9E\u8A00\u5FBD\u7AE0\u4E0D\u662F\u4E00\u56DE\u4E8B\uFF1A\u5B83\u8AAA\u7684\u662F\u300C\u9019\u672C\u6B78\u5916\u639B\u7BA1\u7406\u300D\uFF0C\u800C\u9019\u4E0D\u662F\u4E00\u500B\u6703\u5728\u5C01\u9762\u4E0A\u53BB\u6383\u7684\u503C\u3002",
     "mangaTools.settings.help.cover": "\u5C01\u9762",
-    "mangaTools.settings.help.card.title": "\u7BC4\u4F8B\u6F2B\u756B\u6A19\u984C\uFF0C\u4F54\u5169\u884C",
+    "mangaTools.settings.help.card.title": "\u7BC4\u4F8B\u6F2B\u756B\u6A19\u984C",
     "mangaTools.settings.help.card.date": "2026-09-30",
-    "mangaTools.settings.help.card.description": "\u518D\u4E0B\u9762\u662F\u9019\u4E00\u672C\u7684\u7C21\u4ECB\uFF0C\u5361\u7247\u4E0A\u4F54\u4E09\u884C\u3002",
     "mangaTools.manga.mark": "\u6A19\u8A18\u70BA\u6F2B\u756B",
     "mangaTools.manga.marked": "\u6F2B\u756B",
     "mangaTools.manga.isManga": "\u662F\u5426\u70BA\u6F2B\u756B",
@@ -6080,17 +6077,10 @@
       "div",
       {
         className: "gallery-card card grid-card zoom-1",
-        style: { width: 200 }
+        style: { width: 240 }
       },
       /* @__PURE__ */ React5.createElement("div", { className: "thumbnail-section" }, /* @__PURE__ */ React5.createElement("span", { className: "gallery-card-header" }, /* @__PURE__ */ React5.createElement("div", { className: "gallery-card-cover" }, /* @__PURE__ */ React5.createElement("div", { className: "gallery-card-image manga-tools-help-cover" }, t(intl, "mangaTools.settings.help.cover")))), sample ? languageChip(sample, lit("badge").trim()) : null),
-      /* @__PURE__ */ React5.createElement("div", { className: "card-section" }, /* @__PURE__ */ React5.createElement("h5", { className: "card-section-title flex-aligned" }, /* @__PURE__ */ React5.createElement("div", { className: "TruncatedText", style: { WebkitLineClamp: 2 } }, t(intl, "mangaTools.settings.help.card.title"))), /* @__PURE__ */ React5.createElement("div", { className: "gallery-card__details" }, /* @__PURE__ */ React5.createElement("span", { className: "gallery-card__date" }, t(intl, "mangaTools.settings.help.card.date")), /* @__PURE__ */ React5.createElement(
-        "div",
-        {
-          className: "TruncatedText gallery-card__description",
-          style: { WebkitLineClamp: 3 }
-        },
-        t(intl, "mangaTools.settings.help.card.description")
-      ))),
+      /* @__PURE__ */ React5.createElement("div", { className: "card-section" }, /* @__PURE__ */ React5.createElement("h5", { className: "card-section-title flex-aligned" }, /* @__PURE__ */ React5.createElement("div", { className: "TruncatedText", style: { WebkitLineClamp: 2 } }, t(intl, "mangaTools.settings.help.card.title"))), /* @__PURE__ */ React5.createElement("div", { className: "gallery-card__details" }, /* @__PURE__ */ React5.createElement("span", { className: "gallery-card__date" }, t(intl, "mangaTools.settings.help.card.date")))),
       /* @__PURE__ */ React5.createElement("hr", null),
       /* @__PURE__ */ React5.createElement("div", { role: "group", className: "card-popovers btn-group" }, count("image-count", Solid.faImage || null, 32), count("tag-count", Solid.faTag || null, 11), /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-popover-slot" + lit("mark") }, /* @__PURE__ */ React5.createElement(
         "button",
