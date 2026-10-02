@@ -908,6 +908,10 @@
     "mangaTools.settings.coverIcon.heading": "Show the manga icon on gallery covers",
     "mangaTools.settings.coverIcon.description": "The icon at the end of a cover's info row \u2014 the row that appears on hover, with the image count and the tag count. Turned off, the cover carries no mark, and the gallery is still managed.",
     "mangaTools.settings.coverIcon.help": "Not the same thing as the language badge: this one says the gallery is one the plugin manages, which is not a value anyone scans a cover for.",
+    "mangaTools.settings.help.cover": "Cover",
+    "mangaTools.settings.help.card.title": "A manga title, over two lines",
+    "mangaTools.settings.help.card.date": "2026-09-30",
+    "mangaTools.settings.help.card.description": "And the line or two of description a card shows under it.",
     "mangaTools.manga.mark": "Mark as manga",
     "mangaTools.manga.marked": "Manga",
     "mangaTools.manga.isManga": "Is manga",
@@ -1002,6 +1006,10 @@
     "mangaTools.settings.coverIcon.heading": "\u5728\u5C01\u9762\u4FE1\u606F\u680F\u663E\u793A\u6F2B\u753B\u56FE\u6807",
     "mangaTools.settings.coverIcon.description": "\u5C01\u9762\u4FE1\u606F\u680F\u672B\u5C3E\u7684\u90A3\u4E2A\u56FE\u6807\u2014\u2014\u5C31\u662F\u60AC\u505C\u65F6\u51FA\u73B0\u3001\u5E26\u56FE\u7247\u6570\u548C\u6807\u7B7E\u6570\u7684\u90A3\u4E00\u884C\u3002\u5173\u6389\u540E\u5C01\u9762\u4E0D\u5E26\u6807\u8BB0\uFF0C\u753B\u5ECA\u4F9D\u7136\u7531\u63D2\u4EF6\u7BA1\u7406\u3002",
     "mangaTools.settings.coverIcon.help": "\u548C\u8BED\u8A00\u5FBD\u7AE0\u4E0D\u662F\u4E00\u56DE\u4E8B\uFF1A\u5B83\u8BF4\u7684\u662F\u300C\u8FD9\u672C\u5F52\u63D2\u4EF6\u7BA1\u7406\u300D\uFF0C\u800C\u8FD9\u4E0D\u662F\u4E00\u4E2A\u4F1A\u5728\u5C01\u9762\u4E0A\u53BB\u626B\u7684\u503C\u3002",
+    "mangaTools.settings.help.cover": "\u5C01\u9762",
+    "mangaTools.settings.help.card.title": "\u793A\u4F8B\u6F2B\u753B\u6807\u9898\uFF0C\u5360\u4E24\u884C",
+    "mangaTools.settings.help.card.date": "2026-09-30",
+    "mangaTools.settings.help.card.description": "\u518D\u4E0B\u9762\u662F\u8FD9\u4E00\u672C\u7684\u7B80\u4ECB\uFF0C\u5361\u7247\u4E0A\u5360\u4E09\u884C\u3002",
     "mangaTools.manga.mark": "\u6807\u8BB0\u4E3A\u6F2B\u753B",
     "mangaTools.manga.marked": "\u6F2B\u753B",
     "mangaTools.manga.isManga": "\u662F\u5426\u4E3A\u6F2B\u753B",
@@ -1096,6 +1104,10 @@
     "mangaTools.settings.coverIcon.heading": "\u5728\u5C01\u9762\u8CC7\u8A0A\u6B04\u986F\u793A\u6F2B\u756B\u5716\u793A",
     "mangaTools.settings.coverIcon.description": "\u5C01\u9762\u8CC7\u8A0A\u6B04\u672B\u5C3E\u7684\u90A3\u500B\u5716\u793A\u2014\u2014\u5C31\u662F\u61F8\u505C\u6642\u51FA\u73FE\u3001\u5E36\u5716\u7247\u6578\u548C\u6A19\u7C64\u6578\u7684\u90A3\u4E00\u884C\u3002\u95DC\u6389\u5F8C\u5C01\u9762\u4E0D\u5E36\u6A19\u8A18\uFF0C\u756B\u5ECA\u4F9D\u7136\u7531\u5916\u639B\u7BA1\u7406\u3002",
     "mangaTools.settings.coverIcon.help": "\u548C\u8A9E\u8A00\u5FBD\u7AE0\u4E0D\u662F\u4E00\u56DE\u4E8B\uFF1A\u5B83\u8AAA\u7684\u662F\u300C\u9019\u672C\u6B78\u5916\u639B\u7BA1\u7406\u300D\uFF0C\u800C\u9019\u4E0D\u662F\u4E00\u500B\u6703\u5728\u5C01\u9762\u4E0A\u53BB\u6383\u7684\u503C\u3002",
+    "mangaTools.settings.help.cover": "\u5C01\u9762",
+    "mangaTools.settings.help.card.title": "\u7BC4\u4F8B\u6F2B\u756B\u6A19\u984C\uFF0C\u4F54\u5169\u884C",
+    "mangaTools.settings.help.card.date": "2026-09-30",
+    "mangaTools.settings.help.card.description": "\u518D\u4E0B\u9762\u662F\u9019\u4E00\u672C\u7684\u7C21\u4ECB\uFF0C\u5361\u7247\u4E0A\u4F54\u4E09\u884C\u3002",
     "mangaTools.manga.mark": "\u6A19\u8A18\u70BA\u6F2B\u756B",
     "mangaTools.manga.marked": "\u6F2B\u756B",
     "mangaTools.manga.isManga": "\u662F\u5426\u70BA\u6F2B\u756B",
@@ -5374,6 +5386,16 @@
       }
     );
   }
+  function languageChip(info, className) {
+    const extra = className ? " " + className : "";
+    if (!info.known) {
+      return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-badge is-unknown" + extra }, info.name);
+    }
+    if (!NS.showFlags) {
+      return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-badge is-name" + extra }, info.name);
+    }
+    return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-badge" + extra, "aria-label": info.name }, /* @__PURE__ */ React5.createElement(Flag2, { flag: info.flag }));
+  }
   function LanguageBadge(props) {
     useGlobalVersion();
     const locale = useLocale();
@@ -5382,13 +5404,7 @@
       locale
     );
     if (!info) return null;
-    if (!info.known) {
-      return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-badge is-unknown" }, info.name);
-    }
-    if (!NS.showFlags) {
-      return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-badge is-name" }, info.name);
-    }
-    return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-badge", "aria-label": info.name }, /* @__PURE__ */ React5.createElement(Flag2, { flag: info.flag }));
+    return languageChip(info);
   }
   var POPOVER_ANCHOR_CLASS = "manga-tools-popover-anchor";
   var POPOVER_SLOT_CLASS = "manga-tools-popover-slot";
@@ -5866,7 +5882,7 @@
     const offeredInfo = offered ? NS.describe(offered.code, intl.locale) : null;
     const chipIcon = Solid.faWandMagicSparkles || Solid.faMagic || Solid.faLanguage || null;
     const chipTitle = offered && offeredInfo ? t(intl, "mangaTools.translationGroup.fill") + " " + offeredInfo.name + " \u2014 " + t(intl, "mangaTools.translationGroup.suggestedLanguage") + " (" + offered.count + ")" : "";
-    const languageChip = offered && offeredInfo ? /* @__PURE__ */ React5.createElement(
+    const languageChip2 = offered && offeredInfo ? /* @__PURE__ */ React5.createElement(
       "button",
       {
         type: "button",
@@ -5889,7 +5905,7 @@
       /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_language" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_language" }, fieldLabel2(intl)), /* @__PURE__ */ React5.createElement(
         "div",
         {
-          className: cls.control + (languageChip ? " manga-tools-chip-row" : "")
+          className: cls.control + (languageChip2 ? " manga-tools-chip-row" : "")
         },
         /* @__PURE__ */ React5.createElement(
           Select,
@@ -5909,7 +5925,7 @@
             }
           }
         ),
-        languageChip
+        languageChip2
       ))
     );
     const mark = censorshipOf(props.values);
@@ -6051,11 +6067,55 @@
       host
     );
   }
+  function HelpExampleCard(props) {
+    const intl = PluginApi5.libraries.Intl.useIntl();
+    const Solid = PluginApi5.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi5.components.Icon;
+    const locale = intl.locale;
+    const own = NS.describe(locale, locale);
+    const sample = ((own == null ? void 0 : own.known) ? own : NS.describe("en", locale)) || void 0;
+    const lit = (which) => props.highlight === which ? " manga-tools-help-lit" : "";
+    const count = (cls, icon, n) => /* @__PURE__ */ React5.createElement("span", { className: cls }, /* @__PURE__ */ React5.createElement("button", { type: "button", tabIndex: -1, className: "minimal btn btn-primary" }, icon ? /* @__PURE__ */ React5.createElement(Icon, { icon }) : null, /* @__PURE__ */ React5.createElement("span", null, n)));
+    return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-help-card", "aria-hidden": "true" }, /* @__PURE__ */ React5.createElement(
+      "div",
+      {
+        className: "gallery-card card grid-card zoom-1",
+        style: { width: 200 }
+      },
+      /* @__PURE__ */ React5.createElement("div", { className: "thumbnail-section" }, /* @__PURE__ */ React5.createElement("span", { className: "gallery-card-header" }, /* @__PURE__ */ React5.createElement("div", { className: "gallery-card-cover" }, /* @__PURE__ */ React5.createElement("div", { className: "gallery-card-image manga-tools-help-cover" }, t(intl, "mangaTools.settings.help.cover")))), sample ? languageChip(sample, lit("badge").trim()) : null),
+      /* @__PURE__ */ React5.createElement("div", { className: "card-section" }, /* @__PURE__ */ React5.createElement("h5", { className: "card-section-title flex-aligned" }, /* @__PURE__ */ React5.createElement("div", { className: "TruncatedText", style: { WebkitLineClamp: 2 } }, t(intl, "mangaTools.settings.help.card.title"))), /* @__PURE__ */ React5.createElement("div", { className: "gallery-card__details" }, /* @__PURE__ */ React5.createElement("span", { className: "gallery-card__date" }, t(intl, "mangaTools.settings.help.card.date")), /* @__PURE__ */ React5.createElement(
+        "div",
+        {
+          className: "TruncatedText gallery-card__description",
+          style: { WebkitLineClamp: 3 }
+        },
+        t(intl, "mangaTools.settings.help.card.description")
+      ))),
+      /* @__PURE__ */ React5.createElement("hr", null),
+      /* @__PURE__ */ React5.createElement("div", { role: "group", className: "card-popovers btn-group" }, count("image-count", Solid.faImage || null, 32), count("tag-count", Solid.faTag || null, 11), /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-popover-slot" + lit("mark") }, /* @__PURE__ */ React5.createElement(
+        "button",
+        {
+          type: "button",
+          tabIndex: -1,
+          className: "minimal btn btn-primary manga-tools-mark"
+        },
+        /* @__PURE__ */ React5.createElement(MangaIcon, null)
+      )))
+    ));
+  }
   function HelpIcon(props) {
     const Solid = PluginApi5.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi5.components.Icon;
     const icon = Solid.faQuestionCircle || null;
-    return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-help", title: props.text }, icon ? /* @__PURE__ */ React5.createElement(Icon, { icon }) : "?");
+    return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-help" }, /* @__PURE__ */ React5.createElement(
+      "button",
+      {
+        type: "button",
+        className: "manga-tools-help-button",
+        "aria-label": props.text
+      },
+      icon ? /* @__PURE__ */ React5.createElement(Icon, { icon }) : "?"
+    ), /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-help-panel" }, /* @__PURE__ */ React5.createElement(HelpExampleCard, { highlight: props.example })));
   }
   function BooleanSetting(props) {
     const Bootstrap = PluginApi5.libraries.Bootstrap;
@@ -6065,16 +6125,21 @@
       );
       return null;
     }
-    return /* @__PURE__ */ React5.createElement("div", { className: "setting" }, /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement("h3", null, props.help ? /* @__PURE__ */ React5.createElement(React5.Fragment, null, props.heading, /* @__PURE__ */ React5.createElement(HelpIcon, { text: props.help })) : props.heading), props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null), /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement(
-      Bootstrap.Form.Switch,
-      {
-        id: props.id,
-        checked: props.checked,
-        onChange: () => {
-          props.onChange(!props.checked);
+    return (
+      // `manga-tools-setting` is what the stylesheet needs to undo Stash's
+      // `flex-wrap: wrap` on a plugin's rows, which puts a switch with a long
+      // sub-heading on a line of its own — see the rule in mangaTools.css.
+      /* @__PURE__ */ React5.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement("h3", null, props.help ? /* @__PURE__ */ React5.createElement(React5.Fragment, null, props.heading, /* @__PURE__ */ React5.createElement(HelpIcon, { text: props.help.text, example: props.help.example })) : props.heading), props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null), /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement(
+        Bootstrap.Form.Switch,
+        {
+          id: props.id,
+          checked: props.checked,
+          onChange: () => {
+            props.onChange(!props.checked);
+          }
         }
-      }
-    )));
+      )))
+    );
   }
   function SettingSwitch(props) {
     return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(
@@ -6214,7 +6279,10 @@
               intl,
               "mangaTools.settings.showCoverBadge.description"
             ),
-            help: t(intl, "mangaTools.settings.showCoverBadge.help"),
+            help: {
+              text: t(intl, "mangaTools.settings.showCoverBadge.help"),
+              example: "badge"
+            },
             checked: NS.showCoverBadge,
             onChange: writeFlag((next) => {
               NS.showCoverBadge = next;
@@ -6319,7 +6387,10 @@
         id: "mangaTools-coverIcon",
         heading: t(intl, "mangaTools.settings.coverIcon.heading"),
         subHeading: t(intl, "mangaTools.settings.coverIcon.description"),
-        help: t(intl, "mangaTools.settings.coverIcon.help"),
+        help: {
+          text: t(intl, "mangaTools.settings.coverIcon.help"),
+          example: "mark"
+        },
         checked: NS.coverIcon,
         onChange: writeFlag((next) => {
           NS.coverIcon = next;
