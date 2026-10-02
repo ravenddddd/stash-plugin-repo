@@ -843,6 +843,7 @@
     "mangaReader.groupReading": "Reading",
     "mangaReader.singlePage": "Single page",
     "mangaReader.doublePage": "Double page",
+    "mangaReader.scrollMode": "Scroll",
     "mangaReader.coverAlone": "Cover on a page of its own",
     "mangaReader.detectSpreads": "Detect spreads automatically",
     "mangaReader.offset": "Shift the pairing by one page",
@@ -929,6 +930,7 @@
     "mangaReader.groupReading": "\u9605\u8BFB",
     "mangaReader.singlePage": "\u5355\u9875",
     "mangaReader.doublePage": "\u53CC\u9875",
+    "mangaReader.scrollMode": "\u7EB5\u5411",
     "mangaReader.coverAlone": "\u5C01\u9762\u5355\u72EC\u4E00\u9875",
     "mangaReader.detectSpreads": "\u81EA\u52A8\u68C0\u6D4B\u8DE8\u9875",
     "mangaReader.offset": "\u914D\u5BF9\u504F\u79FB\u4E00\u9875",
@@ -1015,6 +1017,7 @@
     "mangaReader.groupReading": "\u95B1\u8B80",
     "mangaReader.singlePage": "\u55AE\u9801",
     "mangaReader.doublePage": "\u96D9\u9801",
+    "mangaReader.scrollMode": "\u7E31\u5411",
     "mangaReader.coverAlone": "\u5C01\u9762\u55AE\u7368\u4E00\u9801",
     "mangaReader.detectSpreads": "\u81EA\u52D5\u5075\u6E2C\u8DE8\u9801",
     "mangaReader.offset": "\u914D\u5C0D\u504F\u79FB\u4E00\u9801",
@@ -1403,9 +1406,9 @@
         return wrap;
       };
       const reading = group("mangaReader.groupReading");
-      const pair = (first, second, choose) => {
+      const pair = (halves, choose) => {
         const track2 = text(CLASS_PAGES, "div");
-        for (const half of [first, second]) {
+        for (const half of halves) {
           const button2 = document.createElement("button");
           button2.type = "button";
           button2.id = half.id;
@@ -1421,9 +1424,14 @@
       };
       reading.appendChild(
         pair(
-          { id: SINGLE_PAGE_ID, textId: "mangaReader.singlePage" },
-          { id: DOUBLE_PAGE_ID, textId: "mangaReader.doublePage" },
-          (id) => latest == null ? void 0 : latest.handlers.onSetting({ doublePage: id === DOUBLE_PAGE_ID })
+          [
+            { id: SINGLE_PAGE_ID, textId: "mangaReader.singlePage" },
+            { id: DOUBLE_PAGE_ID, textId: "mangaReader.doublePage" },
+            { id: SCROLL_ID, textId: "mangaReader.scrollMode" }
+          ],
+          (id) => latest == null ? void 0 : latest.handlers.onSetting({
+            readingMode: id === DOUBLE_PAGE_ID ? "double" : id === SCROLL_ID ? "scroll" : "single"
+          })
         )
       );
       parts.coverRow = row2(
@@ -1447,12 +1455,15 @@
         switchAt(OFFSET_ID, (on) => latest == null ? void 0 : latest.handlers.onOffset(on))
       );
       reading.appendChild(parts.offsetRow);
-      rule();
+      parts.animationRule = rule();
       const animation = group("mangaReader.groupAnimation");
+      parts.animationGroup = animation;
       animation.appendChild(
         pair(
-          { id: FADE_OFF_ID, textId: "mangaReader.fadeOff" },
-          { id: FADE_ON_ID, textId: "mangaReader.fade" },
+          [
+            { id: FADE_OFF_ID, textId: "mangaReader.fadeOff" },
+            { id: FADE_ON_ID, textId: "mangaReader.fade" }
+          ],
           (id) => latest == null ? void 0 : latest.handlers.onSetting({ fade: id === FADE_ON_ID })
         )
       );
@@ -1471,14 +1482,16 @@
     say("mangaReader.groupAnimation");
     say("mangaReader.singlePage");
     say("mangaReader.doublePage");
+    say("mangaReader.scrollMode");
     say("mangaReader.fadeOff");
     say("mangaReader.fade");
     const chosen = (id, on) => {
       const half = panel2.querySelector("#" + id);
       if (half) half.classList.toggle("is-on", on);
     };
-    chosen(SINGLE_PAGE_ID, !state.settings.doublePage);
-    chosen(DOUBLE_PAGE_ID, state.settings.doublePage);
+    chosen(SINGLE_PAGE_ID, state.settings.readingMode === "single");
+    chosen(DOUBLE_PAGE_ID, state.settings.readingMode === "double");
+    chosen(SCROLL_ID, state.settings.readingMode === "scroll");
     chosen(FADE_OFF_ID, !state.settings.fade);
     chosen(FADE_ON_ID, state.settings.fade);
     set(COVER_ID, state.settings.coverAlone);
@@ -1487,13 +1500,17 @@
     say("mangaReader.coverAlone");
     say("mangaReader.detectSpreads");
     say("mangaReader.offset");
-    const paired = state.settings.doublePage;
+    const paired = state.settings.readingMode === "double";
     showWhen(parts.coverRow, paired);
     showWhen(parts.spreadsRow, paired);
     showWhen(parts.offsetRow, paired);
+    const screening = state.settings.readingMode !== "scroll";
+    showWhen(parts.animationGroup, screening);
+    showWhen(parts.animationRule, screening);
   }
   var SINGLE_PAGE_ID = "manga-reader-single-page";
   var DOUBLE_PAGE_ID = "manga-reader-double-page";
+  var SCROLL_ID = "manga-reader-scroll";
   var COVER_ID = "manga-reader-cover-alone";
   var SPREAD_ID = "manga-reader-detect-spreads";
   var OFFSET_ID = "manga-reader-offset";
@@ -2149,6 +2166,7 @@
   var CLASS_LABEL = "manga-reader-progress-label";
   var CLASS_SCRUBBING = "is-scrubbing";
   var CLASS_IDLE = "is-idle";
+  var CLASS_VERTICAL = "is-vertical";
   var CLASS_SHOWING = "is-showing";
   var latest2 = null;
   var bar = null;
@@ -2160,7 +2178,9 @@
   var labelChapter = null;
   var nodes = null;
   var drawn = null;
+  var lastVertical = null;
   var labelWidth = 0;
+  var labelHeight = 0;
   var bubble = null;
   var pointer = null;
   var target = 0;
@@ -2173,8 +2193,10 @@
     latest2 = state;
     if (!lightbox.querySelector(".Lightbox-footer")) return bar;
     if (state.total <= 1) return null;
-    if (!bar) build(lightbox);
-    else if (bar.parentNode !== lightbox) place(lightbox);
+    const parent = parentFor(lightbox);
+    if (!parent) return null;
+    if (!bar) build();
+    place(parent);
     if (!bar || !track || !read || !thumb || !label || !nodes) return bar;
     update2(state);
     return bar;
@@ -2200,8 +2222,32 @@
     pointer = null;
     pressed = false;
     labelWidth = 0;
+    labelHeight = 0;
   }
-  function build(lightbox) {
+  function vertical() {
+    return (latest2 == null ? void 0 : latest2.vertical) === true;
+  }
+  function setAlong(node, fraction) {
+    const at = (fraction * 100).toFixed(3) + "%";
+    if (vertical()) {
+      if (node.style.top !== at) node.style.top = at;
+      if (node.style.left) node.style.left = "";
+    } else {
+      if (node.style.left !== at) node.style.left = at;
+      if (node.style.top) node.style.top = "";
+    }
+  }
+  function setAlongLength(node, fraction) {
+    const at = (fraction * 100).toFixed(3) + "%";
+    if (vertical()) {
+      if (node.style.height !== at) node.style.height = at;
+      if (node.style.width) node.style.width = "";
+    } else {
+      if (node.style.width !== at) node.style.width = at;
+      if (node.style.height) node.style.height = "";
+    }
+  }
+  function build() {
     bar = document.createElement("div");
     bar.className = CLASS_BAR + " " + CLASS_IDLE;
     label = document.createElement("div");
@@ -2228,49 +2274,68 @@
     track.addEventListener("mousemove", onMoveOverBar);
     track.addEventListener("mouseleave", onLeaveTrack);
     track.addEventListener("mousedown", onPress);
-    place(lightbox);
   }
-  function place(lightbox) {
-    if (!bar) return;
-    const footer = lightbox.querySelector(".Lightbox-footer");
-    if (footer) lightbox.insertBefore(bar, footer);
-    else lightbox.appendChild(bar);
+  var SELECTOR_DISPLAY2 = ".Lightbox-display";
+  function parentFor(lightbox) {
+    if (!vertical()) return lightbox;
+    return lightbox.querySelector(SELECTOR_DISPLAY2);
+  }
+  function place(parent) {
+    if (!bar || bar.parentNode === parent) return;
+    if (parent.classList.contains("Lightbox-display")) {
+      parent.appendChild(bar);
+      return;
+    }
+    const footer = parent.querySelector(".Lightbox-footer");
+    if (footer) parent.insertBefore(bar, footer);
+    else parent.appendChild(bar);
   }
   function update2(state) {
     if (!bar || !track || !read || !thumb || !label || !nodes) return;
+    if (state.vertical !== lastVertical) {
+      lastVertical = state.vertical;
+      drawn = null;
+    }
     const key = state.chapters.map((c) => c.at + ":" + c.title).join("|");
     if (!drawn || drawn.nodes !== key || drawn.total !== state.total) {
       drawNodes(state);
     }
+    bar.classList.toggle(CLASS_VERTICAL, state.vertical);
     if (state.width > 0) lastWidth = state.width;
-    if (!pressed && lastWidth > 0) {
+    if (state.vertical) {
+      if (track.style.width) track.style.width = "";
+    } else if (!pressed && lastWidth > 0) {
       const wanted2 = Math.round(lastWidth) + "px";
       if (track.style.width !== wanted2) track.style.width = wanted2;
     }
     const settled = fractionOfPage(state.at, state.total);
     const fraction = pointer === null ? settled : pointer;
-    const where = (fraction * 100).toFixed(3) + "%";
-    if (read.style.width !== where) read.style.width = where;
-    if (thumb.style.left !== where) thumb.style.left = where;
+    setAlongLength(read, fraction);
+    setAlong(thumb, fraction);
     if (bubble) {
       if ((labelPage == null ? void 0 : labelPage.textContent) !== bubble.page) {
         if (labelPage) labelPage.textContent = bubble.page;
         labelWidth = label.offsetWidth;
+        labelHeight = label.offsetHeight;
       }
       if ((labelChapter == null ? void 0 : labelChapter.textContent) !== bubble.chapter) {
         if (labelChapter) labelChapter.textContent = bubble.chapter;
         labelWidth = label.offsetWidth;
+        labelHeight = label.offsetHeight;
       }
     }
     if (bubble) {
-      const half = labelWidth / 2;
-      const width = track.clientWidth || 0;
-      const px = Math.max(half, Math.min(bubble.fraction * width, width - half)).toFixed(
-        0
-      ) + "px";
-      if (label.style.left !== px) label.style.left = px;
+      const half = (vertical() ? labelHeight : labelWidth) / 2;
+      const span = vertical() ? track.clientHeight : track.clientWidth;
+      const px = Math.max(
+        half,
+        Math.min(bubble.fraction * (span || 0), (span || 0) - half)
+      ).toFixed(0) + "px";
+      if (vertical()) {
+        if (label.style.top !== px) label.style.top = px;
+      } else if (label.style.left !== px) label.style.left = px;
     }
-    if (owed && state.width > 0) {
+    if (owed && (state.vertical || state.width > 0)) {
       owed = false;
       wake();
     }
@@ -2285,7 +2350,7 @@
     for (const node of progressNodes(state.chapters, state.total, state.locale)) {
       const tick = document.createElement("div");
       tick.className = CLASS_NODE;
-      tick.style.left = (node.fraction * 100).toFixed(3) + "%";
+      setAlong(tick, node.fraction);
       tick.dataset.name = node.name;
       tick.dataset.at = String(node.at);
       tick.dataset.fraction = String(node.fraction);
@@ -2331,7 +2396,7 @@
   }
   function wake() {
     if (!bar) return;
-    if (lastWidth <= 0) {
+    if (!vertical() && lastWidth <= 0) {
       bar.classList.add(CLASS_IDLE);
       owed = true;
       return;
@@ -2350,11 +2415,12 @@
     pending = null;
   }
   var pressed = false;
-  function fractionAt(clientX) {
+  function fractionAt(event) {
     if (!track) return 0;
     const rect = track.getBoundingClientRect();
-    const width = rect.width || track.clientWidth || 1;
-    return Math.min(Math.max((clientX - rect.left) / width, 0), 1);
+    const span = vertical() ? rect.height || track.clientHeight || 1 : rect.width || track.clientWidth || 1;
+    const from = vertical() ? event.clientY - rect.top : event.clientX - rect.left;
+    return Math.min(Math.max(from / span, 0), 1);
   }
   function onPress(event) {
     var _a2, _b2, _c;
@@ -2375,14 +2441,14 @@
       redraw3();
     } else {
       bubble = null;
-      scrubTo(fractionAt(press.clientX));
+      scrubTo(fractionAt(press));
     }
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onRelease);
   }
   function onMove(event) {
     if (!pressed) return;
-    scrubTo(fractionAt(event.clientX));
+    scrubTo(fractionAt(event));
   }
   function onRelease() {
     document.removeEventListener("mousemove", onMove);
@@ -2446,7 +2512,7 @@
   }
   var FADE_MS = 200;
   var DEFAULT_SETTINGS = {
-    doublePage: false,
+    readingMode: "single",
     coverAlone: true,
     detectSpreads: true,
     fade: true,
@@ -2463,13 +2529,23 @@
       }
     })();
     const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
+    const readingMode = () => {
+      const value = stored.readingMode;
+      if (value === "single" || value === "double" || value === "scroll") {
+        return value;
+      }
+      if (typeof stored.doublePage === "boolean") {
+        return stored.doublePage ? "double" : "single";
+      }
+      return DEFAULT_SETTINGS.readingMode;
+    };
     const fade = () => {
       if (typeof stored.fade === "boolean") return stored.fade;
       if (typeof stored.fadeMs === "number") return stored.fadeMs > 0;
       return DEFAULT_SETTINGS.fade;
     };
     return {
-      doublePage: flag("doublePage"),
+      readingMode: readingMode(),
       coverAlone: flag("coverAlone"),
       detectSpreads: flag("detectSpreads"),
       fade: fade(),
@@ -2499,6 +2575,40 @@
   NR.parseSettings = parseSettings;
   NR.readSettings = readSettings;
   NR.FADE_MS = FADE_MS;
+
+  // src/reader/scroll.ts
+  var CLASS_SCROLL = "is-scroll";
+  var CLASS_SCROLL_PAGE = "manga-reader-scroll-page";
+  function pageAtTop(rows, edge) {
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i].bottom > edge) return i;
+    }
+    return rows.length > 0 ? rows.length - 1 : -1;
+  }
+  function buildColumn(column, pages, urlOf) {
+    column.textContent = "";
+    pages.forEach((page, index) => {
+      const row2 = document.createElement("div");
+      row2.className = CLASS_SCROLL_PAGE;
+      if (page.width > 0) row2.style.maxWidth = page.width + "px";
+      if (page.width > 0 && page.height > 0) {
+        row2.style.aspectRatio = page.width + " / " + page.height;
+      }
+      const image = document.createElement("img");
+      image.src = urlOf(page, index);
+      image.alt = String(index + 1);
+      image.decoding = "async";
+      image.loading = "lazy";
+      image.draggable = false;
+      row2.appendChild(image);
+      column.appendChild(row2);
+    });
+  }
+  function rowOffset(column, index) {
+    const row2 = column.querySelectorAll("." + CLASS_SCROLL_PAGE)[index];
+    return row2 ? row2.offsetTop : null;
+  }
+  NR.pageAtTop = pageAtTop;
 
   // src/reader/spreads.ts
   var DEFAULT_SPREAD_OPTIONS = {
@@ -2665,12 +2775,12 @@
       detectSpreads: settings.detectSpreads,
       // The setting is a yes or no; the layout's own word for it is a page count.
       offset: settings.offset ? 1 : 0,
-      double: settings.doublePage
+      double: settings.readingMode === "double"
     });
   }
   function pairingKey() {
     return [
-      settings.doublePage,
+      settings.readingMode,
       settings.coverAlone,
       settings.detectSpreads,
       settings.offset
@@ -2774,10 +2884,15 @@
     ensureChrome(lightbox, chromeState(gallery, lightbox));
     lightbox.classList.add(CLASS_TAKEOVER);
     const at = screenNow(gallery);
-    syncFooter(
-      lightbox,
-      at < 0 ? null : gallery.images[gallery.screens[at].start] || null
-    );
+    const page = pageAt(gallery, at);
+    syncFooter(lightbox, page < 0 ? null : gallery.images[page] || null);
+    const scrolling = settings.readingMode === "scroll";
+    if (scrolling) {
+      ensureProgress(lightbox, progressState(gallery, at, lightbox));
+      ensureColumn(lightbox, gallery);
+      return;
+    }
+    removeColumn();
     if (at >= 0) ensureProgress(lightbox, progressState(gallery, at, lightbox));
     if (at < 0) return;
     if (at === shownAt && container && (container.childElementCount || awaiting === at)) {
@@ -2788,16 +2903,20 @@
     draw(gallery.screens[at], at);
   }
   function progressState(gallery, at, lightbox) {
-    var _a2, _b2, _c;
+    var _a2;
     const screen = gallery.screens[at];
+    const scrolling = settings.readingMode === "scroll";
     return {
-      at: (_b2 = (_a2 = gallery.screens[at]) == null ? void 0 : _a2.start) != null ? _b2 : 0,
+      at: Math.max(pageAt(gallery, at), 0),
       total: gallery.pages.length,
-      width: pictureWidth((_c = screen == null ? void 0 : screen.pages.length) != null ? _c : 0),
+      // The column's bar is a column too, and its extent is the picture area's rather
+      // than a measurement of the pages — see progress.ts.
+      width: scrolling ? 0 : pictureWidth((_a2 = screen == null ? void 0 : screen.pages.length) != null ? _a2 : 0),
+      vertical: scrolling,
       chapters: gallery.chapters,
       chapterNameAt: (page) => {
-        var _a3, _b3;
-        return ((_b3 = chapterAt(gallery.chapters, ((_a3 = gallery.pages[page]) == null ? void 0 : _a3.id) || "")) == null ? void 0 : _b3.title) || "";
+        var _a3, _b2;
+        return ((_b2 = chapterAt(gallery.chapters, ((_a3 = gallery.pages[page]) == null ? void 0 : _a3.id) || "")) == null ? void 0 : _b2.title) || "";
       },
       locale: language,
       handlers: {
@@ -2809,7 +2928,7 @@
     var _a2;
     const at = screenNow(gallery);
     const image = at < 0 ? null : gallery.images[gallery.screens[at].start] || null;
-    const pageId = at < 0 ? "" : ((_a2 = gallery.pages[gallery.screens[at].start]) == null ? void 0 : _a2.id) || "";
+    const pageId = ((_a2 = gallery.pages[pageAt(gallery, at)]) == null ? void 0 : _a2.id) || "";
     return {
       image,
       number: Math.max(place2, 0) + 1,
@@ -2828,6 +2947,7 @@
         },
         onChapter: (to) => {
           place2 = to;
+          if (settings.readingMode === "scroll") scrollTo = to;
           step();
         },
         onSetting: (next) => {
@@ -2873,6 +2993,7 @@
       container.addEventListener("click", onSpreadClick);
       container.addEventListener("wheel", onSpreadWheel);
       container.addEventListener("mousedown", onSpreadPress);
+      container.addEventListener("scroll", onColumnScroll);
       container.addEventListener(
         "load",
         () => {
@@ -2884,6 +3005,53 @@
     display.style.position = "relative";
     display.appendChild(container);
     lightbox.classList.add(CLASS_ACTIVE);
+  }
+  var columnFor = null;
+  var scrollTo = null;
+  function ensureColumn(lightbox, gallery) {
+    ensureContainer(lightbox);
+    if (!container) return;
+    container.classList.add(CLASS_SCROLL);
+    container.style.transform = "";
+    view = fitView();
+    let built = false;
+    if (columnFor !== gallery.id) {
+      buildColumn(container, gallery.pages, (page) => pageUrl(page));
+      columnFor = gallery.id;
+      built = true;
+      awaiting = -1;
+    }
+    const to = built ? place2 : scrollTo;
+    scrollTo = null;
+    if (to === null || to < 0) return;
+    const offset = rowOffset(container, to);
+    if (offset !== null) container.scrollTop = offset;
+  }
+  function removeColumn() {
+    if (columnFor === null) return;
+    columnFor = null;
+    scrollTo = null;
+    view = fitView();
+    shownAt = -1;
+    container == null ? void 0 : container.classList.remove(CLASS_SCROLL);
+  }
+  function columnPageAt(column) {
+    const rows = Array.from(column.querySelectorAll("." + CLASS_SCROLL_PAGE)).map(
+      (row2) => row2.getBoundingClientRect()
+    );
+    return NR.pageAtTop(
+      rows.map((rect) => ({ top: rect.top, bottom: rect.bottom })),
+      column.getBoundingClientRect().top
+    );
+  }
+  function onColumnScroll() {
+    const lightbox = root;
+    if (!lightbox || !container) return;
+    if (settings.readingMode !== "scroll" || !wanted()) return;
+    const at = columnPageAt(container);
+    if (at < 0 || at === place2) return;
+    place2 = at;
+    sync(lightbox);
   }
   var REVEAL_BUDGET_MS = 300;
   NR.REVEAL_BUDGET_MS = REVEAL_BUDGET_MS;
@@ -2990,6 +3158,10 @@
       }
     }
   }
+  function pageAt(gallery, at) {
+    if (settings.readingMode === "scroll") return Math.max(place2, 0);
+    return at < 0 ? -1 : gallery.screens[at].start;
+  }
   function screenNow(gallery) {
     if (place2 < 0) return -1;
     return screenAt(gallery.screens, place2);
@@ -3072,6 +3244,7 @@
     if (!gallery) return;
     if (event.key === "o" || event.key === "O") {
       if (event.repeat) return;
+      if (settings.readingMode !== "double") return;
       setOffset(gallery, !settings.offset);
       event.preventDefault();
       event.stopPropagation();
@@ -3087,6 +3260,17 @@
   function turnBy(lightbox, direction) {
     const gallery = current();
     if (!gallery) return false;
+    if (settings.readingMode === "scroll") {
+      const next = Math.min(
+        Math.max(place2 + direction, 0),
+        gallery.pages.length - 1
+      );
+      if (next === place2) return false;
+      place2 = next;
+      scrollTo = next;
+      sync(lightbox);
+      return true;
+    }
     const at = screenNow(gallery);
     if (at < 0) return false;
     const steps = stepsToAdjacent(gallery.screens, place2, direction);
@@ -3097,10 +3281,14 @@
   }
   function pictureWidth(pages) {
     if (!container || pages <= 0) return 0;
+    const images = Array.from(container.querySelectorAll("img"));
+    if (!images.length) return 0;
+    for (const image of images) {
+      if (!image.offsetWidth) return 0;
+    }
     let left = Number.POSITIVE_INFINITY;
     let right = 0;
-    for (const node of Array.from(container.querySelectorAll("img"))) {
-      const image = node;
+    for (const image of images) {
       left = Math.min(left, image.offsetLeft);
       right = Math.max(right, image.offsetLeft + image.offsetWidth);
     }
@@ -3110,6 +3298,7 @@
     const gallery = current();
     if (!gallery) return;
     place2 = Math.min(Math.max(at, 0), gallery.pages.length - 1);
+    if (settings.readingMode === "scroll") scrollTo = place2;
     sync(lightbox);
   }
   function navIcon(button2) {
@@ -3147,6 +3336,7 @@
       return;
     }
     const target2 = event.target;
+    if (settings.readingMode === "scroll" && (target2 == null ? void 0 : target2.tagName) === "IMG") return;
     if ((target2 == null ? void 0 : target2.tagName) !== "IMG") {
       if (inFullscreen(lightbox)) {
         event.stopPropagation();
@@ -3170,6 +3360,7 @@
   function onSpreadWheel(event) {
     const lightbox = root;
     if (!lightbox || !container) return;
+    if (settings.readingMode === "scroll") return;
     const wheel = event;
     wheel.preventDefault();
     if (wheel.ctrlKey || wheel.metaKey) {
@@ -3200,6 +3391,7 @@
     }
   }
   function onSpreadPress(event) {
+    if (settings.readingMode === "scroll") return;
     const press = event;
     if (press.button !== 0) return;
     pressed2 = { x: press.clientX, y: press.clientY, at: press.timeStamp };

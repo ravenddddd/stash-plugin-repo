@@ -651,23 +651,24 @@ the value is simply no longer offered as a new choice. This is react-select's
 `value`/`options` split: the selected value is rendered from `value`, which is
 never filtered, while only the option *list* is filtered.
 
-## Reading: two pages at a time
+## Reading: three ways
 
-A two-page (**spread**) view for Stash's image lightbox, for reading manga the way
-it was printed: two pages side by side, the earlier one on the right. **Off until
-you turn it on.** Open any gallery, open an image, and the lightbox's own options
-menu — the one behind the gear icon in its header — opens the reader's own panel:
-**Single page / Double page** as a pair, then the switches, in three groups.
+A reader for Stash's image lightbox, for reading manga the way it was printed — two
+pages side by side, the earlier one on the right — or one page at a time, or the
+whole gallery as a column scrolled downwards. **Off until you turn it on.** Open any
+gallery, open an image, and the lightbox's own options menu — the one behind the gear
+icon in its header — opens the reader's own panel: **Single page / Double page /
+Scroll** as a row of buttons, then the switches, grouped.
 
 **Everything is in that one panel, and it is grouped by what each setting is about:**
 
 | Group | | |
 |---|---|---|
-| **Reading** | **Single page / Double page** | How the pages are paired |
-| | **Cover on a page of its own** | A cover is not the left half of anything |
-| | **Detect spreads automatically** | A page wider than it is tall is taken for one image spanning two pages |
-| | **Shift the pairing by one page** | For pages that are grouped wrongly, or `O` |
-| **Animation** | **None / Fade in** | Whether a screen arrives or appears. The length is the plugin's — 200 ms |
+| **Reading** | **Single page / Double page / Scroll** | Which of the three ways the pages are laid out — see below |
+| | **Cover on a page of its own** | A cover is not the left half of anything. Double page only |
+| | **Detect spreads automatically** | A page wider than it is tall is taken for one image spanning two pages. Double page only |
+| | **Shift the pairing by one page** | For pages that are grouped wrongly, or `O`. Double page only |
+| **Animation** | **None / Fade in** | Whether a screen arrives or appears. The two screen modes only; the length is the plugin's — 200 ms |
 
 The last two of the reading group are **stored settings that had no control until
 now**: the pairing has read `coverAlone` and `detectSpreads` from the browser's
@@ -675,10 +676,40 @@ settings since the mode was written, and nothing could change them. Turning eith
 off re-lays the pages there and then — as the single/double pair does — because a
 switch that writes a setting the screen does not obey is worse than no switch.
 
-**The last three go away when there is no pairing.** "Cover on a page of its own" and
-"detect spreads" describe how two pages are put together, and the shift moves that
-pairing by a page: reading one page at a time, all three are put away. A switch that
-changes nothing is worse than no switch.
+**The pairing's three go away unless the pages are actually paired.** "Cover on a
+page of its own" and "detect spreads" describe how two pages are put together, and the
+shift moves that pairing by a page: one page at a time, or a column, all three are put
+away. A switch that changes nothing is worse than no switch. The fade goes with them
+in the column, which has no screen to arrive.
+
+**Three ways, and the third is a different renderer rather than a third setting.** A
+screen at a time is *discrete*: a spread is one screen, a turn is arithmetic on the
+place in the book, and the bar's width is measured from the pages on show. A column is
+*not*: the pages are stacked, the browser scrolls them, and where the reader is
+depends on where the column is. What the two share is the place itself — a page — and
+that is what lets the header, the counter, the chapter menu and the bar go on meaning
+the same thing in all three.
+
+**In the column:**
+
+- **The wheel is the browser's.** Scrolling *is* reading there: no page turns, no
+  `preventDefault`, and no chord of this plugin's. `←`/`→` move one page, because a
+  page is what the counter counts; a screenful would be a measurement and a different
+  answer on every window. A click on a page does nothing — there is no page on either
+  side of it — while a click on the letterbox still closes the lightbox.
+- **There is no zoom and no pan.** A page is already as wide as the picture area, and
+  the zoom is a transform on the container, which is a scroll box in this mode.
+- **Every row's height is reserved before its picture arrives**, from the size the
+  gallery answer carries: a column of images that are not there yet has no height at
+  all, and each one landing would push the rest down — which for a reader halfway
+  through is the page moving under their eyes.
+- **The bar turns.** It is the same bar down the side of the picture instead of along
+  the bottom: the same four pixels of paint, the same sixteen of aim, the same chapter
+  ticks, the same bubble (beside the line rather than above it), the same drag. Its
+  length is the picture area's, so nothing about it is measured — and the browser's own
+  scrollbar is hidden, because this *is* the scrollbar here.
+- **The pages are in reading order**, the same list the other two modes read — not
+  path order.
 
 **No row has a description under it.** Each is its words and its control. A quiet line
 under a switch is Stash's own shape for one, and this panel has decided against it for
@@ -709,7 +740,7 @@ While the pairing is on, and while you are reading a **gallery**:
 | **Pan** | Press and drag to move the pages — as far as you take them, past the edge of the screen and all, exactly as Stash's own image does; turning the page is what puts them back in the middle. A drag never turns the page, and a click never moves it. Nor does a press held longer than a click: Stash's own other half of the test, so a press you thought better of sends you nowhere |
 | **Shift the pairing** | Its own switch in the options panel — in the reading group, and there while a pairing is — or `O`, for pages that are grouped wrongly. Remembered for the browser, like every other switch in that panel |
 | **The chapter menu** | The header's chapter control opens a list of the chapters, each with the **range of pages it covers** — its own first and last page on screen, so a cover in no chapter is not claimed by the one after it. The chapter being read is marked down its side, and the list has a heading that stays put while the list scrolls under it |
-| **The progress bar** | Its own line between the picture and the footer, as wide as the pages it is measuring — so a spread's bar is wider than a lone page's, and it never lies across the picture: how far through the book you are, with a tick where each chapter begins. Drag it to cross four hundred pages in one gesture — the handle follows your hand exactly, while the pictures follow as fast as they can be fetched — and letting go lands you on the page you were nearest. Hover a tick to see which chapter it is, in the bar's own bubble — at once, rather than after the second a browser's tooltip takes — and click it to jump straight there. It is out of the way to begin with, fades again after a couple of seconds, and the pointer reaching the bar is what brings it back |
+| **The progress bar** | Its own line between the picture and the footer, as wide as the pages it is measuring — so a spread's bar is wider than a lone page's, and it never lies across the picture: how far through the book you are, with a tick where each chapter begins. A page still on its way does not shrink it — half a pair is not the width of a pair — so the bar holds the width it had until both of the pages are there. Drag it to cross four hundred pages in one gesture — the handle follows your hand exactly, while the pictures follow as fast as they can be fetched — and letting go lands you on the page you were nearest. Hover a tick to see which chapter it is, in the bar's own bubble — at once, rather than after the second a browser's tooltip takes — and click it to jump straight there. It is out of the way to begin with, fades again after a couple of seconds, and the pointer reaching the bar is what brings it back |
 | **The change of screen** | Fades in rather than snapping — briefly, and never at the cost of a wait. Two buttons in the options panel choose whether, and how long is the plugin's own answer (200 ms): the length was a slider, and what a reader did with it was look for the one that stopped being noticeable. Nothing is animated for a reader who has asked their system for less motion |
 | **Fullscreen** | Stash's own button in Stash's own place. While the lightbox is filling the screen, a click on the space around the pages does nothing at all — the margin of a book is not a way out of it — so leaving fullscreen is the button, or Escape |
 | **Back closes it** | Pressing Back closes the lightbox instead of leaving it over the page you land on. Stash's own does not: its lightbox is in its own state and not in the route, so Back moves the page out from under it |
@@ -1420,8 +1451,9 @@ canonical spelling.
 
 The reading half's own:
 
-- **No zoom or pan in spread mode.** Stash's zoom acts on the carousel, which is
-  hidden while the reader draws. Pages are fitted to the screen and that is all.
+- **No zoom or pan in the column.** By design rather than by omission: a page is
+  already as wide as the picture area, and the zoom is a transform on a container that
+  scrolls in this mode. The two screen modes both zoom, with `Ctrl`+wheel.
 - **The switches are worded in English the first time.** Their language comes from
   Stash's own configuration, read with the gallery — so the wording is right from
   the second time the menu is opened in a session.
