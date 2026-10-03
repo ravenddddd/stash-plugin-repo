@@ -2267,7 +2267,9 @@
     if (!vertical() || !bar) return 0;
     const box = bar.getBoundingClientRect();
     if (!box.width) return 0;
-    return Math.max(0, area.left + area.width - box.left);
+    const right = area.left + area.width;
+    const air = right - (box.left + box.width);
+    return Math.max(0, right - box.left + air);
   }
   function setAlong(node, fraction) {
     const at = (fraction * 100).toFixed(3) + "%";
