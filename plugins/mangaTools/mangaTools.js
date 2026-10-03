@@ -2263,6 +2263,12 @@
   function vertical() {
     return (latest2 == null ? void 0 : latest2.vertical) === true;
   }
+  function barReserve(area) {
+    if (!vertical() || !bar) return 0;
+    const box = bar.getBoundingClientRect();
+    if (!box.width) return 0;
+    return Math.max(0, area.left + area.width - box.left);
+  }
   function setAlong(node, fraction) {
     const at = (fraction * 100).toFixed(3) + "%";
     if (vertical()) {
@@ -2629,16 +2635,17 @@
   function columnZoom() {
     return zoom;
   }
-  function columnFitted(width, height) {
+  function columnFitted(width, height, reserved = 0) {
     if (!(width > 0) || !(height > 0)) return 0;
-    return Math.min(width, height);
+    return Math.max(1, Math.min(width - reserved, height));
   }
   function zoomedBy(current2, factor) {
     return Math.min(Math.max(current2 * factor, VIEW_MIN_ZOOM), VIEW_MAX_ZOOM);
   }
-  function setColumnZoom(next) {
+  function setColumnZoom(next, reserved = 0) {
     zoom = next;
-    const fitted = column ? columnFitted(column.clientWidth || 0, column.clientHeight || 0) : 0;
+    const box = column == null ? void 0 : column.getBoundingClientRect();
+    const fitted = box ? columnFitted(box.width || 0, box.height || 0, reserved) : 0;
     column == null ? void 0 : column.querySelectorAll("." + CLASS_SCROLL_PAGE).forEach((row2) => {
       const node = row2;
       const natural = Number(node.dataset.width || 0);
@@ -2998,7 +3005,7 @@
         onResetZoom: () => {
           view = fitView();
           if (settings.readingMode === "scroll") {
-            setColumnZoom(1);
+            refitColumn(1);
             scrollTo = Math.max(place2, 0);
           }
           applyView();
@@ -3082,7 +3089,7 @@
       columnIn = container;
       built = true;
       awaiting = -1;
-      setColumnZoom(1);
+      refitColumn(1);
     }
     const to = built ? place2 : scrollTo;
     scrollTo = null;
@@ -3267,8 +3274,12 @@
     galleryId = null;
     logged = false;
   }
+  function refitColumn(next) {
+    if (!container) return;
+    setColumnZoom(next, barReserve(container.getBoundingClientRect()));
+  }
   function measureAgain() {
-    if (settings.readingMode === "scroll") setColumnZoom(columnZoom());
+    if (settings.readingMode === "scroll") refitColumn(columnZoom());
     if (root) sync(root);
   }
   function handOverChapters(lightbox, gallery) {
@@ -3435,7 +3446,7 @@
       const next = zoomedBy(was, wheel.deltaY < 0 ? VIEW_STEP : 1 / VIEW_STEP);
       if (next === was) return;
       const wasAt = container ? { top: container.scrollTop || 0, left: container.scrollLeft || 0 } : null;
-      setColumnZoom(next);
+      refitColumn(next);
       if (container && wasAt) {
         container.scrollTop = wasAt.top * (next / was);
         container.scrollLeft = wasAt.left * (next / was);
