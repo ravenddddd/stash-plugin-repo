@@ -859,6 +859,9 @@
     "mangaReader.groupAnimation": "Animation",
     "mangaReader.fade": "Fade in",
     "mangaReader.fadeOff": "None",
+    "mangaReader.groupProgress": "Progress",
+    "mangaReader.showProgress": "Progress bar",
+    "mangaReader.showChapterMarks": "Chapter marks",
     "mangaReader.importChapters": "Import Stash's chapters",
     "mangaReader.reimportChapters": "Re-import Stash's chapters",
     "mangaReader.importingChapters": "Importing\u2026",
@@ -955,6 +958,9 @@
     "mangaReader.groupAnimation": "\u52A8\u753B",
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.fadeOff": "\u65E0",
+    "mangaReader.groupProgress": "\u8FDB\u5EA6",
+    "mangaReader.showProgress": "\u8FDB\u5EA6\u6761",
+    "mangaReader.showChapterMarks": "\u7AE0\u8282\u6807\u8BB0",
     "mangaReader.importChapters": "\u5BFC\u5165 Stash \u7684\u7AE0\u8282",
     "mangaReader.reimportChapters": "\u91CD\u65B0\u5BFC\u5165 Stash \u7684\u7AE0\u8282",
     "mangaReader.importingChapters": "\u6B63\u5728\u5BFC\u5165\u2026",
@@ -1051,6 +1057,9 @@
     "mangaReader.groupAnimation": "\u52D5\u756B",
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.fadeOff": "\u7121",
+    "mangaReader.groupProgress": "\u9032\u5EA6",
+    "mangaReader.showProgress": "\u9032\u5EA6\u689D",
+    "mangaReader.showChapterMarks": "\u7AE0\u7BC0\u6A19\u8A18",
     "mangaReader.importChapters": "\u532F\u5165 Stash \u7684\u7AE0\u7BC0",
     "mangaReader.reimportChapters": "\u91CD\u65B0\u532F\u5165 Stash \u7684\u7AE0\u7BC0",
     "mangaReader.importingChapters": "\u6B63\u5728\u532F\u5165\u2026",
@@ -1503,6 +1512,27 @@
           (id) => latest == null ? void 0 : latest.handlers.onSetting({ fade: id === FADE_ON_ID })
         )
       );
+      parts.progressRule = rule();
+      const progress = group("mangaReader.groupProgress");
+      parts.progressGroup = progress;
+      parts.progressRow = row2(
+        PROGRESS_ID,
+        "mangaReader.showProgress",
+        switchAt(
+          PROGRESS_ID,
+          (on) => latest == null ? void 0 : latest.handlers.onSetting({ showProgress: on })
+        )
+      );
+      progress.appendChild(parts.progressRow);
+      parts.marksRow = row2(
+        MARKS_ID,
+        "mangaReader.showChapterMarks",
+        switchAt(
+          MARKS_ID,
+          (on) => latest == null ? void 0 : latest.handlers.onSetting({ showChapterMarks: on })
+        )
+      );
+      progress.appendChild(parts.marksRow);
     }
     const say = (id) => {
       const node = labels[id];
@@ -1521,6 +1551,9 @@
     say("mangaReader.scrollMode");
     say("mangaReader.fadeOff");
     say("mangaReader.fade");
+    say("mangaReader.groupProgress");
+    say("mangaReader.showProgress");
+    say("mangaReader.showChapterMarks");
     const chosen = (id, on) => {
       const half = panel2.querySelector("#" + id);
       if (half) half.classList.toggle("is-on", on);
@@ -1533,6 +1566,8 @@
     set(COVER_ID, state.settings.coverAlone);
     set(SPREAD_ID, state.settings.detectSpreads);
     set(OFFSET_ID, state.settings.offset);
+    set(PROGRESS_ID, state.settings.showProgress);
+    set(MARKS_ID, state.settings.showChapterMarks);
     say("mangaReader.coverAlone");
     say("mangaReader.detectSpreads");
     say("mangaReader.offset");
@@ -1543,6 +1578,7 @@
     const screening = state.settings.readingMode !== "scroll";
     showWhen(parts.animationGroup, screening);
     showWhen(parts.animationRule, screening);
+    showWhen(parts.marksRow, state.settings.showProgress);
   }
   var SINGLE_PAGE_ID = "manga-reader-single-page";
   var DOUBLE_PAGE_ID = "manga-reader-double-page";
@@ -1552,6 +1588,8 @@
   var OFFSET_ID = "manga-reader-offset";
   var FADE_OFF_ID = "manga-reader-fade-off";
   var FADE_ON_ID = "manga-reader-fade-on";
+  var PROGRESS_ID = "manga-reader-show-progress";
+  var MARKS_ID = "manga-reader-show-marks";
   function text(className, tag = "span") {
     const node = document.createElement(tag);
     node.className = className;
@@ -2553,7 +2591,9 @@
     coverAlone: true,
     detectSpreads: true,
     fade: true,
-    offset: false
+    offset: false,
+    showProgress: true,
+    showChapterMarks: true
   };
   function parseSettings(raw) {
     const stored = (() => {
@@ -2575,7 +2615,9 @@
       coverAlone: flag("coverAlone"),
       detectSpreads: flag("detectSpreads"),
       fade: flag("fade"),
-      offset: flag("offset")
+      offset: flag("offset"),
+      showProgress: flag("showProgress"),
+      showChapterMarks: flag("showChapterMarks")
     };
   }
   function readSettings() {
@@ -2960,12 +3002,20 @@
     syncFooter(lightbox, page < 0 ? null : gallery.images[page] || null);
     const scrolling = settings.readingMode === "scroll";
     if (scrolling) {
-      ensureProgress(lightbox, progressState(gallery, at, lightbox));
+      if (settings.showProgress) {
+        ensureProgress(lightbox, progressState(gallery, at, lightbox));
+      } else {
+        removeProgress(lightbox);
+      }
       ensureColumn(lightbox, gallery);
       return;
     }
     removeColumn();
-    if (at >= 0) ensureProgress(lightbox, progressState(gallery, at, lightbox));
+    if (at >= 0 && settings.showProgress) {
+      ensureProgress(lightbox, progressState(gallery, at, lightbox));
+    } else {
+      removeProgress(lightbox);
+    }
     if (at < 0) return;
     if (at === shownAt && container && (container.childElementCount || awaiting === at)) {
       return;
@@ -2985,7 +3035,12 @@
       // than a measurement of the pages — see progress.ts.
       width: scrolling ? 0 : pictureWidth((_a2 = screen == null ? void 0 : screen.pages.length) != null ? _a2 : 0),
       vertical: scrolling,
-      chapters: gallery.chapters,
+      // The ticks, and only the ticks: "chapter marks" is a setting about the bar, so the
+      // list the bar draws its marks from is the one that is emptied. What the drag's
+      // bubble says comes from `chapterNameAt` below, which reads the chapters whatever
+      // this says — a reader who turned the marks off has not asked the bar to stop
+      // knowing where the chapters are.
+      chapters: settings.showChapterMarks ? gallery.chapters : [],
       chapterNameAt: (page) => {
         var _a3, _b2;
         return ((_b2 = chapterAt(gallery.chapters, ((_a3 = gallery.pages[page]) == null ? void 0 : _a3.id) || "")) == null ? void 0 : _b2.title) || "";
