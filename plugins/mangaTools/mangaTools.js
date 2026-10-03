@@ -7297,21 +7297,18 @@
     const groupShown = (bulkGroup == null ? void 0 : bulkGroup.kind) === "set" ? bulkGroup.value : (bulkGroup == null ? void 0 : bulkGroup.kind) === "remove" ? BULK_REMOVE_VALUE : selectedGroupAggregate() || "";
     const rawState = bulkOriginal === "raw" ? "raw" : bulkOriginal === "notRaw" ? "notRaw" : selectedOriginalAggregate() === "all" ? "raw" : selectedOriginalAggregate() === "none" ? "notRaw" : "mixed";
     const rawShown = showOriginal && rawState === "raw";
+    const restoresGroup = !!bulkGroupBeforeRaw && (bulkGroupBeforeRaw.pending ? bulkGroupBeforeRaw.pending.kind === "set" : !!selectedGroupAggregate());
     const cycleOriginal = () => {
-      var _a2;
-      if (rawState === "raw") {
-        bulkOriginal = "notRaw";
-        if (bulkGroupBeforeRaw) {
-          bulkGroup = { kind: "set", value: bulkGroupBeforeRaw };
-          bulkGroupBeforeRaw = null;
-        }
-      } else if (rawState === "notRaw") {
-        bulkOriginal = null;
-      } else {
-        bulkGroupBeforeRaw = (bulkGroup == null ? void 0 : bulkGroup.kind) === "set" ? bulkGroup.value : (_a2 = selectedGroupAggregate()) != null ? _a2 : null;
-        bulkOriginal = "raw";
+      const aggregate2 = selectedOriginalAggregate();
+      const next = aggregate2 === "all" ? bulkOriginal === "notRaw" ? null : "notRaw" : aggregate2 === "none" ? bulkOriginal === "raw" ? null : "raw" : bulkOriginal === null ? "raw" : bulkOriginal === "raw" ? "notRaw" : null;
+      if (next === "raw") {
+        bulkGroupBeforeRaw = { pending: bulkGroup };
         bulkGroup = { kind: "remove" };
+      } else if (bulkGroupBeforeRaw) {
+        bulkGroup = bulkGroupBeforeRaw.pending;
+        bulkGroupBeforeRaw = null;
       }
+      bulkOriginal = next;
       emit();
     };
     const groupValue = groupShown === BULK_REMOVE_VALUE ? "" : groupShown;
@@ -7358,7 +7355,7 @@
         "aria-label": t(intl, "mangaTools.translationGroup.original"),
         title: t(
           intl,
-          rawState === "raw" ? bulkGroupBeforeRaw ? "mangaTools.translationGroup.originalOffRestore" : "mangaTools.translationGroup.originalOff" : rawState === "mixed" ? "mangaTools.translationGroup.originalMixed" : "mangaTools.translationGroup.originalOn"
+          rawState === "raw" ? restoresGroup ? "mangaTools.translationGroup.originalOffRestore" : "mangaTools.translationGroup.originalOff" : rawState === "mixed" ? "mangaTools.translationGroup.originalMixed" : "mangaTools.translationGroup.originalOn"
         ),
         onClick: cycleOriginal
       },
