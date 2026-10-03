@@ -861,6 +861,7 @@
     "mangaReader.fadeOff": "None",
     "mangaReader.groupProgress": "Progress",
     "mangaReader.groupWheel": "Wheel",
+    "mangaReader.perMode": "Each way of reading keeps its own settings: single page, double page and the column do not share them, and what you change here is the set for the way you are reading now. They are stored on the server with the library, so every browser reads the same.",
     "mangaReader.wheel": "Wheel",
     "mangaReader.wheelShift": "Shift + wheel",
     "mangaReader.wheelCtrl": "Ctrl + wheel",
@@ -971,6 +972,7 @@
     "mangaReader.fadeOff": "\u65E0",
     "mangaReader.groupProgress": "\u8FDB\u5EA6",
     "mangaReader.groupWheel": "\u6EDA\u8F6E",
+    "mangaReader.perMode": "\u6BCF\u4E2A\u9605\u8BFB\u65B9\u5F0F\u5404\u6709\u4E00\u5957\u8BBE\u7F6E\uFF1A\u5355\u9875\u3001\u53CC\u9875\u3001\u7EB5\u5411\u4E92\u4E0D\u5F71\u54CD\uFF0C\u73B0\u5728\u6539\u7684\u662F\u5F53\u524D\u8FD9\u4E00\u5957\u3002\u8BBE\u7F6E\u5B58\u5728\u670D\u52A1\u5668\u4E0A\u3001\u8DDF\u7740\u5E93\u8D70\uFF0C\u6240\u4EE5\u6BCF\u4E2A\u6D4F\u89C8\u5668\u8BFB\u5230\u7684\u4E00\u6837\u3002",
     "mangaReader.wheel": "\u6EDA\u8F6E",
     "mangaReader.wheelShift": "Shift + \u6EDA\u8F6E",
     "mangaReader.wheelCtrl": "Ctrl + \u6EDA\u8F6E",
@@ -1081,6 +1083,7 @@
     "mangaReader.fadeOff": "\u7121",
     "mangaReader.groupProgress": "\u9032\u5EA6",
     "mangaReader.groupWheel": "\u6EFE\u8F2A",
+    "mangaReader.perMode": "\u6BCF\u500B\u95B1\u8B80\u65B9\u5F0F\u5404\u6709\u4E00\u5957\u8A2D\u5B9A\uFF1A\u55AE\u9801\u3001\u96D9\u9801\u3001\u7E31\u5411\u4E92\u4E0D\u5F71\u97FF\uFF0C\u73FE\u5728\u6539\u7684\u662F\u7576\u524D\u9019\u4E00\u5957\u3002\u8A2D\u5B9A\u5B58\u5728\u4F3A\u670D\u5668\u4E0A\u3001\u8DDF\u8457\u5EAB\u8D70\uFF0C\u6240\u4EE5\u6BCF\u500B\u700F\u89BD\u5668\u8B80\u5230\u7684\u4E00\u6A23\u3002",
     "mangaReader.wheel": "\u6EFE\u8F2A",
     "mangaReader.wheelShift": "Shift + \u6EFE\u8F2A",
     "mangaReader.wheelCtrl": "Ctrl + \u6EFE\u8F2A",
@@ -1626,6 +1629,25 @@
   }
 
   // src/reader/wheel.ts
+  var READING_MODES = [
+    "single",
+    "double",
+    "scroll"
+  ];
+  var WHEEL_GESTURES = [
+    "plain",
+    "shift",
+    "ctrl"
+  ];
+  var WHEEL_ACTIONS = [
+    "off",
+    "turn",
+    "zoom",
+    "scroll"
+  ];
+  function isWheelAction(value) {
+    return value === "off" || value === "turn" || value === "zoom" || value === "scroll";
+  }
   function wheelGesture(wheel) {
     if (wheel.ctrlKey || wheel.metaKey) return "ctrl";
     return wheel.shiftKey ? "shift" : "plain";
@@ -1633,17 +1655,17 @@
   function wheelDelta(wheel) {
     return wheel.deltaY || wheel.deltaX;
   }
-  function autoWheelAction(gesture, scrolling) {
-    if (gesture === "ctrl") return "zoom";
-    if (scrolling) return "scroll";
-    return gesture === "shift" ? "scroll" : "turn";
-  }
-  function wheelEffect(action, gesture, scrolling) {
-    const chosen = action === "auto" ? autoWheelAction(gesture, scrolling) : action;
-    if (chosen === "off") return "none";
-    if (chosen === "turn") return "turn";
-    if (chosen === "zoom") return "zoom";
+  function wheelEffect(action, scrolling) {
+    if (action === "off") return "none";
+    if (action === "turn") return "turn";
+    if (action === "zoom") return "zoom";
     return scrolling ? "scroll" : "pan";
+  }
+  function withWheelAction(wheel, gesture, action) {
+    return { ...wheel, [gesture]: action };
+  }
+  function defaultWheel(mode) {
+    return mode === "scroll" ? { plain: "scroll", shift: "turn", ctrl: "zoom" } : { plain: "turn", shift: "scroll", ctrl: "zoom" };
   }
 
   // src/reader/chrome.ts
@@ -1677,6 +1699,10 @@
   var CLASS_ROW_SLIDER = "manga-reader-row-slider";
   var CLASS_READOUT = "manga-reader-readout";
   var CLASS_SELECT = "manga-reader-select";
+  var CLASS_HEADING_LINE = "manga-reader-heading-line";
+  var CLASS_HELP = "manga-reader-help";
+  var CLASS_HELP_BUTTON = "manga-reader-help-button";
+  var CLASS_HELP_PANEL = "manga-reader-help-panel";
   var CLASS_PAGES = "manga-reader-pages";
   var CLASS_SEGMENT = "manga-reader-segment";
   var CLASS_CHAPTER_TOGGLE = "minimal Lightbox-header-chapter-button dropdown-toggle btn btn-primary";
@@ -1916,6 +1942,13 @@
         return wrap;
       };
       const reading = group("mangaReader.groupReading");
+      const readingTitle = labels["mangaReader.groupReading"];
+      if (readingTitle == null ? void 0 : readingTitle.parentNode) {
+        const line = text(CLASS_HEADING_LINE, "div");
+        readingTitle.parentNode.insertBefore(line, readingTitle);
+        line.appendChild(readingTitle);
+        line.appendChild(helpAt("mangaReader.perMode"));
+      }
       const pair = (halves, choose) => {
         const track2 = text(CLASS_PAGES, "div");
         for (const half of halves) {
@@ -2029,6 +2062,17 @@
         wheelGroup.appendChild(parts[chord.id]);
       }
     }
+    function helpAt(textId) {
+      const wrap = text(CLASS_HELP, "span");
+      const button2 = document.createElement("button");
+      button2.type = "button";
+      button2.className = CLASS_HELP_BUTTON;
+      const note = text(CLASS_HELP_PANEL);
+      labels[textId] = note;
+      wrap.appendChild(button2);
+      wrap.appendChild(note);
+      return wrap;
+    }
     function selectAt(chord) {
       const select = document.createElement("select");
       select.className = "custom-select " + CLASS_SELECT;
@@ -2040,8 +2084,11 @@
       }
       select.addEventListener("change", () => {
         const value = select.value;
-        if (!isWheelAction(value)) return;
-        latest2 == null ? void 0 : latest2.handlers.onSetting({ [chord.key]: value });
+        const wheel = latest2 == null ? void 0 : latest2.settings.wheel;
+        if (!isWheelAction(value) || !wheel) return;
+        latest2 == null ? void 0 : latest2.handlers.onSetting({
+          wheel: withWheelAction(wheel, chord.gesture, value)
+        });
       });
       return select;
     }
@@ -2067,6 +2114,12 @@
     say("mangaReader.showChapterMarks");
     say("mangaReader.progressIdle");
     say("mangaReader.groupWheel");
+    say("mangaReader.perMode");
+    const helpName = label2("mangaReader.perMode");
+    const helpButton = panel2.querySelector("." + CLASS_HELP_BUTTON);
+    if (helpButton && helpButton.getAttribute("aria-label") !== helpName) {
+      helpButton.setAttribute("aria-label", helpName);
+    }
     say("mangaReader.wheel");
     say("mangaReader.wheelShift");
     say("mangaReader.wheelCtrl");
@@ -2094,7 +2147,6 @@
     const screening = state.settings.readingMode !== "scroll";
     showWhen(parts.animationGroup, screening);
     showWhen(parts.animationRule, screening);
-    const scrolling = state.settings.readingMode === "scroll";
     for (const chord of WHEEL_CHORDS) {
       const select = panel2.querySelector(
         "#" + chord.id
@@ -2107,8 +2159,7 @@
         const words = label2(WHEEL_WORDS[action]);
         if (option.textContent !== words) option.textContent = words;
       });
-      const stored = state.settings[chord.key];
-      const chosen2 = stored === "auto" ? autoWheelAction(chord.gesture, scrolling) : stored;
+      const chosen2 = state.settings.wheel[chord.gesture];
       if (select.value !== chosen2) select.value = chosen2;
     }
     showWhen(parts.marksRow, state.settings.showProgress);
@@ -2141,29 +2192,10 @@
   var SHIFT_WHEEL_ID = "manga-reader-shift-wheel";
   var CTRL_WHEEL_ID = "manga-reader-ctrl-wheel";
   var WHEEL_CHORDS = [
-    {
-      id: WHEEL_ID,
-      textId: "mangaReader.wheel",
-      key: "wheelAction",
-      gesture: "plain"
-    },
-    {
-      id: SHIFT_WHEEL_ID,
-      textId: "mangaReader.wheelShift",
-      key: "shiftWheelAction",
-      gesture: "shift"
-    },
-    {
-      id: CTRL_WHEEL_ID,
-      textId: "mangaReader.wheelCtrl",
-      key: "ctrlWheelAction",
-      gesture: "ctrl"
-    }
+    { id: WHEEL_ID, textId: "mangaReader.wheel", gesture: "plain" },
+    { id: SHIFT_WHEEL_ID, textId: "mangaReader.wheelShift", gesture: "shift" },
+    { id: CTRL_WHEEL_ID, textId: "mangaReader.wheelCtrl", gesture: "ctrl" }
   ];
-  var WHEEL_ACTIONS = ["off", "turn", "zoom", "scroll"];
-  function isWheelAction(value) {
-    return value === "off" || value === "turn" || value === "zoom" || value === "scroll";
-  }
   var WHEEL_WORDS = {
     off: "mangaReader.wheelOff",
     turn: "mangaReader.wheelTurn",
@@ -2787,41 +2819,56 @@
 
   // src/reader/settings.ts
   var FADE_MS = 200;
+  function defaultProfile(mode) {
+    return {
+      coverAlone: true,
+      detectSpreads: true,
+      offset: false,
+      fade: true,
+      showProgress: true,
+      showChapterMarks: true,
+      progressIdleMs: PROGRESS_IDLE_MS,
+      wheel: defaultWheel(mode)
+    };
+  }
   var DEFAULT_SETTINGS = {
     readingMode: "single",
-    coverAlone: true,
-    detectSpreads: true,
-    fade: true,
-    offset: false,
-    showProgress: true,
-    showChapterMarks: true,
-    progressIdleMs: PROGRESS_IDLE_MS,
-    // "auto" is not one of the choices the panel offers — it is what a reader who has never
-    // touched the wheel has, and it is the only value that means something different in each
-    // mode. See wheel.ts.
-    wheelAction: "auto",
-    shiftWheelAction: "auto",
-    ctrlWheelAction: "auto"
+    ...defaultProfile("single")
   };
-  function parseSettings(raw) {
-    const stored = (() => {
-      if (!raw) return {};
-      try {
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch {
-        return {};
-      }
-    })();
-    const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
-    const wheelAction = (key) => {
-      const value = stored[key];
-      return value === "off" || value === "turn" || value === "zoom" || value === "scroll" || value === "auto" ? value : "auto";
-    };
+  var PROFILE_KEYS = [
+    "coverAlone",
+    "detectSpreads",
+    "offset",
+    "fade",
+    "showProgress",
+    "showChapterMarks",
+    "progressIdleMs",
+    "wheel"
+  ];
+  function settingsObject(raw) {
+    if (!raw) return {};
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function asObject(value) {
+    return value && typeof value === "object" ? value : {};
+  }
+  function readMode(stored) {
+    const value = stored.readingMode;
+    return value === "single" || value === "double" || value === "scroll" ? value : DEFAULT_SETTINGS.readingMode;
+  }
+  function readProfile(stored, mode) {
+    const fallback = defaultProfile(mode);
+    const at = asObject(asObject(stored.profiles)[mode]);
+    const flag = (key) => typeof at[key] === "boolean" ? at[key] : fallback[key];
     const idleMs = () => {
-      const value = stored.progressIdleMs;
+      const value = at.progressIdleMs;
       if (typeof value !== "number" || !Number.isFinite(value)) {
-        return DEFAULT_SETTINGS.progressIdleMs;
+        return fallback.progressIdleMs;
       }
       if (value === PROGRESS_NEVER || value === PROGRESS_HOLD_MS) return value;
       return Math.min(
@@ -2829,23 +2876,36 @@
         PROGRESS_IDLE_MAX_MS
       );
     };
-    const readingMode = () => {
-      const value = stored.readingMode;
-      return value === "single" || value === "double" || value === "scroll" ? value : DEFAULT_SETTINGS.readingMode;
+    const wheel = () => {
+      const bindings = asObject(at.wheel);
+      const chords = { ...fallback.wheel };
+      for (const gesture of WHEEL_GESTURES) {
+        const value = bindings[gesture];
+        if (isWheelAction(value)) chords[gesture] = value;
+      }
+      return chords;
     };
     return {
-      readingMode: readingMode(),
-      progressIdleMs: idleMs(),
-      wheelAction: wheelAction("wheelAction"),
-      shiftWheelAction: wheelAction("shiftWheelAction"),
-      ctrlWheelAction: wheelAction("ctrlWheelAction"),
       coverAlone: flag("coverAlone"),
       detectSpreads: flag("detectSpreads"),
-      fade: flag("fade"),
       offset: flag("offset"),
+      fade: flag("fade"),
       showProgress: flag("showProgress"),
-      showChapterMarks: flag("showChapterMarks")
+      showChapterMarks: flag("showChapterMarks"),
+      progressIdleMs: idleMs(),
+      wheel: wheel()
     };
+  }
+  function storedProfiles(raw) {
+    const stored = settingsObject(raw);
+    const profiles = {};
+    for (const mode of READING_MODES) profiles[mode] = readProfile(stored, mode);
+    return profiles;
+  }
+  function parseSettings(raw) {
+    const stored = settingsObject(raw);
+    const readingMode = readMode(stored);
+    return { readingMode, ...readProfile(stored, readingMode) };
   }
   function readSettings() {
     try {
@@ -2862,7 +2922,17 @@
     var _a2, _b2;
     const merged = { ...readSettings(), ...next };
     try {
-      (_b2 = (_a2 = NS).writeReaderSettings) == null ? void 0 : _b2.call(_a2, JSON.stringify(merged));
+      const profiles = storedProfiles(NS.readerSettingsRaw);
+      const mode = merged.readingMode;
+      const profile = { ...profiles[mode] };
+      for (const key of PROFILE_KEYS) {
+        if (key in next) {
+          profile[key] = merged[key];
+        }
+      }
+      profiles[mode] = profile;
+      (_b2 = (_a2 = NS).writeReaderSettings) == null ? void 0 : _b2.call(_a2, JSON.stringify({ readingMode: mode, profiles }));
+      return { readingMode: mode, ...profile };
     } catch (e) {
       console.error("[mangaReader] settings are not writable:", e);
     }
@@ -2870,6 +2940,7 @@
   }
   NR.parseSettings = parseSettings;
   NR.readSettings = readSettings;
+  NR.defaultProfile = defaultProfile;
   NR.FADE_MS = FADE_MS;
 
   // src/reader/zoom.ts
@@ -3759,13 +3830,11 @@
   NR.WHEEL_REST_MS = WHEEL_REST_MS;
   NR.wheelGesture = wheelGesture;
   NR.wheelDelta = wheelDelta;
-  NR.autoWheelAction = autoWheelAction;
   NR.wheelEffect = wheelEffect;
   var wheelRun = 0;
   var wheelRest = null;
   function actionOf(gesture) {
-    if (gesture === "ctrl") return settings.ctrlWheelAction;
-    return gesture === "shift" ? settings.shiftWheelAction : settings.wheelAction;
+    return settings.wheel[gesture];
   }
   function onSpreadWheel(event) {
     const lightbox = root;
@@ -3773,7 +3842,7 @@
     const wheel = event;
     const scrolling = settings.readingMode === "scroll";
     const gesture = wheelGesture(wheel);
-    const effect = wheelEffect(actionOf(gesture), gesture, scrolling);
+    const effect = wheelEffect(actionOf(gesture), scrolling);
     const delta = wheelDelta(wheel);
     if (effect === "scroll") return;
     wheel.preventDefault();
