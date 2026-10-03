@@ -2639,7 +2639,7 @@
   }
   function columnFitted(width, height, reserved = 0) {
     if (!(width > 0) || !(height > 0)) return 0;
-    return Math.max(1, Math.min(width - reserved, height));
+    return Math.max(1, Math.min(width - 2 * reserved, height));
   }
   function zoomedBy(current2, factor) {
     return Math.min(Math.max(current2 * factor, VIEW_MIN_ZOOM), VIEW_MAX_ZOOM);
@@ -3278,9 +3278,7 @@
   }
   function refitColumn(next) {
     if (!container) return;
-    const reserve = barReserve(container.getBoundingClientRect());
-    container.style.paddingRight = reserve > 0 ? `${reserve}px` : "";
-    setColumnZoom(next, reserve);
+    setColumnZoom(next, barReserve(container.getBoundingClientRect()));
   }
   function measureAgain() {
     if (settings.readingMode === "scroll") refitColumn(columnZoom());
