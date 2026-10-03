@@ -6146,8 +6146,13 @@
             className: props.fold ? "manga-tools-foldable" : void 0,
             onClick: props.fold ? props.fold.onToggle : void 0
           },
-          props.fold ? /* @__PURE__ */ React5.createElement(FoldIcon, { folded: props.fold.folded, onToggle: props.fold.onToggle }) : null,
-          /* @__PURE__ */ React5.createElement("h3", null, heading),
+          props.fold ? /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-heading-line" }, /* @__PURE__ */ React5.createElement(
+            FoldIcon,
+            {
+              folded: props.fold.folded,
+              onToggle: props.fold.onToggle
+            }
+          ), /* @__PURE__ */ React5.createElement("h3", null, heading)) : /* @__PURE__ */ React5.createElement("h3", null, heading),
           props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null
         ),
         /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement(
@@ -6202,6 +6207,20 @@
       }
     ), rows && !folded ? /* @__PURE__ */ React5.createElement("div", { className: "setting-group manga-tools-settings-group" }, rows) : null);
   }
+  function SettingsGroup(props) {
+    const folded = foldedGroups.has(props.id);
+    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(
+      SettingsHeading,
+      {
+        heading: props.heading,
+        subHeading: props.subHeading,
+        fold: {
+          folded,
+          onToggle: () => setGroupFolded(props.id, !folded)
+        }
+      }
+    ), folded ? null : /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-body" }, props.children));
+  }
   function SettingsHeading(props) {
     return /* @__PURE__ */ React5.createElement(
       "div",
@@ -6209,17 +6228,16 @@
         className: "manga-tools-settings-heading" + (props.fold ? " manga-tools-foldable" : ""),
         onClick: props.fold ? props.fold.onToggle : void 0
       },
-      props.fold ? /* @__PURE__ */ React5.createElement(FoldIcon, { folded: props.fold.folded, onToggle: props.fold.onToggle }) : null,
-      /* @__PURE__ */ React5.createElement("h3", null, props.heading),
+      props.fold ? /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-heading-line" }, /* @__PURE__ */ React5.createElement(FoldIcon, { folded: props.fold.folded, onToggle: props.fold.onToggle }), /* @__PURE__ */ React5.createElement("h3", null, props.heading)) : /* @__PURE__ */ React5.createElement("h3", null, props.heading),
       props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null
     );
   }
   var MARK_GROUP_ID = "mangaTools-markGroup";
+  var DISPLAY_GROUP_ID = "mangaTools-displayGroup";
   function MangaToolsSettings() {
     useGlobalVersion();
     const intl = PluginApi5.libraries.Intl.useIntl();
     const Select = resolveSelect();
-    const markFolded = foldedGroups.has(MARK_GROUP_ID);
     function persist() {
       saveSettings();
     }
@@ -6369,103 +6387,104 @@
         }
       ),
       /* @__PURE__ */ React5.createElement(
-        SettingsHeading,
+        SettingsGroup,
         {
+          id: DISPLAY_GROUP_ID,
           heading: t(intl, "mangaTools.settings.display.heading")
-        }
-      ),
+        },
+        /* @__PURE__ */ React5.createElement(
+          BooleanSetting,
+          {
+            id: "mangaTools-openDetailsBlock",
+            heading: t(intl, "mangaTools.settings.openDetailsBlock.heading"),
+            subHeading: t(
+              intl,
+              "mangaTools.settings.openDetailsBlock.description"
+            ),
+            checked: NS.openDetailsBlock,
+            onChange: writeFlag((next) => {
+              NS.openDetailsBlock = next;
+            })
+          }
+        ),
+        /* @__PURE__ */ React5.createElement(
+          BooleanSetting,
+          {
+            id: "mangaTools-openEditBlock",
+            heading: t(intl, "mangaTools.settings.openEditBlock.heading"),
+            subHeading: t(
+              intl,
+              "mangaTools.settings.openEditBlock.description"
+            ),
+            checked: NS.openEditBlock,
+            onChange: writeFlag((next) => {
+              NS.openEditBlock = next;
+            })
+          }
+        ),
+        /* @__PURE__ */ React5.createElement(
+          BooleanSetting,
+          {
+            id: "mangaTools-hidePerformers",
+            heading: t(intl, "mangaTools.settings.hidePerformers.heading"),
+            subHeading: t(
+              intl,
+              "mangaTools.settings.hidePerformers.description"
+            ),
+            checked: NS.hidePerformers,
+            onChange: writeFlag((next) => {
+              NS.hidePerformers = next;
+            })
+          }
+        )
+      )
+    ), /* @__PURE__ */ React5.createElement(
+      SettingsGroup,
+      {
+        id: MARK_GROUP_ID,
+        heading: t(intl, "mangaTools.settings.mark.heading")
+      },
       /* @__PURE__ */ React5.createElement(
         BooleanSetting,
         {
-          id: "mangaTools-openDetailsBlock",
-          heading: t(intl, "mangaTools.settings.openDetailsBlock.heading"),
-          subHeading: t(
-            intl,
-            "mangaTools.settings.openDetailsBlock.description"
-          ),
-          checked: NS.openDetailsBlock,
+          id: "mangaTools-confirmUnmark",
+          heading: t(intl, "mangaTools.settings.confirmUnmark.heading"),
+          subHeading: t(intl, "mangaTools.settings.confirmUnmark.description"),
+          checked: NS.confirmUnmark,
           onChange: writeFlag((next) => {
-            NS.openDetailsBlock = next;
+            NS.confirmUnmark = next;
           })
         }
       ),
       /* @__PURE__ */ React5.createElement(
         BooleanSetting,
         {
-          id: "mangaTools-openEditBlock",
-          heading: t(intl, "mangaTools.settings.openEditBlock.heading"),
-          subHeading: t(intl, "mangaTools.settings.openEditBlock.description"),
-          checked: NS.openEditBlock,
+          id: "mangaTools-deleteOnUnmark",
+          heading: t(intl, "mangaTools.settings.deleteOnUnmark.heading"),
+          subHeading: t(intl, "mangaTools.settings.deleteOnUnmark.description"),
+          checked: NS.deleteOnUnmark,
           onChange: writeFlag((next) => {
-            NS.openEditBlock = next;
+            NS.deleteOnUnmark = next;
           })
         }
       ),
       /* @__PURE__ */ React5.createElement(
         BooleanSetting,
         {
-          id: "mangaTools-hidePerformers",
-          heading: t(intl, "mangaTools.settings.hidePerformers.heading"),
-          subHeading: t(intl, "mangaTools.settings.hidePerformers.description"),
-          checked: NS.hidePerformers,
+          id: "mangaTools-coverIcon",
+          heading: t(intl, "mangaTools.settings.coverIcon.heading"),
+          subHeading: t(intl, "mangaTools.settings.coverIcon.description"),
+          help: {
+            text: t(intl, "mangaTools.settings.coverIcon.help"),
+            example: "mark"
+          },
+          checked: NS.coverIcon,
           onChange: writeFlag((next) => {
-            NS.hidePerformers = next;
+            NS.coverIcon = next;
           })
         }
       )
-    ), /* @__PURE__ */ React5.createElement(
-      SettingsHeading,
-      {
-        heading: t(intl, "mangaTools.settings.mark.heading"),
-        fold: {
-          folded: markFolded,
-          onToggle: () => setGroupFolded(MARK_GROUP_ID, !markFolded)
-        }
-      }
-    ), markFolded ? null : /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(
-      BooleanSetting,
-      {
-        id: "mangaTools-confirmUnmark",
-        heading: t(intl, "mangaTools.settings.confirmUnmark.heading"),
-        subHeading: t(
-          intl,
-          "mangaTools.settings.confirmUnmark.description"
-        ),
-        checked: NS.confirmUnmark,
-        onChange: writeFlag((next) => {
-          NS.confirmUnmark = next;
-        })
-      }
-    ), /* @__PURE__ */ React5.createElement(
-      BooleanSetting,
-      {
-        id: "mangaTools-deleteOnUnmark",
-        heading: t(intl, "mangaTools.settings.deleteOnUnmark.heading"),
-        subHeading: t(
-          intl,
-          "mangaTools.settings.deleteOnUnmark.description"
-        ),
-        checked: NS.deleteOnUnmark,
-        onChange: writeFlag((next) => {
-          NS.deleteOnUnmark = next;
-        })
-      }
-    ), /* @__PURE__ */ React5.createElement(
-      BooleanSetting,
-      {
-        id: "mangaTools-coverIcon",
-        heading: t(intl, "mangaTools.settings.coverIcon.heading"),
-        subHeading: t(intl, "mangaTools.settings.coverIcon.description"),
-        help: {
-          text: t(intl, "mangaTools.settings.coverIcon.help"),
-          example: "mark"
-        },
-        checked: NS.coverIcon,
-        onChange: writeFlag((next) => {
-          NS.coverIcon = next;
-        })
-      }
-    )));
+    ));
   }
   var bulkLanguage = null;
   var bulkCensorship = null;
