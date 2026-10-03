@@ -1629,6 +1629,7 @@
   var CLASS_DIVIDER = "manga-reader-divider";
   var CLASS_ROW = "manga-reader-row";
   var CLASS_ROW_LABEL = "manga-reader-row-label";
+  var CLASS_ROW_SLIDER = "manga-reader-row-slider";
   var CLASS_READOUT = "manga-reader-readout";
   var CLASS_PAGES = "manga-reader-pages";
   var CLASS_SEGMENT = "manga-reader-segment";
@@ -1951,7 +1952,7 @@
         )
       );
       progress.appendChild(parts.marksRow);
-      parts.idleRow = text(CLASS_ROW, "div");
+      parts.idleRow = text(CLASS_ROW + " " + CLASS_ROW_SLIDER, "div");
       const idleLabel = document.createElement("label");
       idleLabel.className = CLASS_ROW_LABEL;
       idleLabel.htmlFor = IDLE_ID;
@@ -3544,7 +3545,9 @@
   }
   function pictureWidth(pages) {
     if (!container || pages <= 0) return 0;
-    const images = Array.from(container.querySelectorAll("img"));
+    const images = Array.from(
+      container.querySelectorAll("." + CLASS_PAGE)
+    ).flatMap((box) => Array.from(box.querySelectorAll("img")));
     if (!images.length) return 0;
     for (const image of images) {
       if (!image.offsetWidth) return 0;
