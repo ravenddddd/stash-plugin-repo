@@ -1419,7 +1419,7 @@
         if (label.style.top !== px) label.style.top = px;
       } else if (label.style.left !== px) label.style.left = px;
     }
-    if (owed && (state.vertical || state.width > 0)) {
+    if ((owed || state.idleMs === PROGRESS_NEVER) && (state.vertical || state.width > 0)) {
       owed = false;
       wake();
     }
