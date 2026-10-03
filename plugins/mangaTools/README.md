@@ -640,9 +640,16 @@ not its parent's last child, which across nested groups means a line between eve
 pair of rows *and* another at every group boundary — the page read as a table. This
 plugin's rows carry none of their own; a line is drawn only under a row that is a
 section of the page, under a group's last row, under a heading that is not a switch,
-and under the page's last row. The last of those is a direct child of Stash's
-collapse box rather than of `div.plugin-settings`: that div belongs to Stash's own
-`PluginSettings`, and this plugin *replaces* that component rather than adding to it.
+and under the page's last row. **A group's last row is a row in one shape and a
+wrapper in the other**, and the wrapper is the shape the page has: the fields' group
+ends with the rows under the heading for how the info is shown, and the page itself
+ends with the mark's. So the wrapper's last row is what draws the line at both ends of
+the page as it is drawn today — and without a rule of its own for that shape, neither
+of the two lines the page is meant to end with was drawn at all, silently: a selector
+that matches nothing is a selector nothing reports. The page-last one is a direct
+child of Stash's collapse box rather than of `div.plugin-settings`: that div belongs
+to Stash's own `PluginSettings`, and this plugin *replaces* that component rather than
+adding to it.
 
 **Two rows say a second thing, and it is the second half of their description.**
 "Where the lightbox's own settings live" and "editing chapters does not touch Stash's
@@ -827,6 +834,17 @@ depends on where the column is. What the two share is the place itself — a pag
 that is what lets the header, the counter, the chapter menu and the bar go on meaning
 the same thing in all three.
 
+**The bar's width is a measurement, and it belongs to the lightbox that made it.**
+Measured from the pages on show and kept between two screens of one lightbox — a page
+still on its way does not shrink it, because the reader turned a page rather than
+switched off — and forgotten when that lightbox closes. The next gallery has pages of
+its own size and has said nothing yet, so a bar drawn at the last book's width, or one
+that comes out before its own pages have arrived, is exactly the bar this one is
+asleep for. The wake a turn owes when it arrives before there is anything to measure
+goes with the lightbox too, for the same reason: what is owed is a screen of *that*
+book, and a reader who opens a second gallery in that moment is the one who would have
+seen it paid.
+
 **In the column:**
 
 - **The plain wheel is the browser's**, left entirely alone: no page turns and no
@@ -855,9 +873,13 @@ the same thing in all three.
   for it, which is what a zoom is for. Filling the width in landscape instead would draw a
   page three and a half screenfuls tall at a size that never shows a whole screenful of
   anything. It is a measurement and not a share of the box, which is why the rows carry
-  a width in pixels; a window that changes size re-fits them (`measureAgain`), and a
-  box that has not been measured — a DOM with no layout behind it — falls back to
-  filling.
+  a width in pixels; a window that changes size re-fits them (`measureAgain`), **and so
+  does a bar that turns up after the fit was made** — the reserve is measured off the
+  bar's own rectangle, and the bar is drawn by a different function in the same pass, so
+  the first pass of a lightbox can fit the column before there is anything to measure.
+  That comparison is made on every pass of the column, and it is one number against
+  another: a fit that changes nothing writes nothing. A box that has not been measured —
+  a DOM with no layout behind it — falls back to filling.
 - **A zoomed column is wider than the picture area, and the drag is how a reader
   moves around in it.** A drag *scrolls* the box — the same movement the wheel makes,
   on the same box, so the two cannot disagree about where the reader is. The zoom
@@ -865,7 +887,14 @@ the same thing in all three.
   that are *fitted* to the screen, with slack in both directions, while the fit here is
   the page's own width. So the page itself grows — which is the browser's own model of
   page zoom — because a transform on a scroll box leaves its scroll range where it was
-  and puts the edges of a zoomed page out of reach. Whichever zoom is in hand, the
+  and puts the edges of a zoomed page out of reach. **Which is also why the rows are
+  centred *safely*.** They are centred on the column's cross axis, and centring an item
+  that overflows puts half of that overflow outside the *start* edge — which a scroll box
+  does not count as part of its scroll range: measured in Chrome, a 900px row in a 400px
+  box gives a `scrollWidth` of 650, so the left 250px of a zoomed page is beyond the
+  reach of the scroll and of the drag alike. `align-items: safe center` gives the
+  centring up exactly when a row does not fit, with the plain `center` left above it for
+  a browser that does not know the keyword. Whichever zoom is in hand, the
   header's reset button puts it back, and the reader stays exactly where they were
   reading — the position is scaled by the same factor the pages are, rather than
   snapped to the top of the page they happened to be in.

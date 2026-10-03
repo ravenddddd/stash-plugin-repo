@@ -2259,6 +2259,8 @@
     pressed = false;
     labelWidth = 0;
     labelHeight = 0;
+    lastWidth = 0;
+    owed = false;
   }
   function vertical() {
     return (latest2 == null ? void 0 : latest2.vertical) === true;
@@ -2644,6 +2646,9 @@
   function zoomedBy(current2, factor) {
     return Math.min(Math.max(current2 * factor, VIEW_MIN_ZOOM), VIEW_MAX_ZOOM);
   }
+  function setStyle(node, name, value) {
+    if (node.style[name] !== value) node.style[name] = value;
+  }
   function setColumnZoom(next, reserved = 0) {
     zoom = next;
     const box = column == null ? void 0 : column.getBoundingClientRect();
@@ -2652,12 +2657,16 @@
       const node = row2;
       const natural = Number(node.dataset.width || 0);
       if (fitted > 0) {
-        node.style.width = zoom * fitted + "px";
-        node.style.maxWidth = zoom * (natural > 0 ? Math.min(natural, fitted) : fitted) + "px";
+        setStyle(node, "width", zoom * fitted + "px");
+        setStyle(
+          node,
+          "maxWidth",
+          zoom * (natural > 0 ? Math.min(natural, fitted) : fitted) + "px"
+        );
         return;
       }
-      node.style.width = zoom * 100 + "%";
-      if (natural > 0) node.style.maxWidth = zoom * natural + "px";
+      setStyle(node, "width", zoom * 100 + "%");
+      if (natural > 0) setStyle(node, "maxWidth", zoom * natural + "px");
     });
     return zoom;
   }
@@ -2687,7 +2696,6 @@
       row2.appendChild(image);
       into.appendChild(row2);
     });
-    setColumnZoom(zoom);
   }
   function rowOffset(into, index) {
     const row2 = into.querySelectorAll("." + CLASS_SCROLL_PAGE)[index];
@@ -3092,6 +3100,8 @@
       built = true;
       awaiting = -1;
       refitColumn(1);
+    } else {
+      refitIfReserveChanged();
     }
     const to = built ? place2 : scrollTo;
     scrollTo = null;
@@ -3276,9 +3286,18 @@
     galleryId = null;
     logged = false;
   }
+  var fittedWith = null;
   function refitColumn(next) {
     if (!container) return;
-    setColumnZoom(next, barReserve(container.getBoundingClientRect()));
+    const reserve = barReserve(container.getBoundingClientRect());
+    fittedWith = reserve;
+    setColumnZoom(next, reserve);
+  }
+  function refitIfReserveChanged() {
+    if (!container) return;
+    if (barReserve(container.getBoundingClientRect()) !== fittedWith) {
+      refitColumn(columnZoom());
+    }
   }
   function measureAgain() {
     if (settings.readingMode === "scroll") refitColumn(columnZoom());
