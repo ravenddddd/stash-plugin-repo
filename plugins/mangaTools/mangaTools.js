@@ -3276,7 +3276,9 @@
   }
   function refitColumn(next) {
     if (!container) return;
-    setColumnZoom(next, barReserve(container.getBoundingClientRect()));
+    const reserve = barReserve(container.getBoundingClientRect());
+    container.style.paddingRight = reserve > 0 ? `${reserve}px` : "";
+    setColumnZoom(next, reserve);
   }
   function measureAgain() {
     if (settings.readingMode === "scroll") refitColumn(columnZoom());
