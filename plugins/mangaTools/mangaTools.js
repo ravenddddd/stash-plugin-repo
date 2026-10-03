@@ -5531,12 +5531,23 @@
     firedOnce[target2] = true;
     console.info("[mangaTools] patch active: " + target2);
   }
+  var notedOnce = {};
+  function noteOnce(key, message2) {
+    if (notedOnce[key]) return;
+    notedOnce[key] = true;
+    console.warn("[mangaTools] " + message2);
+  }
   var store = null;
   var listeners2 = /* @__PURE__ */ new Set();
   var inFlight = null;
   var started = false;
   var lastLoggedSize = -1;
+  var locationListener = false;
+  var bulkRenders = 0;
   var currentPath = window.location.pathname || "";
+  function pathNow() {
+    return window.location.pathname || currentPath || "";
+  }
   function emit() {
     listeners2.forEach((fn) => {
       fn();
@@ -5561,10 +5572,10 @@
     return version;
   }
   function isGalleryContext() {
-    return currentPath.indexOf("/galleries") === 0;
+    return pathNow().indexOf("/galleries") === 0;
   }
   function currentGalleryId() {
-    const m = /^\/galleries\/(\d+)(?:\/|$)/.exec(currentPath);
+    const m = /^\/galleries\/(\d+)(?:\/|$)/.exec(pathNow());
     return m ? m[1] : "";
   }
   function pickLanguage(customFields) {
@@ -5786,12 +5797,8 @@
         "[mangaTools] could not tell where my own files are served from, so the switch's icon falls back to the stylesheet's own relative URL. Scripts and stylesheets on this page: " + pageAssetUrls().join(", ")
       );
     }
-    refresh();
-    refreshSettings();
-    window.setInterval(() => {
-      if (document.visibilityState === "visible") refresh();
-    }, REFRESH_MS);
     if ((_a2 = PluginApi5.Event) == null ? void 0 : _a2.addEventListener) {
+      locationListener = true;
       PluginApi5.Event.addEventListener("stash:location", (e) => {
         var _a3, _b2;
         const ev = e;
@@ -5801,7 +5808,16 @@
         refreshSettings();
         emit();
       });
+    } else {
+      console.error(
+        "[mangaTools] Stash has no stash:location event, so the plugin will not hear about navigation on its own; rows it gates on the route may only appear once something else redraws. MangaTools.diag() reports this."
+      );
     }
+    refresh();
+    refreshSettings();
+    window.setInterval(() => {
+      if (document.visibilityState === "visible") refresh();
+    }, REFRESH_MS);
   }
   function refreshAfterWrite() {
     const pending3 = inFlight;
@@ -7084,7 +7100,26 @@
       },
       []
     );
-    if (!isGalleryContext() || !Select || !host) return null;
+    bulkRenders += 1;
+    if (!isGalleryContext() || !Select || !host) {
+      if (!isGalleryContext() && bulkAnchor()) {
+        noteOnce(
+          "bulk-not-gallery",
+          'the gallery bulk edit dialog is open, but the plugin reads "' + pathNow() + '" as the current route, so it does not draw its manga rows there. MangaTools.diag() reports what it sees.'
+        );
+      } else if (isGalleryContext() && !Select) {
+        noteOnce(
+          "bulk-no-select",
+          "Stash's react-select is not available, so the manga rows in the bulk edit dialog are not drawn"
+        );
+      } else if (isGalleryContext() && !host) {
+        noteOnce(
+          "bulk-no-host",
+          "the bulk edit dialog's mount point could not be placed \u2014 " + BULK_ANCHOR + " was not found inside the dialog's own form"
+        );
+      }
+      return null;
+    }
     const cls = readNativeFieldClasses(bulkAnchor()) || {
       group: "row",
       label: "col-form-label col-3",
@@ -7403,6 +7438,28 @@
   function ensureBulkFieldHost() {
     return ensureHostAfter(bulkAnchor(), "bulk");
   }
+  NS.diag = () => {
+    var _a2;
+    return {
+      url: window.location.pathname || "",
+      path: pathNow(),
+      rememberedPath: currentPath,
+      galleryContext: isGalleryContext(),
+      galleryId: currentGalleryId(),
+      started,
+      locationListener,
+      eventApi: !!((_a2 = PluginApi5.Event) == null ? void 0 : _a2.addEventListener),
+      bulkRenders,
+      bulkAnchor: !!bulkAnchor(),
+      hosts: Object.keys(fieldHosts).map((key) => {
+        var _a3;
+        return [
+          key,
+          fieldHosts[key] ? ((_a3 = fieldHosts[key]) == null ? void 0 : _a3.parentNode) ? "attached" : "detached" : "none"
+        ];
+      })
+    };
+  };
   function fieldLabel2(intl) {
     return intl.formatMessage({
       id: "config.ui.language.heading",
