@@ -1812,6 +1812,7 @@
     else if (openMenu === "settings") fitMenu(settingsPanel);
   }
   var MENU_MARGIN = 8;
+  var MENU_MIN_HEIGHT = 180;
   function fitShift(left, width, viewport, margin) {
     const over = left + width + margin - viewport;
     if (over > 0) {
@@ -1828,9 +1829,16 @@
     if (!rect.width) return;
     const had = Number(panel2.dataset.shift || 0);
     const shift = fitShift(rect.left - had, rect.width, viewport, MENU_MARGIN);
-    if (shift === had) return;
-    panel2.dataset.shift = String(shift);
-    panel2.style.transform = shift === 0 ? "" : "translateX(" + shift + "px)";
+    if (shift !== had) {
+      panel2.dataset.shift = String(shift);
+      panel2.style.transform = shift === 0 ? "" : "translateX(" + shift + "px)";
+    }
+    if (!panel2.classList.contains(CLASS_SETTINGS)) return;
+    const height = window.innerHeight;
+    if (typeof rect.top !== "number" || !height) return;
+    const room = Math.max(MENU_MIN_HEIGHT, height - rect.top - MENU_MARGIN);
+    const wanted2 = Math.round(room) + "px";
+    if (panel2.style.maxHeight !== wanted2) panel2.style.maxHeight = wanted2;
   }
   function drawChapters(panel2, state) {
     var _a2, _b2, _c;
