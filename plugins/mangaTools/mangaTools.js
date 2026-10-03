@@ -2629,14 +2629,24 @@
   function columnZoom() {
     return zoom;
   }
+  function columnFitted(width, height) {
+    if (!(width > 0) || !(height > 0)) return 0;
+    return Math.min(width, height);
+  }
   function zoomedBy(current2, factor) {
     return Math.min(Math.max(current2 * factor, VIEW_MIN_ZOOM), VIEW_MAX_ZOOM);
   }
   function setColumnZoom(next) {
     zoom = next;
+    const fitted = column ? columnFitted(column.clientWidth || 0, column.clientHeight || 0) : 0;
     column == null ? void 0 : column.querySelectorAll("." + CLASS_SCROLL_PAGE).forEach((row2) => {
       const node = row2;
       const natural = Number(node.dataset.width || 0);
+      if (fitted > 0) {
+        node.style.width = zoom * fitted + "px";
+        node.style.maxWidth = zoom * (natural > 0 ? Math.min(natural, fitted) : fitted) + "px";
+        return;
+      }
       node.style.width = zoom * 100 + "%";
       if (natural > 0) node.style.maxWidth = zoom * natural + "px";
     });
@@ -2676,6 +2686,7 @@
   }
   NR.pageAtTop = pageAtTop;
   NR.zoomedBy = zoomedBy;
+  NR.columnFitted = columnFitted;
 
   // src/reader/spreads.ts
   var DEFAULT_SPREAD_OPTIONS = {
@@ -3257,6 +3268,7 @@
     logged = false;
   }
   function measureAgain() {
+    if (settings.readingMode === "scroll") setColumnZoom(columnZoom());
     if (root) sync(root);
   }
   function handOverChapters(lightbox, gallery) {
