@@ -6064,6 +6064,12 @@
       host
     );
   }
+  function SettingsNote(props) {
+    const Solid = PluginApi5.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi5.components.Icon;
+    const icon = Solid.faInfoCircle || null;
+    return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-settings-note" }, icon ? /* @__PURE__ */ React5.createElement(Icon, { icon }) : null, /* @__PURE__ */ React5.createElement("span", null, props.children));
+  }
   function sampleLanguageCode(uiLocale) {
     const parts2 = String(uiLocale || "").split(/[-_]/);
     for (let n = parts2.length; n > 0; n--) {
@@ -6193,13 +6199,12 @@
       {
         id: "mangaTools-readerTakeover",
         heading: t(intl, "mangaTools.settings.readerTakeover.heading"),
-        subHeading: t(intl, "mangaTools.settings.readerTakeover.description"),
+        subHeading: /* @__PURE__ */ React5.createElement(React5.Fragment, null, t(intl, "mangaTools.settings.readerTakeover.description"), /* @__PURE__ */ React5.createElement(SettingsNote, null, t(intl, "mangaTools.settings.readerTakeover.note"))),
         checked: NS.readerTakeover,
         onChange: writeFlag((next) => {
           NS.readerTakeover = next;
         })
-      },
-      /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-note" }, t(intl, "mangaTools.settings.readerTakeover.note"))
+      }
     ), /* @__PURE__ */ React5.createElement(
       SettingSwitch,
       {

@@ -618,7 +618,10 @@
   background: linear-gradient(150deg, #66757f 0%, #45535e 55%, #38434c 100%);
   border-radius: 2px;
   color: rgba(255, 255, 255, 0.35);
-  font-size: 0.75rem;
+  /* The card's title size, not the small print the other labels are in: Bootstrap
+     gives an h5 1.25rem and that is what `.card-section-title` is, and this word is
+     standing in for the cover itself rather than labelling a detail of it. */
+  font-size: 1.25rem;
   letter-spacing: 0.2em;
 }
 
@@ -626,11 +629,6 @@
  * What the panel is about gets a ring and a spotlight: the rest of the card is
  * pushed back, and that one part is left at full brightness. The ring answers
  * "which of these is it", the dim answers it from a glance.
- *
- * The dim is a `box-shadow` with a spread wide enough to cover the card, drawn
- * with the element — which is why nothing else here needs a mask or an overlay.
- * The card clips it: Stash's own `.gallery-card.card` is `overflow: hidden`, so
- * the shadow stops at the card's edge.
  *
  * `outline` and not a border, and no `position` in this rule: the badge it goes
  * around is absolutely positioned in the cover's corner, and a `position` on this
@@ -647,6 +645,22 @@
   outline: 2px solid #48aff0;
   outline-offset: 2px;
   border-radius: 3px;
+}
+
+/*
+ * The dim: a `box-shadow` with a spread wide enough to cover the card, drawn with
+ * the element, so there is no overlay to keep in step. What clips it is the frame
+ * around the example (see `.manga-tools-help-card`), not Stash's card.
+ *
+ * Written twice, and the second one is not a duplicate. The badge's text chips
+ * carry a drop shadow of their own, declared on two class names
+ * (`.manga-tools-badge.is-name`, and `.is-unknown` with it), and a spotlight
+ * declared on one class loses to that — which is what "the dim is missing when
+ * the flags are off" *was*: the chip kept its one-pixel shadow, the card stayed
+ * bright, and only the flag version of the same example dimmed anything.
+ */
+.manga-tools-help-card .manga-tools-help-lit,
+.manga-tools-help-card .manga-tools-badge.manga-tools-help-lit {
   box-shadow: 0 0 0 9999px rgba(12, 17, 22, 0.62);
 }
 
@@ -663,19 +677,46 @@
 }
 
 /*
- * Two lines that sit where a sub-setting would, and are not settings: the
- * lightbox's note about where its own settings live, and what turning the
- * chapters switch on commits to. Muted and unboxed, so neither reads as
+ * One line that sits where a sub-setting would and is not a setting: what turning
+ * the chapters switch on commits to. Muted and unboxed, so it does not read as
  * something to click.
  */
-.manga-tools-settings-note,
 .manga-tools-settings-warning {
   font-size: 0.85rem;
   padding: 0.25rem 0 0.5rem;
 }
 
+/*
+ * The lightbox's note, inside that row's description: boxed and tinted so it is
+ * read as a remark rather than as the description's next sentence — which is what
+ * it was, in the same grey, and nobody read it.
+ *
+ * A flex row with the icon centred against the text, rather than an icon aligned
+ * on the text's baseline: a small circle set on the baseline sits a little low, no
+ * single `vertical-align` value fixes it at every font size, and it is the kind of
+ * misalignment that reads as "something is off" without being nameable. The box
+ * hugs its words (`fit-content`) so it does not stretch the column, and the text
+ * still wraps inside it.
+ */
 .manga-tools-settings-note {
-  color: rgba(191, 204, 214, 0.5);
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(19, 124, 189, 0.16);
+  border: 1px solid rgba(72, 175, 240, 0.35);
+  border-radius: 3px;
+  color: #f5f8fa;
+}
+
+.manga-tools-settings-note .fa-icon {
+  /* Stash's unscoped `.fa-icon { margin: 0 0.4rem }` again, and here the flex
+     `gap` is what spaces the icon from the words. */
+  margin: 0;
+  color: #48aff0;
 }
 
 .manga-tools-settings-control {
