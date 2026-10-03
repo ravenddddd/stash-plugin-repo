@@ -860,6 +860,14 @@
     "mangaReader.fade": "Fade in",
     "mangaReader.fadeOff": "None",
     "mangaReader.groupProgress": "Progress",
+    "mangaReader.groupWheel": "Wheel",
+    "mangaReader.wheel": "Wheel",
+    "mangaReader.wheelShift": "Shift + wheel",
+    "mangaReader.wheelCtrl": "Ctrl + wheel",
+    "mangaReader.wheelOff": "Off",
+    "mangaReader.wheelTurn": "Turn page",
+    "mangaReader.wheelZoom": "Zoom",
+    "mangaReader.wheelScroll": "Scroll",
     "mangaReader.showProgress": "Progress bar",
     "mangaReader.showChapterMarks": "Chapter marks",
     "mangaReader.progressIdle": "Hide after",
@@ -962,6 +970,14 @@
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.fadeOff": "\u65E0",
     "mangaReader.groupProgress": "\u8FDB\u5EA6",
+    "mangaReader.groupWheel": "\u6EDA\u8F6E",
+    "mangaReader.wheel": "\u6EDA\u8F6E",
+    "mangaReader.wheelShift": "Shift + \u6EDA\u8F6E",
+    "mangaReader.wheelCtrl": "Ctrl + \u6EDA\u8F6E",
+    "mangaReader.wheelOff": "\u7981\u7528",
+    "mangaReader.wheelTurn": "\u7FFB\u9875",
+    "mangaReader.wheelZoom": "\u653E\u5927",
+    "mangaReader.wheelScroll": "\u6EDA\u52A8",
     "mangaReader.showProgress": "\u8FDB\u5EA6\u6761",
     "mangaReader.showChapterMarks": "\u7AE0\u8282\u6807\u8BB0",
     "mangaReader.progressIdle": "\u9690\u85CF\u65F6\u95F4",
@@ -1064,6 +1080,14 @@
     "mangaReader.fade": "\u6DE1\u5165",
     "mangaReader.fadeOff": "\u7121",
     "mangaReader.groupProgress": "\u9032\u5EA6",
+    "mangaReader.groupWheel": "\u6EFE\u8F2A",
+    "mangaReader.wheel": "\u6EFE\u8F2A",
+    "mangaReader.wheelShift": "Shift + \u6EFE\u8F2A",
+    "mangaReader.wheelCtrl": "Ctrl + \u6EFE\u8F2A",
+    "mangaReader.wheelOff": "\u505C\u7528",
+    "mangaReader.wheelTurn": "\u7FFB\u9801",
+    "mangaReader.wheelZoom": "\u653E\u5927",
+    "mangaReader.wheelScroll": "\u6372\u52D5",
     "mangaReader.showProgress": "\u9032\u5EA6\u689D",
     "mangaReader.showChapterMarks": "\u7AE0\u7BC0\u6A19\u8A18",
     "mangaReader.progressIdle": "\u96B1\u85CF\u6642\u9593",
@@ -1601,6 +1625,27 @@
     if (latest) update(latest);
   }
 
+  // src/reader/wheel.ts
+  function wheelGesture(wheel) {
+    if (wheel.ctrlKey || wheel.metaKey) return "ctrl";
+    return wheel.shiftKey ? "shift" : "plain";
+  }
+  function wheelDelta(wheel) {
+    return wheel.deltaY || wheel.deltaX;
+  }
+  function autoWheelAction(gesture, scrolling) {
+    if (gesture === "ctrl") return "zoom";
+    if (scrolling) return "scroll";
+    return gesture === "shift" ? "scroll" : "turn";
+  }
+  function wheelEffect(action, gesture, scrolling) {
+    const chosen = action === "auto" ? autoWheelAction(gesture, scrolling) : action;
+    if (chosen === "off") return "none";
+    if (chosen === "turn") return "turn";
+    if (chosen === "zoom") return "zoom";
+    return scrolling ? "scroll" : "pan";
+  }
+
   // src/reader/chrome.ts
   var CLASS_CHROME = "manga-reader-chrome";
   var CLASS_CHAPTER = "manga-reader-chapter";
@@ -1631,6 +1676,7 @@
   var CLASS_ROW_LABEL = "manga-reader-row-label";
   var CLASS_ROW_SLIDER = "manga-reader-row-slider";
   var CLASS_READOUT = "manga-reader-readout";
+  var CLASS_SELECT = "manga-reader-select";
   var CLASS_PAGES = "manga-reader-pages";
   var CLASS_SEGMENT = "manga-reader-segment";
   var CLASS_CHAPTER_TOGGLE = "minimal Lightbox-header-chapter-button dropdown-toggle btn btn-primary";
@@ -1975,6 +2021,29 @@
       });
       parts.idleSlider = idle2;
       progress.appendChild(idle2);
+      parts.wheelRule = rule();
+      const wheelGroup = group("mangaReader.groupWheel");
+      parts.wheelGroup = wheelGroup;
+      for (const chord of WHEEL_CHORDS) {
+        parts[chord.id] = row2(chord.id, chord.textId, selectAt(chord));
+        wheelGroup.appendChild(parts[chord.id]);
+      }
+    }
+    function selectAt(chord) {
+      const select = document.createElement("select");
+      select.className = "custom-select " + CLASS_SELECT;
+      select.id = chord.id;
+      for (const action of WHEEL_ACTIONS) {
+        const option = document.createElement("option");
+        option.value = action;
+        select.appendChild(option);
+      }
+      select.addEventListener("change", () => {
+        const value = select.value;
+        if (!isWheelAction(value)) return;
+        latest2 == null ? void 0 : latest2.handlers.onSetting({ [chord.key]: value });
+      });
+      return select;
     }
     const say = (id) => {
       const node = labels[id];
@@ -1997,6 +2066,10 @@
     say("mangaReader.showProgress");
     say("mangaReader.showChapterMarks");
     say("mangaReader.progressIdle");
+    say("mangaReader.groupWheel");
+    say("mangaReader.wheel");
+    say("mangaReader.wheelShift");
+    say("mangaReader.wheelCtrl");
     const chosen = (id, on) => {
       const half = panel2.querySelector("#" + id);
       if (half) half.classList.toggle("is-on", on);
@@ -2021,6 +2094,23 @@
     const screening = state.settings.readingMode !== "scroll";
     showWhen(parts.animationGroup, screening);
     showWhen(parts.animationRule, screening);
+    const scrolling = state.settings.readingMode === "scroll";
+    for (const chord of WHEEL_CHORDS) {
+      const select = panel2.querySelector(
+        "#" + chord.id
+      );
+      if (!select) continue;
+      WHEEL_ACTIONS.forEach((action, at) => {
+        var _a2;
+        const option = (_a2 = select.children) == null ? void 0 : _a2[at];
+        if (!option) return;
+        const words = label2(WHEEL_WORDS[action]);
+        if (option.textContent !== words) option.textContent = words;
+      });
+      const stored = state.settings[chord.key];
+      const chosen2 = stored === "auto" ? autoWheelAction(chord.gesture, scrolling) : stored;
+      if (select.value !== chosen2) select.value = chosen2;
+    }
     showWhen(parts.marksRow, state.settings.showProgress);
     showWhen(parts.idleRow, state.settings.showProgress);
     showWhen(parts.idleSlider, state.settings.showProgress);
@@ -2047,6 +2137,39 @@
   var PROGRESS_ID = "manga-reader-show-progress";
   var MARKS_ID = "manga-reader-show-marks";
   var IDLE_ID = "manga-reader-idle";
+  var WHEEL_ID = "manga-reader-wheel";
+  var SHIFT_WHEEL_ID = "manga-reader-shift-wheel";
+  var CTRL_WHEEL_ID = "manga-reader-ctrl-wheel";
+  var WHEEL_CHORDS = [
+    {
+      id: WHEEL_ID,
+      textId: "mangaReader.wheel",
+      key: "wheelAction",
+      gesture: "plain"
+    },
+    {
+      id: SHIFT_WHEEL_ID,
+      textId: "mangaReader.wheelShift",
+      key: "shiftWheelAction",
+      gesture: "shift"
+    },
+    {
+      id: CTRL_WHEEL_ID,
+      textId: "mangaReader.wheelCtrl",
+      key: "ctrlWheelAction",
+      gesture: "ctrl"
+    }
+  ];
+  var WHEEL_ACTIONS = ["off", "turn", "zoom", "scroll"];
+  function isWheelAction(value) {
+    return value === "off" || value === "turn" || value === "zoom" || value === "scroll";
+  }
+  var WHEEL_WORDS = {
+    off: "mangaReader.wheelOff",
+    turn: "mangaReader.wheelTurn",
+    zoom: "mangaReader.wheelZoom",
+    scroll: "mangaReader.wheelScroll"
+  };
   var IDLE_STEP_MS = 500;
   var IDLE_TOP_STEP = PROGRESS_IDLE_MAX_MS / IDLE_STEP_MS;
   var IDLE_NEVER_STEP = IDLE_TOP_STEP + 1;
@@ -2672,7 +2795,13 @@
     offset: false,
     showProgress: true,
     showChapterMarks: true,
-    progressIdleMs: PROGRESS_IDLE_MS
+    progressIdleMs: PROGRESS_IDLE_MS,
+    // "auto" is not one of the choices the panel offers — it is what a reader who has never
+    // touched the wheel has, and it is the only value that means something different in each
+    // mode. See wheel.ts.
+    wheelAction: "auto",
+    shiftWheelAction: "auto",
+    ctrlWheelAction: "auto"
   };
   function parseSettings(raw) {
     const stored = (() => {
@@ -2685,6 +2814,10 @@
       }
     })();
     const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
+    const wheelAction = (key) => {
+      const value = stored[key];
+      return value === "off" || value === "turn" || value === "zoom" || value === "scroll" || value === "auto" ? value : "auto";
+    };
     const idleMs = () => {
       const value = stored.progressIdleMs;
       if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -2703,6 +2836,9 @@
     return {
       readingMode: readingMode(),
       progressIdleMs: idleMs(),
+      wheelAction: wheelAction("wheelAction"),
+      shiftWheelAction: wheelAction("shiftWheelAction"),
+      ctrlWheelAction: wheelAction("ctrlWheelAction"),
       coverAlone: flag("coverAlone"),
       detectSpreads: flag("detectSpreads"),
       fade: flag("fade"),
@@ -3621,17 +3757,30 @@
   var WHEEL_REST_MS = 250;
   NR.WHEEL_TURN = WHEEL_TURN;
   NR.WHEEL_REST_MS = WHEEL_REST_MS;
+  NR.wheelGesture = wheelGesture;
+  NR.wheelDelta = wheelDelta;
+  NR.autoWheelAction = autoWheelAction;
+  NR.wheelEffect = wheelEffect;
   var wheelRun = 0;
   var wheelRest = null;
+  function actionOf(gesture) {
+    if (gesture === "ctrl") return settings.ctrlWheelAction;
+    return gesture === "shift" ? settings.shiftWheelAction : settings.wheelAction;
+  }
   function onSpreadWheel(event) {
     const lightbox = root;
     if (!lightbox || !container) return;
     const wheel = event;
-    if (settings.readingMode === "scroll") {
-      if (!wheel.ctrlKey && !wheel.metaKey) return;
-      wheel.preventDefault();
+    const scrolling = settings.readingMode === "scroll";
+    const gesture = wheelGesture(wheel);
+    const effect = wheelEffect(actionOf(gesture), gesture, scrolling);
+    const delta = wheelDelta(wheel);
+    if (effect === "scroll") return;
+    wheel.preventDefault();
+    if (effect === "none") return;
+    if (effect === "zoom" && scrolling) {
       const was = columnZoom();
-      const next = zoomedBy(was, wheel.deltaY < 0 ? VIEW_STEP : 1 / VIEW_STEP);
+      const next = zoomedBy(was, delta < 0 ? VIEW_STEP : 1 / VIEW_STEP);
       if (next === was) return;
       const wasAt = container ? { top: container.scrollTop || 0, left: container.scrollLeft || 0 } : null;
       refitColumn(next);
@@ -3642,20 +3791,19 @@
       sync(lightbox);
       return;
     }
-    wheel.preventDefault();
-    if (wheel.ctrlKey || wheel.metaKey) {
-      view = zoomed(view, wheel.deltaY < 0 ? VIEW_STEP : 1 / VIEW_STEP);
+    if (effect === "zoom") {
+      view = zoomed(view, delta < 0 ? VIEW_STEP : 1 / VIEW_STEP);
       applyView();
       redrawChrome();
       return;
     }
-    if (wheel.shiftKey) {
-      view = panned(view, 0, wheel.deltaY < 0 ? -VIEW_PAN_STEP : VIEW_PAN_STEP);
+    if (effect === "pan") {
+      view = panned(view, 0, delta < 0 ? -VIEW_PAN_STEP : VIEW_PAN_STEP);
       applyView();
       redrawChrome();
       return;
     }
-    wheelRun += wheel.deltaY;
+    wheelRun += delta;
     if (wheelRest !== null) window.clearTimeout(wheelRest);
     wheelRest = window.setTimeout(() => {
       wheelRest = null;
