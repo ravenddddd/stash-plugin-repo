@@ -2067,6 +2067,8 @@
       const button2 = document.createElement("button");
       button2.type = "button";
       button2.className = CLASS_HELP_BUTTON;
+      button2.textContent = "?";
+      setIcon(button2, "faQuestionCircle");
       const note = text(CLASS_HELP_PANEL);
       labels[textId] = note;
       wrap.appendChild(button2);
