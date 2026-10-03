@@ -956,6 +956,7 @@
     "mangaTools.translationGroup.originalOffRestore": "No longer raw \u2014 clear the mark and put the translation group back",
     "mangaTools.translationGroup.originalDetail": "raw (no translation group)",
     "mangaTools.translationGroup.originalInline": " (raw)",
+    "mangaTools.translationGroup.originalMixed": "Some of these are raw \u2014 click to mark them all",
     "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
     "mangaTools.bulk.remove": "Remove",
     "mangaTools.bulk.unmarkWarning": "Unmarking removes this plugin's manga, language, censorship and translation group fields from the selected galleries."
@@ -1066,6 +1067,7 @@
     "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0\uFF0C\u5E76\u6062\u590D\u539F\u6765\u7684\u7FFB\u8BD1\u7EC4",
     "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
     "mangaTools.translationGroup.originalInline": "\uFF08\u751F\u8089\uFF09",
+    "mangaTools.translationGroup.originalMixed": "\u90E8\u5206\u5DF2\u6807\u4E3A\u751F\u8089 \u2014\u2014 \u70B9\u51FB\u5168\u90E8\u6807\u4E0A",
     "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E2D\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u6F2B\u753B\u3001\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5B57\u6BB5\u3002"
@@ -1176,6 +1178,7 @@
     "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18\uFF0C\u4E26\u9084\u539F\u539F\u672C\u7684\u7FFB\u8B6F\u7D44",
     "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u7121\u7FFB\u8B6F\u7D44\uFF09",
     "mangaTools.translationGroup.originalInline": "\uFF08\u751F\u8089\uFF09",
+    "mangaTools.translationGroup.originalMixed": "\u90E8\u5206\u5DF2\u6A19\u70BA\u751F\u8089 \u2014\u2014 \u9EDE\u64CA\u5168\u90E8\u6A19\u4E0A",
     "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E2D\u79FB\u9664\u672C\u5916\u639B\u7684\u6F2B\u756B\u3001\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u6B04\u4F4D\u3002"
@@ -6954,7 +6957,10 @@
   }
   var bulkLanguage = null;
   var bulkCensorship = null;
+  var bulkGroup = null;
   var bulkManga = null;
+  var bulkOriginal = null;
+  var bulkGroupBeforeRaw = null;
   var selectedGalleryIds = [];
   function captureSelection(selectedIds) {
     const next = [];
@@ -6981,6 +6987,26 @@
       if (censorshipOf(store == null ? void 0 : store.get(selectedGalleryIds[i])) !== first) return null;
     }
     return first || null;
+  }
+  function selectedGroupAggregate() {
+    if (!selectedGalleryIds.length) return null;
+    const first = NS.translationGroupOf(store == null ? void 0 : store.get(selectedGalleryIds[0]));
+    for (let i = 1; i < selectedGalleryIds.length; i++) {
+      const name = NS.translationGroupOf(store == null ? void 0 : store.get(selectedGalleryIds[i]));
+      if (!NS.sameTranslationGroup(name, first)) return null;
+    }
+    return first || null;
+  }
+  function selectedOriginalAggregate() {
+    if (!selectedGalleryIds.length) return "none";
+    let anyRaw = false;
+    let anyOther = false;
+    for (let i = 0; i < selectedGalleryIds.length; i++) {
+      if (NS.isOriginal(store == null ? void 0 : store.get(selectedGalleryIds[i]))) anyRaw = true;
+      else anyOther = true;
+      if (anyRaw && anyOther) return "mixed";
+    }
+    return anyRaw ? "all" : "none";
   }
   function selectedMangaAggregate() {
     if (!selectedGalleryIds.length) return "none";
@@ -7009,7 +7035,13 @@
     const partial = {};
     const remove = [];
     if (bulkManga === "unmark") {
-      remove.push(FIELD_NAME, CENSORSHIP_FIELD_NAME, MANGA_FIELD_NAME);
+      remove.push(
+        FIELD_NAME,
+        CENSORSHIP_FIELD_NAME,
+        TRANSLATION_GROUP_FIELD_NAME,
+        ORIGINAL_FIELD_NAME,
+        MANGA_FIELD_NAME
+      );
     } else {
       if (bulkManga === "mark") partial[MANGA_FIELD_NAME] = NS.MANGA_VALUE;
       if ((bulkLanguage == null ? void 0 : bulkLanguage.kind) === "set") partial[FIELD_NAME] = bulkLanguage.value;
@@ -7018,6 +7050,13 @@
         partial[CENSORSHIP_FIELD_NAME] = bulkCensorship.value;
       else if ((bulkCensorship == null ? void 0 : bulkCensorship.kind) === "remove")
         remove.push(CENSORSHIP_FIELD_NAME);
+      if ((bulkGroup == null ? void 0 : bulkGroup.kind) === "set")
+        partial[TRANSLATION_GROUP_FIELD_NAME] = bulkGroup.value;
+      else if ((bulkGroup == null ? void 0 : bulkGroup.kind) === "remove")
+        remove.push(TRANSLATION_GROUP_FIELD_NAME);
+      if (bulkOriginal === "raw")
+        partial[ORIGINAL_FIELD_NAME] = NS.ORIGINAL_VALUE;
+      else if (bulkOriginal === "notRaw") remove.push(ORIGINAL_FIELD_NAME);
     }
     if (!Object.keys(partial).length && !remove.length) return false;
     if (!isGalleryContext()) return false;
@@ -7099,6 +7138,9 @@
         if (!bulkAnchor()) {
           bulkLanguage = null;
           bulkCensorship = null;
+          bulkGroup = null;
+          bulkOriginal = null;
+          bulkGroupBeforeRaw = null;
           bulkManga = null;
         }
       },
@@ -7161,32 +7203,58 @@
       ];
     }
     const selected = langShown === BULK_REMOVE_VALUE ? removeOption : current2 ? { value: current2.code, label: current2.name, flag: current2.flag } : null;
-    const languageRow = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_language" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_language" }, fieldLabel2(intl)), /* @__PURE__ */ React5.createElement("div", { className: cls.control }, /* @__PURE__ */ React5.createElement(
-      Select,
+    const groupNow = (bulkGroup == null ? void 0 : bulkGroup.kind) === "set" ? bulkGroup.value : (bulkGroup == null ? void 0 : bulkGroup.kind) === "remove" ? "" : selectedGroupAggregate() || "";
+    const usualForGroup = NS.usualLanguagesOf(store)[NS.groupKey(groupNow)];
+    const offered = usualForGroup && (!NS.enabledLanguages || NS.enabledLanguages.has(usualForGroup.code)) && (!current2 || current2.code !== usualForGroup.code) ? usualForGroup : null;
+    const offeredInfo = offered ? NS.describe(offered.code, intl.locale) : null;
+    const wandIcon = Solid.faWandMagicSparkles || Solid.faMagic || Solid.faLanguage || null;
+    const languageChip2 = offered && offeredInfo ? /* @__PURE__ */ React5.createElement(
+      "button",
       {
-        className: "manga-tools-select",
-        classNamePrefix: "react-select",
-        inputId: "manga_tools_language",
-        isClearable: true,
-        isSearchable: false,
-        menuPortalTarget: document.body,
-        placeholder: t(intl, "mangaTools.select.placeholder"),
-        value: selected,
-        options: [...options, removeOption],
-        formatOptionLabel: formatLanguageWithRemove,
-        components: { IndicatorSeparator: () => null },
-        onChange: (opt) => {
-          if (!opt) {
-            bulkLanguage = null;
-          } else if (opt.value === BULK_REMOVE_VALUE) {
-            bulkLanguage = { kind: "remove" };
-          } else {
-            bulkLanguage = { kind: "set", value: opt.value };
-          }
+        type: "button",
+        className: "btn btn-secondary manga-tools-chip",
+        "aria-label": offeredInfo.name,
+        title: t(intl, "mangaTools.translationGroup.fill") + " " + offeredInfo.name + " \u2014 " + t(intl, "mangaTools.translationGroup.suggestedLanguage") + " (" + offered.count + ")",
+        onClick: () => {
+          bulkLanguage = { kind: "set", value: offered.code };
           emit();
         }
-      }
-    )));
+      },
+      wandIcon ? /* @__PURE__ */ React5.createElement(Icon, { icon: wandIcon }) : null
+    ) : null;
+    const languageRow = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_language" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_language" }, fieldLabel2(intl)), /* @__PURE__ */ React5.createElement(
+      "div",
+      {
+        className: cls.control + (languageChip2 ? " manga-tools-chip-row" : "")
+      },
+      /* @__PURE__ */ React5.createElement(
+        Select,
+        {
+          className: "manga-tools-select",
+          classNamePrefix: "react-select",
+          inputId: "manga_tools_language",
+          isClearable: true,
+          isSearchable: false,
+          menuPortalTarget: document.body,
+          placeholder: t(intl, "mangaTools.select.placeholder"),
+          value: selected,
+          options: [...options, removeOption],
+          formatOptionLabel: formatLanguageWithRemove,
+          components: { IndicatorSeparator: () => null },
+          onChange: (opt) => {
+            if (!opt) {
+              bulkLanguage = null;
+            } else if (opt.value === BULK_REMOVE_VALUE) {
+              bulkLanguage = { kind: "remove" };
+            } else {
+              bulkLanguage = { kind: "set", value: opt.value };
+            }
+            emit();
+          }
+        }
+      ),
+      languageChip2
+    ));
     const censorshipOptions2 = [
       { value: "censored", label: t(intl, "mangaTools.censorship.censored") },
       {
@@ -7225,8 +7293,122 @@
         }
       }
     )));
+    const showOriginal = NS.fieldShowing("original");
+    const groupShown = (bulkGroup == null ? void 0 : bulkGroup.kind) === "set" ? bulkGroup.value : (bulkGroup == null ? void 0 : bulkGroup.kind) === "remove" ? BULK_REMOVE_VALUE : selectedGroupAggregate() || "";
+    const rawState = bulkOriginal === "raw" ? "raw" : bulkOriginal === "notRaw" ? "notRaw" : selectedOriginalAggregate() === "all" ? "raw" : selectedOriginalAggregate() === "none" ? "notRaw" : "mixed";
+    const rawShown = showOriginal && rawState === "raw";
+    const cycleOriginal = () => {
+      var _a2;
+      if (rawState === "raw") {
+        bulkOriginal = "notRaw";
+        if (bulkGroupBeforeRaw) {
+          bulkGroup = { kind: "set", value: bulkGroupBeforeRaw };
+          bulkGroupBeforeRaw = null;
+        }
+      } else if (rawState === "notRaw") {
+        bulkOriginal = null;
+      } else {
+        bulkGroupBeforeRaw = (bulkGroup == null ? void 0 : bulkGroup.kind) === "set" ? bulkGroup.value : (_a2 = selectedGroupAggregate()) != null ? _a2 : null;
+        bulkOriginal = "raw";
+        bulkGroup = { kind: "remove" };
+      }
+      emit();
+    };
+    const groupValue = groupShown === BULK_REMOVE_VALUE ? "" : groupShown;
+    const known = knownTranslationGroups();
+    const namesANewGroup = !!groupValue && !known.some((name) => NS.sameTranslationGroup(name, groupValue));
+    const agreedLanguage = (bulkLanguage == null ? void 0 : bulkLanguage.kind) === "set" ? bulkLanguage.value : (bulkLanguage == null ? void 0 : bulkLanguage.kind) === "remove" ? "" : selectedLanguageAggregate() || "";
+    const usualLanguages = NS.usualLanguagesOf(store);
+    const usualOf = (name) => usualLanguages[NS.groupKey(name)];
+    const matchesAgreed = (name) => {
+      const usualHere = usualOf(name);
+      return !!agreedLanguage && !!usualHere && usualHere.code === agreedLanguage;
+    };
+    const ordered = known.filter(matchesAgreed).concat(known.filter((name) => !matchesAgreed(name)));
+    const groupOptions = [
+      ...namesANewGroup ? [
+        {
+          value: groupValue,
+          label: groupValue,
+          createLabel: t(intl, "mangaTools.translationGroup.create") + ' "' + groupValue + '"'
+        }
+      ] : [],
+      ...ordered.map((name) => {
+        const usualHere = usualOf(name);
+        const described = usualHere ? NS.describe(usualHere.code, intl.locale) : null;
+        return {
+          value: name,
+          label: name,
+          hint: described ? { flag: described.flag, name: described.name } : null
+        };
+      })
+    ];
+    const groupRemoveOption = {
+      value: BULK_REMOVE_VALUE,
+      label: t(intl, "mangaTools.bulk.remove")
+    };
+    const formatGroupWithRemove = (opt, meta) => opt.value === BULK_REMOVE_VALUE ? removeLabel : formatGroupOption(opt, meta);
+    const steakIcon = /* @__PURE__ */ React5.createElement(SteakIcon, { raw: rawState === "raw" });
+    const originalChip = /* @__PURE__ */ React5.createElement(
+      "button",
+      {
+        type: "button",
+        className: "btn btn-secondary manga-tools-chip manga-tools-original" + (rawState === "raw" ? " active" : "") + (rawState === "mixed" ? " mixed" : ""),
+        "aria-pressed": rawState === "mixed" ? "mixed" : rawState === "raw",
+        "aria-label": t(intl, "mangaTools.translationGroup.original"),
+        title: t(
+          intl,
+          rawState === "raw" ? bulkGroupBeforeRaw ? "mangaTools.translationGroup.originalOffRestore" : "mangaTools.translationGroup.originalOff" : rawState === "mixed" ? "mangaTools.translationGroup.originalMixed" : "mangaTools.translationGroup.originalOn"
+        ),
+        onClick: cycleOriginal
+      },
+      steakIcon
+    );
+    const groupRow = /* @__PURE__ */ React5.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React5.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React5.createElement(
+      "div",
+      {
+        className: cls.control + (showOriginal ? " manga-tools-chip-row" : "")
+      },
+      /* @__PURE__ */ React5.createElement(
+        Select,
+        {
+          className: "manga-tools-select manga-tools-group-select",
+          classNamePrefix: "react-select",
+          inputId: "manga_tools_translation_group",
+          isClearable: true,
+          isDisabled: rawShown,
+          menuPortalTarget: document.body,
+          placeholder: t(
+            intl,
+            rawShown ? "mangaTools.translationGroup.originalDetail" : "mangaTools.translationGroup.placeholder"
+          ),
+          value: groupShown === BULK_REMOVE_VALUE ? groupRemoveOption : groupValue ? { value: groupValue, label: groupValue } : null,
+          options: [...groupOptions, groupRemoveOption],
+          formatOptionLabel: formatGroupWithRemove,
+          components: { IndicatorSeparator: () => null },
+          onInputChange: (text2, meta) => {
+            if ((meta == null ? void 0 : meta.action) !== "input-change") return;
+            const typed = text2.trim();
+            bulkGroup = typed ? { kind: "set", value: typed } : null;
+            emit();
+          },
+          onChange: (opt) => {
+            if (!opt) {
+              bulkGroup = null;
+            } else if (opt.value === BULK_REMOVE_VALUE) {
+              bulkGroup = { kind: "remove" };
+            } else {
+              bulkGroup = { kind: "set", value: opt.value };
+              if (showOriginal) bulkOriginal = "notRaw";
+            }
+            emit();
+          }
+        }
+      ),
+      showOriginal ? originalChip : null
+    ));
     return PluginApi5.ReactDOM.createPortal(
-      /* @__PURE__ */ React5.createElement(React5.Fragment, null, tri === false && aggregate !== "none" ? /* @__PURE__ */ React5.createElement("div", { className: "alert alert-warning", role: "alert" }, t(intl, "mangaTools.bulk.unmarkWarning")) : null, mangaRow, tri === true && NS.fieldShowing("language") ? languageRow : null, tri === true && NS.fieldShowing("censorship") ? censorshipRow : null),
+      /* @__PURE__ */ React5.createElement(React5.Fragment, null, tri === false && aggregate !== "none" ? /* @__PURE__ */ React5.createElement("div", { className: "alert alert-warning", role: "alert" }, t(intl, "mangaTools.bulk.unmarkWarning")) : null, mangaRow, tri === true && NS.fieldShowing("language") ? languageRow : null, tri === true && NS.fieldShowing("censorship") ? censorshipRow : null, tri === true && NS.fieldShowing("translationGroup") ? groupRow : null),
       host
     );
   }
