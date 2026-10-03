@@ -7402,15 +7402,9 @@
   }
   var FIELD_HOST_CLASS = "manga-tools-field-host";
   function bulkAnchor() {
-    let el = document.querySelector(BULK_DIALOG_MARK);
-    while (el) {
-      const element = el;
-      if (element.tagName === "form") {
-        return element.querySelector(BULK_ANCHOR);
-      }
-      el = el.parentNode;
-    }
-    return null;
+    var _a2;
+    const form2 = (_a2 = document.querySelector(BULK_DIALOG_MARK)) == null ? void 0 : _a2.closest("form");
+    return form2 ? form2.querySelector(BULK_ANCHOR) : null;
   }
   var fieldHosts = {
     edit: null,
