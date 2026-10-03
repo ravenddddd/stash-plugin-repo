@@ -2077,7 +2077,7 @@
     }
     function selectAt(chord) {
       const select = document.createElement("select");
-      select.className = "custom-select " + CLASS_SELECT;
+      select.className = "form-control btn-secondary " + CLASS_SELECT;
       select.id = chord.id;
       for (const action of WHEEL_ACTIONS) {
         const option = document.createElement("option");
