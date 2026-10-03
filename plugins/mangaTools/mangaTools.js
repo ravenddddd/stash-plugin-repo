@@ -881,10 +881,9 @@
     "mangaTools.settings.readerTakeover.note": "The lightbox's own settings are adjusted on the lightbox page, not here.",
     "mangaTools.settings.manageChapters.heading": "Take over the Chapters tab",
     "mangaTools.settings.manageChapters.description": "Creating and editing chapters is this plugin's job, and writing them stores this plugin's own chapter field. Stash's existing chapters are brought over quietly, and are never modified.",
-    "mangaTools.settings.manageChapters.warning": "From here on, editing chapters does not touch Stash's own chapter rows.",
+    "mangaTools.settings.manageChapters.note": "From here on, editing chapters does not touch Stash's own chapter rows.",
     "mangaTools.settings.fields.heading": "Custom fields",
     "mangaTools.settings.fields.description": "The plugin's fields are written as custom fields, so none of Stash's own data is touched. Turning one off does not clear the values already on your galleries.",
-    "mangaTools.settings.field.description": "Turned off, this field leaves every page it appears on: the cover badge, the detail row, the edit row, the bulk dialog and the filters. The values already on your galleries are kept.",
     "mangaTools.settings.enabledLanguages.heading": "Enabled languages",
     "mangaTools.settings.enabledLanguages.description": "Only these languages appear in the edit-page dropdown. Display (badge and detail row) is unaffected. Leave empty to show every language.",
     "mangaTools.settings.enabledLanguages.placeholder": "All languages",
@@ -978,10 +977,9 @@
     "mangaTools.settings.readerTakeover.note": "\u63D2\u4EF6\u706F\u7BB1\u76F8\u5173\u8BBE\u7F6E\u5728\u706F\u7BB1\u9875\u9762\u8BBE\u7F6E\u4E2D\u8C03\u6574\u3002",
     "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u8282\u7CFB\u7EDF",
     "mangaTools.settings.manageChapters.description": "\u6807\u7B7E\u9875\u7684\u521B\u5EFA\u548C\u7F16\u8F91\u7531\u63D2\u4EF6\u63A5\u7BA1\uFF0C\u5199\u5165\u63D2\u4EF6\u81EA\u5DF1\u7684\u7AE0\u8282\u5B57\u6BB5\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u8282\u4F1A\u88AB\u9759\u9ED8\u5BFC\u5165\uFF0C\u4F46\u4E0D\u4F1A\u88AB\u4FEE\u6539\u3002",
-    "mangaTools.settings.manageChapters.warning": "\u5F00\u542F\u540E\uFF0C\u5BF9\u7AE0\u8282\u7684\u4EFB\u4F55\u7F16\u8F91\u90FD\u4E0D\u4F1A\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u8282\u3002",
+    "mangaTools.settings.manageChapters.note": "\u5F00\u542F\u540E\uFF0C\u5BF9\u7AE0\u8282\u7684\u4EFB\u4F55\u7F16\u8F91\u90FD\u4E0D\u4F1A\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u8282\u3002",
     "mangaTools.settings.fields.heading": "\u81EA\u5B9A\u4E49\u5B57\u6BB5",
     "mangaTools.settings.fields.description": "\u63D2\u4EF6\u7684\u5B57\u6BB5\u901A\u8FC7\u5199\u5165 custom fields \u6DFB\u52A0\uFF0C\u4E0D\u5F71\u54CD\u539F\u751F\u6570\u636E\uFF1B\u5173\u6389\u4EFB\u4F55\u4E00\u4E2A\uFF0C\u90FD\u4E0D\u4F1A\u6E05\u9664\u753B\u5ECA\u4E0A\u5DF2\u6709\u7684\u503C\u3002",
-    "mangaTools.settings.field.description": "\u5173\u95ED\u540E\uFF0C\u8FD9\u4E2A\u5B57\u6BB5\u4ECE\u5B83\u51FA\u73B0\u7684\u6BCF\u4E00\u5904\u6D88\u5931\uFF1A\u5C01\u9762\u5FBD\u7AE0\u3001\u8BE6\u60C5\u884C\u3001\u7F16\u8F91\u884C\u3001\u6279\u91CF\u7F16\u8F91\u548C\u7B5B\u9009\u5668\u3002\u753B\u5ECA\u4E0A\u5DF2\u6709\u7684\u503C\u4F1A\u4FDD\u7559\u3002",
     "mangaTools.settings.enabledLanguages.heading": "\u542F\u7528\u7684\u8BED\u8A00",
     "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u8FD9\u4E9B\u8BED\u8A00\u4F1A\u51FA\u73B0\u5728\u7F16\u8F91\u9875\u7684\u4E0B\u62C9\u6846\u91CC\u3002\u663E\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8BE6\u60C5\u9875\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u54CD\u3002\u7559\u7A7A\u8868\u793A\u663E\u793A\u5168\u90E8\u8BED\u8A00\u3002",
     "mangaTools.settings.enabledLanguages.placeholder": "\u5168\u90E8\u8BED\u8A00",
@@ -1075,10 +1073,9 @@
     "mangaTools.settings.readerTakeover.note": "\u5916\u639B\u71C8\u7BB1\u76F8\u95DC\u8A2D\u5B9A\u5728\u71C8\u7BB1\u9801\u9762\u8A2D\u5B9A\u4E2D\u8ABF\u6574\u3002",
     "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u7BC0\u7CFB\u7D71",
     "mangaTools.settings.manageChapters.description": "\u5206\u9801\u7684\u5EFA\u7ACB\u548C\u7DE8\u8F2F\u7531\u5916\u639B\u63A5\u7BA1\uFF0C\u5BEB\u5165\u5916\u639B\u81EA\u5DF1\u7684\u7AE0\u7BC0\u6B04\u4F4D\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u7BC0\u6703\u88AB\u975C\u9ED8\u532F\u5165\uFF0C\u4F46\u4E0D\u6703\u88AB\u4FEE\u6539\u3002",
-    "mangaTools.settings.manageChapters.warning": "\u958B\u555F\u5F8C\uFF0C\u5C0D\u7AE0\u7BC0\u7684\u4EFB\u4F55\u7DE8\u8F2F\u90FD\u4E0D\u6703\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u7BC0\u3002",
+    "mangaTools.settings.manageChapters.note": "\u958B\u555F\u5F8C\uFF0C\u5C0D\u7AE0\u7BC0\u7684\u4EFB\u4F55\u7DE8\u8F2F\u90FD\u4E0D\u6703\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u7BC0\u3002",
     "mangaTools.settings.fields.heading": "\u81EA\u8A02\u6B04\u4F4D",
     "mangaTools.settings.fields.description": "\u5916\u639B\u7684\u6B04\u4F4D\u900F\u904E\u5BEB\u5165 custom fields \u52A0\u5165\uFF0C\u4E0D\u5F71\u97FF\u539F\u751F\u8CC7\u6599\uFF1B\u95DC\u6389\u4EFB\u4F55\u4E00\u500B\uFF0C\u90FD\u4E0D\u6703\u6E05\u9664\u756B\u5ECA\u4E0A\u5DF2\u6709\u7684\u503C\u3002",
-    "mangaTools.settings.field.description": "\u95DC\u9589\u5F8C\uFF0C\u9019\u500B\u6B04\u4F4D\u5F9E\u5B83\u51FA\u73FE\u7684\u6BCF\u4E00\u8655\u6D88\u5931\uFF1A\u5C01\u9762\u5FBD\u7AE0\u3001\u8A73\u7D30\u884C\u3001\u7DE8\u8F2F\u884C\u3001\u6279\u91CF\u7DE8\u8F2F\u548C\u7BE9\u9078\u5668\u3002\u756B\u5ECA\u4E0A\u5DF2\u6709\u7684\u503C\u6703\u4FDD\u7559\u3002",
     "mangaTools.settings.enabledLanguages.heading": "\u555F\u7528\u7684\u8A9E\u8A00",
     "mangaTools.settings.enabledLanguages.description": "\u53EA\u6709\u9019\u4E9B\u8A9E\u8A00\u6703\u51FA\u73FE\u5728\u7DE8\u8F2F\u9801\u7684\u4E0B\u62C9\u9078\u55AE\u88E1\u3002\u986F\u793A\u65B9\u5F0F\uFF08\u5C01\u9762\u5FBD\u7AE0\u548C\u8A73\u7D30\u9801\u90A3\u4E00\u884C\uFF09\u4E0D\u53D7\u5F71\u97FF\u3002\u7559\u7A7A\u8868\u793A\u986F\u793A\u5168\u90E8\u8A9E\u8A00\u3002",
     "mangaTools.settings.enabledLanguages.placeholder": "\u5168\u90E8\u8A9E\u8A00",
@@ -6183,13 +6180,11 @@
     const enabled = NS.enabledLanguages;
     const value = enabled ? options.filter((o) => enabled == null ? void 0 : enabled.has(o.value)) : [];
     if (!Select) return null;
-    const fieldDescription = t(intl, "mangaTools.settings.field.description");
     const field2 = (id, heading, showing, set) => /* @__PURE__ */ React5.createElement(
       BooleanSetting,
       {
         id,
         heading,
-        subHeading: fieldDescription,
         checked: showing(),
         onChange: writeFlag(set)
       }
@@ -6210,13 +6205,12 @@
       {
         id: "mangaTools-manageChapters",
         heading: t(intl, "mangaTools.settings.manageChapters.heading"),
-        subHeading: t(intl, "mangaTools.settings.manageChapters.description"),
+        subHeading: /* @__PURE__ */ React5.createElement(React5.Fragment, null, t(intl, "mangaTools.settings.manageChapters.description"), /* @__PURE__ */ React5.createElement(SettingsNote, null, t(intl, "mangaTools.settings.manageChapters.note"))),
         checked: NS.manageChapters,
         onChange: writeFlag((next) => {
           NS.manageChapters = next;
         })
-      },
-      /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-warning", role: "alert" }, t(intl, "mangaTools.settings.manageChapters.warning"))
+      }
     ), /* @__PURE__ */ React5.createElement(
       SettingSwitch,
       {
@@ -6233,7 +6227,6 @@
         {
           id: "mangaTools-fieldLanguage",
           heading: fieldLabel2(intl),
-          subHeading: fieldDescription,
           checked: NS.fieldLanguage,
           onChange: writeFlag((next) => {
             NS.fieldLanguage = next;
