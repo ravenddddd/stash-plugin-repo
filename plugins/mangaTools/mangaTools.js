@@ -6130,23 +6130,64 @@
       );
       return null;
     }
+    const heading = props.help ? /* @__PURE__ */ React5.createElement(React5.Fragment, null, props.heading, /* @__PURE__ */ React5.createElement(HelpIcon, { text: props.help.text, example: props.help.example })) : props.heading;
     return (
       // `manga-tools-setting` is what the stylesheet needs to undo Stash's
       // `flex-wrap: wrap` on a plugin's rows, which puts a switch with a long
       // sub-heading on a line of its own — see the rule in mangaTools.css.
-      /* @__PURE__ */ React5.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement("h3", null, props.help ? /* @__PURE__ */ React5.createElement(React5.Fragment, null, props.heading, /* @__PURE__ */ React5.createElement(HelpIcon, { text: props.help.text, example: props.help.example })) : props.heading), props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null), /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement(
-        Bootstrap.Form.Switch,
+      /* @__PURE__ */ React5.createElement(
+        "div",
         {
-          id: props.id,
-          checked: props.checked,
-          onChange: () => {
-            props.onChange(!props.checked);
+          className: "setting manga-tools-setting" + (props.head ? " manga-tools-setting-head" : "")
+        },
+        /* @__PURE__ */ React5.createElement(
+          "div",
+          {
+            className: props.fold ? "manga-tools-foldable" : void 0,
+            onClick: props.fold ? props.fold.onToggle : void 0
+          },
+          props.fold ? /* @__PURE__ */ React5.createElement(FoldIcon, { folded: props.fold.folded, onToggle: props.fold.onToggle }) : null,
+          /* @__PURE__ */ React5.createElement("h3", null, heading),
+          props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null
+        ),
+        /* @__PURE__ */ React5.createElement("div", null, /* @__PURE__ */ React5.createElement(
+          Bootstrap.Form.Switch,
+          {
+            id: props.id,
+            checked: props.checked,
+            onChange: () => {
+              props.onChange(!props.checked);
+            }
           }
+        ))
+      )
+    );
+  }
+  var foldedGroups = /* @__PURE__ */ new Set();
+  function setGroupFolded(id, folded) {
+    if (folded) foldedGroups.add(id);
+    else foldedGroups.delete(id);
+    emit();
+  }
+  function FoldIcon(props) {
+    return /* @__PURE__ */ React5.createElement(
+      "button",
+      {
+        type: "button",
+        className: "manga-tools-fold" + (props.folded ? " is-folded" : ""),
+        "aria-expanded": !props.folded,
+        onClick: (event) => {
+          event.stopPropagation();
+          props.onToggle();
         }
-      )))
+      },
+      /* @__PURE__ */ React5.createElement("span", { className: "fa-icon" })
     );
   }
   function SettingSwitch(props) {
+    const rows = props.checked && props.children ? props.children : null;
+    const folded = foldedGroups.has(props.id);
+    const fold = rows ? { folded, onToggle: () => setGroupFolded(props.id, !folded) } : void 0;
     return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(
       BooleanSetting,
       {
@@ -6155,17 +6196,30 @@
         subHeading: props.subHeading,
         help: props.help,
         checked: props.checked,
-        onChange: props.onChange
+        onChange: props.onChange,
+        head: true,
+        fold
       }
-    ), props.checked && props.children ? /* @__PURE__ */ React5.createElement("div", { className: "setting-group manga-tools-settings-group" }, props.children) : null);
+    ), rows && !folded ? /* @__PURE__ */ React5.createElement("div", { className: "setting-group manga-tools-settings-group" }, rows) : null);
   }
   function SettingsHeading(props) {
-    return /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-heading" }, /* @__PURE__ */ React5.createElement("h3", null, props.heading), props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null);
+    return /* @__PURE__ */ React5.createElement(
+      "div",
+      {
+        className: "manga-tools-settings-heading" + (props.fold ? " manga-tools-foldable" : ""),
+        onClick: props.fold ? props.fold.onToggle : void 0
+      },
+      props.fold ? /* @__PURE__ */ React5.createElement(FoldIcon, { folded: props.fold.folded, onToggle: props.fold.onToggle }) : null,
+      /* @__PURE__ */ React5.createElement("h3", null, props.heading),
+      props.subHeading ? /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, props.subHeading) : null
+    );
   }
+  var MARK_GROUP_ID = "mangaTools-markGroup";
   function MangaToolsSettings() {
     useGlobalVersion();
     const intl = PluginApi5.libraries.Intl.useIntl();
     const Select = resolveSelect();
+    const markFolded = foldedGroups.has(MARK_GROUP_ID);
     function persist() {
       saveSettings();
     }
@@ -6359,12 +6413,24 @@
           })
         }
       )
-    ), /* @__PURE__ */ React5.createElement(SettingsHeading, { heading: t(intl, "mangaTools.settings.mark.heading") }), /* @__PURE__ */ React5.createElement(
+    ), /* @__PURE__ */ React5.createElement(
+      SettingsHeading,
+      {
+        heading: t(intl, "mangaTools.settings.mark.heading"),
+        fold: {
+          folded: markFolded,
+          onToggle: () => setGroupFolded(MARK_GROUP_ID, !markFolded)
+        }
+      }
+    ), markFolded ? null : /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(
       BooleanSetting,
       {
         id: "mangaTools-confirmUnmark",
         heading: t(intl, "mangaTools.settings.confirmUnmark.heading"),
-        subHeading: t(intl, "mangaTools.settings.confirmUnmark.description"),
+        subHeading: t(
+          intl,
+          "mangaTools.settings.confirmUnmark.description"
+        ),
         checked: NS.confirmUnmark,
         onChange: writeFlag((next) => {
           NS.confirmUnmark = next;
@@ -6375,7 +6441,10 @@
       {
         id: "mangaTools-deleteOnUnmark",
         heading: t(intl, "mangaTools.settings.deleteOnUnmark.heading"),
-        subHeading: t(intl, "mangaTools.settings.deleteOnUnmark.description"),
+        subHeading: t(
+          intl,
+          "mangaTools.settings.deleteOnUnmark.description"
+        ),
         checked: NS.deleteOnUnmark,
         onChange: writeFlag((next) => {
           NS.deleteOnUnmark = next;
@@ -6396,7 +6465,7 @@
           NS.coverIcon = next;
         })
       }
-    ));
+    )));
   }
   var bulkLanguage = null;
   var bulkCensorship = null;
