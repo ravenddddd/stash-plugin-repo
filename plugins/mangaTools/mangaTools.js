@@ -862,6 +862,9 @@
     "mangaReader.groupProgress": "Progress",
     "mangaReader.showProgress": "Progress bar",
     "mangaReader.showChapterMarks": "Chapter marks",
+    "mangaReader.progressIdle": "Hide after",
+    "mangaReader.seconds": "{n} s",
+    "mangaReader.never": "Never",
     "mangaReader.importChapters": "Import Stash's chapters",
     "mangaReader.reimportChapters": "Re-import Stash's chapters",
     "mangaReader.importingChapters": "Importing\u2026",
@@ -961,6 +964,9 @@
     "mangaReader.groupProgress": "\u8FDB\u5EA6",
     "mangaReader.showProgress": "\u8FDB\u5EA6\u6761",
     "mangaReader.showChapterMarks": "\u7AE0\u8282\u6807\u8BB0",
+    "mangaReader.progressIdle": "\u9690\u85CF\u65F6\u95F4",
+    "mangaReader.seconds": "{n} \u79D2",
+    "mangaReader.never": "\u6C38\u4E0D",
     "mangaReader.importChapters": "\u5BFC\u5165 Stash \u7684\u7AE0\u8282",
     "mangaReader.reimportChapters": "\u91CD\u65B0\u5BFC\u5165 Stash \u7684\u7AE0\u8282",
     "mangaReader.importingChapters": "\u6B63\u5728\u5BFC\u5165\u2026",
@@ -1060,6 +1066,9 @@
     "mangaReader.groupProgress": "\u9032\u5EA6",
     "mangaReader.showProgress": "\u9032\u5EA6\u689D",
     "mangaReader.showChapterMarks": "\u7AE0\u7BC0\u6A19\u8A18",
+    "mangaReader.progressIdle": "\u96B1\u85CF\u6642\u9593",
+    "mangaReader.seconds": "{n} \u79D2",
+    "mangaReader.never": "\u6C38\u4E0D",
     "mangaReader.importChapters": "\u532F\u5165 Stash \u7684\u7AE0\u7BC0",
     "mangaReader.reimportChapters": "\u91CD\u65B0\u532F\u5165 Stash \u7684\u7AE0\u7BC0",
     "mangaReader.importingChapters": "\u6B63\u5728\u532F\u5165\u2026",
@@ -1184,6 +1193,414 @@
   NS.catalogFor = catalogFor;
   NS.catalogs = catalogs;
 
+  // src/reader/progress.ts
+  var PROGRESS_SCRUB_MS = 120;
+  var PROGRESS_IDLE_MS = 2e3;
+  var PROGRESS_HOLD_MS = 0;
+  var PROGRESS_NEVER = -1;
+  var PROGRESS_IDLE_MAX_MS = 1e4;
+  function fractionOfPage(page, total) {
+    if (total <= 1) return 0;
+    return Math.min(Math.max(page, 0), total - 1) / total;
+  }
+  function pageAtFraction(fraction, total) {
+    if (total <= 1) return 0;
+    const page = Math.round(fraction * total);
+    return Math.min(Math.max(page, 0), total - 1);
+  }
+  function progressNodes(chapters, total, locale) {
+    const nodes2 = [];
+    const seen = /* @__PURE__ */ new Set();
+    chapters.forEach((chapter, index) => {
+      if (chapter.at < 0 || chapter.at >= total || seen.has(chapter.at)) return;
+      seen.add(chapter.at);
+      nodes2.push({
+        // A chapter with no name is named by its place, through the one helper the
+        // header's menu also names it with: the two must not be able to disagree about
+        // what an unnamed chapter is called.
+        name: chapter.title || numbered(locale, "mangaReader.chapterNumber", index + 1),
+        at: chapter.at,
+        fraction: fractionOfPage(chapter.at, total)
+      });
+    });
+    return nodes2;
+  }
+  var CLASS_BAR = "manga-reader-progress";
+  var CLASS_TRACK = "manga-reader-progress-track";
+  var CLASS_READ = "manga-reader-progress-read";
+  var CLASS_THUMB = "manga-reader-progress-thumb";
+  var CLASS_NODES = "manga-reader-progress-nodes";
+  var CLASS_PAGE_WORDS = "manga-reader-progress-page";
+  var CLASS_CHAPTER_WORDS = "manga-reader-progress-chapter";
+  var CLASS_NODE = "manga-reader-progress-node";
+  var CLASS_LABEL = "manga-reader-progress-label";
+  var CLASS_SCRUBBING = "is-scrubbing";
+  var CLASS_IDLE = "is-idle";
+  var CLASS_VERTICAL = "is-vertical";
+  var CLASS_SHOWING = "is-showing";
+  var latest = null;
+  var bar = null;
+  var track = null;
+  var read = null;
+  var thumb = null;
+  var label = null;
+  var labelPage = null;
+  var labelChapter = null;
+  var nodes = null;
+  var drawn = null;
+  var lastVertical = null;
+  var labelWidth = 0;
+  var labelHeight = 0;
+  var bubble = null;
+  var pointer = null;
+  var target = 0;
+  var lastJump = 0;
+  var pending = null;
+  var idle = null;
+  var lastWidth = 0;
+  var owed = false;
+  function ensureProgress(lightbox, state) {
+    latest = state;
+    if (!lightbox.querySelector(".Lightbox-footer")) return bar;
+    if (state.total <= 1) return null;
+    const parent = parentFor(lightbox);
+    if (!parent) return null;
+    if (!bar) build();
+    place(parent);
+    if (!bar || !track || !read || !thumb || !label || !nodes) return bar;
+    update(state);
+    return bar;
+  }
+  function removeProgress(lightbox) {
+    const node = lightbox.querySelector("." + CLASS_BAR);
+    if (node) node.remove();
+    if (node !== bar) return;
+    if (pressed) {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onRelease);
+    }
+    stopTimers();
+    bar = null;
+    track = null;
+    read = null;
+    thumb = null;
+    label = null;
+    nodes = null;
+    drawn = null;
+    latest = null;
+    bubble = null;
+    pointer = null;
+    pressed = false;
+    onTrack = false;
+    labelWidth = 0;
+    labelHeight = 0;
+    lastWidth = 0;
+    owed = false;
+  }
+  function vertical() {
+    return (latest == null ? void 0 : latest.vertical) === true;
+  }
+  function barReserve(area) {
+    if (!vertical() || !bar) return 0;
+    const box = bar.getBoundingClientRect();
+    if (!box.width) return 0;
+    const right = area.left + area.width;
+    const air = right - (box.left + box.width);
+    return Math.max(0, right - box.left + air);
+  }
+  function setAlong(node, fraction) {
+    const at = (fraction * 100).toFixed(3) + "%";
+    if (vertical()) {
+      if (node.style.top !== at) node.style.top = at;
+      if (node.style.left) node.style.left = "";
+    } else {
+      if (node.style.left !== at) node.style.left = at;
+      if (node.style.top) node.style.top = "";
+    }
+  }
+  function setAlongLength(node, fraction) {
+    const at = (fraction * 100).toFixed(3) + "%";
+    if (vertical()) {
+      if (node.style.height !== at) node.style.height = at;
+      if (node.style.width) node.style.width = "";
+    } else {
+      if (node.style.width !== at) node.style.width = at;
+      if (node.style.height) node.style.height = "";
+    }
+  }
+  function build() {
+    bar = document.createElement("div");
+    bar.className = CLASS_BAR + " " + CLASS_IDLE;
+    label = document.createElement("div");
+    label.className = CLASS_LABEL;
+    labelPage = document.createElement("div");
+    labelPage.className = CLASS_PAGE_WORDS;
+    labelChapter = document.createElement("div");
+    labelChapter.className = CLASS_CHAPTER_WORDS;
+    label.appendChild(labelPage);
+    label.appendChild(labelChapter);
+    track = document.createElement("div");
+    track.className = CLASS_TRACK;
+    read = document.createElement("div");
+    read.className = CLASS_READ;
+    nodes = document.createElement("div");
+    nodes.className = CLASS_NODES;
+    thumb = document.createElement("div");
+    thumb.className = CLASS_THUMB;
+    track.appendChild(read);
+    track.appendChild(nodes);
+    track.appendChild(thumb);
+    track.appendChild(label);
+    bar.appendChild(track);
+    track.addEventListener("mousemove", onMoveOverBar);
+    track.addEventListener("mouseleave", onLeaveTrack);
+    track.addEventListener("mousedown", onPress);
+  }
+  var SELECTOR_DISPLAY2 = ".Lightbox-display";
+  function parentFor(lightbox) {
+    if (!vertical()) return lightbox;
+    return lightbox.querySelector(SELECTOR_DISPLAY2);
+  }
+  function place(parent) {
+    if (!bar || bar.parentNode === parent) return;
+    if (parent.classList.contains("Lightbox-display")) {
+      parent.appendChild(bar);
+      return;
+    }
+    const footer = parent.querySelector(".Lightbox-footer");
+    if (footer) parent.insertBefore(bar, footer);
+    else parent.appendChild(bar);
+  }
+  function update(state) {
+    if (!bar || !track || !read || !thumb || !label || !nodes) return;
+    if (state.vertical !== lastVertical) {
+      lastVertical = state.vertical;
+      drawn = null;
+    }
+    const key = state.chapters.map((c) => c.at + ":" + c.title).join("|");
+    if (!drawn || drawn.nodes !== key || drawn.total !== state.total) {
+      drawNodes(state);
+    }
+    bar.classList.toggle(CLASS_VERTICAL, state.vertical);
+    if (state.relaid) lastWidth = 0;
+    if (state.width > 0) lastWidth = state.width;
+    if (state.vertical) {
+      if (track.style.width) track.style.width = "";
+    } else if (!pressed && lastWidth > 0) {
+      const wanted2 = Math.round(lastWidth) + "px";
+      if (track.style.width !== wanted2) track.style.width = wanted2;
+    } else if (!lastWidth) {
+      if (track.style.width) track.style.width = "";
+    }
+    const settled = fractionOfPage(state.at, state.total);
+    const fraction = pointer === null ? settled : pointer;
+    setAlongLength(read, fraction);
+    setAlong(thumb, fraction);
+    if (bubble) {
+      if ((labelPage == null ? void 0 : labelPage.textContent) !== bubble.page) {
+        if (labelPage) labelPage.textContent = bubble.page;
+        labelWidth = label.offsetWidth;
+        labelHeight = label.offsetHeight;
+      }
+      if ((labelChapter == null ? void 0 : labelChapter.textContent) !== bubble.chapter) {
+        if (labelChapter) labelChapter.textContent = bubble.chapter;
+        labelWidth = label.offsetWidth;
+        labelHeight = label.offsetHeight;
+      }
+    }
+    if (bubble) {
+      const half = (vertical() ? labelHeight : labelWidth) / 2;
+      const span = vertical() ? track.clientHeight : track.clientWidth;
+      const px = Math.max(
+        half,
+        Math.min(bubble.fraction * (span || 0), (span || 0) - half)
+      ).toFixed(0) + "px";
+      if (vertical()) {
+        if (label.style.top !== px) label.style.top = px;
+      } else if (label.style.left !== px) label.style.left = px;
+    }
+    if (owed && (state.vertical || state.width > 0)) {
+      owed = false;
+      wake();
+    }
+    const moved = drawn !== null && (drawn.at !== state.at || drawn.total !== state.total);
+    drawn = { nodes: key, at: state.at, total: state.total };
+    if (moved && !pressed) takeBubbleDown();
+    if (moved) wake();
+  }
+  function drawNodes(state) {
+    if (!nodes) return;
+    nodes.textContent = "";
+    for (const node of progressNodes(state.chapters, state.total, state.locale)) {
+      const tick = document.createElement("div");
+      tick.className = CLASS_NODE;
+      setAlong(tick, node.fraction);
+      tick.dataset.name = node.name;
+      tick.dataset.at = String(node.at);
+      tick.dataset.fraction = String(node.fraction);
+      nodes.appendChild(tick);
+    }
+  }
+  function onMoveOverBar(event) {
+    var _a2, _b2, _c;
+    onTrack = true;
+    wake();
+    if (pressed) return;
+    const node = event.target;
+    const tick = ((_a2 = node == null ? void 0 : node.classList) == null ? void 0 : _a2.contains(CLASS_NODE)) ? node : null;
+    if (!tick) {
+      takeBubbleDown();
+      return;
+    }
+    const chapter = ((_b2 = tick.dataset) == null ? void 0 : _b2.name) || "";
+    if ((bubble == null ? void 0 : bubble.chapter) === chapter) return;
+    setBubble({
+      page: "",
+      chapter,
+      fraction: Number(((_c = tick.dataset) == null ? void 0 : _c.fraction) || 0)
+    });
+    redraw();
+  }
+  function onLeaveTrack() {
+    onTrack = false;
+    if (!pressed) takeBubbleDown();
+    if (!pressed && (latest == null ? void 0 : latest.idleMs) === PROGRESS_HOLD_MS) {
+      bar == null ? void 0 : bar.classList.add(CLASS_IDLE);
+    }
+  }
+  function tickUnder(target2) {
+    var _a2;
+    const node = target2;
+    return ((_a2 = node == null ? void 0 : node.classList) == null ? void 0 : _a2.contains(CLASS_NODE)) ? node : null;
+  }
+  function setBubble(next) {
+    bubble = next;
+    bar == null ? void 0 : bar.classList.add(CLASS_SHOWING);
+  }
+  function takeBubbleDown() {
+    if (!bubble) return;
+    bubble = null;
+    bar == null ? void 0 : bar.classList.remove(CLASS_SHOWING);
+    redraw();
+  }
+  function wake() {
+    var _a2;
+    if (!bar) return;
+    if (!vertical() && lastWidth <= 0) {
+      bar.classList.add(CLASS_IDLE);
+      owed = true;
+      return;
+    }
+    if (idle !== null) {
+      window.clearTimeout(idle);
+      idle = null;
+    }
+    const idleMs = (_a2 = latest == null ? void 0 : latest.idleMs) != null ? _a2 : PROGRESS_IDLE_MS;
+    if (idleMs === PROGRESS_HOLD_MS) {
+      bar.classList.toggle(CLASS_IDLE, !onTrack);
+      return;
+    }
+    bar.classList.remove(CLASS_IDLE);
+    if (idleMs === PROGRESS_NEVER) return;
+    idle = window.setTimeout(() => {
+      idle = null;
+      bar == null ? void 0 : bar.classList.add(CLASS_IDLE);
+    }, idleMs);
+  }
+  function stopTimers() {
+    if (idle !== null) window.clearTimeout(idle);
+    if (pending !== null) window.clearTimeout(pending);
+    idle = null;
+    pending = null;
+  }
+  var pressed = false;
+  var onTrack = false;
+  function fractionAt(event) {
+    if (!track) return 0;
+    const rect = track.getBoundingClientRect();
+    const span = vertical() ? rect.height || track.clientHeight || 1 : rect.width || track.clientWidth || 1;
+    const from = vertical() ? event.clientY - rect.top : event.clientX - rect.left;
+    return Math.min(Math.max(from / span, 0), 1);
+  }
+  function onPress(event) {
+    var _a2, _b2, _c;
+    const press = event;
+    if (press.button !== 0 || !track) return;
+    press.preventDefault();
+    press.stopPropagation();
+    onTrack = true;
+    pressed = true;
+    bar == null ? void 0 : bar.classList.add(CLASS_SCRUBBING);
+    const tick = tickUnder(press.target);
+    if (tick) {
+      const fraction = Number(((_a2 = tick.dataset) == null ? void 0 : _a2.fraction) || 0);
+      target = Number(((_b2 = tick.dataset) == null ? void 0 : _b2.at) || 0);
+      pointer = fraction;
+      lastJump = Date.now();
+      setBubble({ page: "", chapter: ((_c = tick.dataset) == null ? void 0 : _c.name) || "", fraction });
+      latest == null ? void 0 : latest.handlers.onSeek(target);
+      redraw();
+    } else {
+      bubble = null;
+      scrubTo(fractionAt(press));
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onRelease);
+  }
+  function onMove(event) {
+    if (!pressed) return;
+    scrubTo(fractionAt(event));
+  }
+  function onRelease() {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onRelease);
+    pressed = false;
+    bar == null ? void 0 : bar.classList.remove(CLASS_SCRUBBING);
+    settle();
+  }
+  function scrubTo(fraction) {
+    var _a2, _b2;
+    pointer = fraction;
+    target = pageAtFraction(fraction, (_a2 = latest == null ? void 0 : latest.total) != null ? _a2 : 1);
+    setBubble({
+      page: target + 1 + " / " + ((_b2 = latest == null ? void 0 : latest.total) != null ? _b2 : 1),
+      chapter: (latest == null ? void 0 : latest.chapterNameAt(target)) || "",
+      fraction
+    });
+    redraw();
+    if (!latest || target === latest.at) return;
+    const since = Date.now() - lastJump;
+    if (pending !== null) {
+      window.clearTimeout(pending);
+      pending = null;
+    }
+    if (since >= PROGRESS_SCRUB_MS) {
+      lastJump = Date.now();
+      latest.handlers.onSeek(target);
+    } else {
+      pending = window.setTimeout(() => {
+        pending = null;
+        lastJump = Date.now();
+        latest == null ? void 0 : latest.handlers.onSeek(target);
+      }, PROGRESS_SCRUB_MS - since);
+    }
+  }
+  function settle() {
+    if (pending !== null) {
+      window.clearTimeout(pending);
+      pending = null;
+    }
+    lastJump = Date.now();
+    const wanted2 = target;
+    pointer = null;
+    latest == null ? void 0 : latest.handlers.onSeek(wanted2);
+    takeBubbleDown();
+    redraw();
+  }
+  function redraw() {
+    if (latest) update(latest);
+  }
+
   // src/reader/chrome.ts
   var CLASS_CHROME = "manga-reader-chrome";
   var CLASS_CHAPTER = "manga-reader-chapter";
@@ -1212,12 +1629,13 @@
   var CLASS_DIVIDER = "manga-reader-divider";
   var CLASS_ROW = "manga-reader-row";
   var CLASS_ROW_LABEL = "manga-reader-row-label";
+  var CLASS_READOUT = "manga-reader-readout";
   var CLASS_PAGES = "manga-reader-pages";
   var CLASS_SEGMENT = "manga-reader-segment";
   var CLASS_CHAPTER_TOGGLE = "minimal Lightbox-header-chapter-button dropdown-toggle btn btn-primary";
   var CLASS_ICON_BUTTON = "btn btn-link";
   function ensureChrome(lightbox, state) {
-    latest = state;
+    latest2 = state;
     let chrome = lightbox.querySelector("." + CLASS_CHROME);
     if (!chrome) {
       chrome = document.createElement("div");
@@ -1263,7 +1681,7 @@
       lightbox.addEventListener("click", onLightboxClick);
     }
     chromeNode = chrome;
-    update(chrome, state);
+    update2(chrome, state);
     return chrome;
   }
   function removeChrome(lightbox) {
@@ -1276,17 +1694,17 @@
     if (openMenu === null) return;
     if (chromeNode == null ? void 0 : chromeNode.contains(event.target)) return;
     openMenu = null;
-    redraw();
+    redraw2();
   }
-  var latest = null;
+  var latest2 = null;
   var chromeNode = null;
-  function redraw() {
-    if (chromeNode && latest) update(chromeNode, latest);
+  function redraw2() {
+    if (chromeNode && latest2) update2(chromeNode, latest2);
   }
   var labels = {};
   var parts = {};
   var openMenu = null;
-  function update(chrome, state) {
+  function update2(chrome, state) {
     var _a2;
     const chapter = chrome.querySelector("." + CLASS_CHAPTER);
     const counter = chrome.querySelector("." + CLASS_COUNTER);
@@ -1474,7 +1892,7 @@
             { id: DOUBLE_PAGE_ID, textId: "mangaReader.doublePage" },
             { id: SCROLL_ID, textId: "mangaReader.scrollMode" }
           ],
-          (id) => latest == null ? void 0 : latest.handlers.onSetting({
+          (id) => latest2 == null ? void 0 : latest2.handlers.onSetting({
             readingMode: id === DOUBLE_PAGE_ID ? "double" : id === SCROLL_ID ? "scroll" : "single"
           })
         )
@@ -1482,7 +1900,7 @@
       parts.coverRow = row2(
         COVER_ID,
         "mangaReader.coverAlone",
-        switchAt(COVER_ID, (on) => latest == null ? void 0 : latest.handlers.onSetting({ coverAlone: on }))
+        switchAt(COVER_ID, (on) => latest2 == null ? void 0 : latest2.handlers.onSetting({ coverAlone: on }))
       );
       reading.appendChild(parts.coverRow);
       parts.spreadsRow = row2(
@@ -1490,14 +1908,14 @@
         "mangaReader.detectSpreads",
         switchAt(
           SPREAD_ID,
-          (on) => latest == null ? void 0 : latest.handlers.onSetting({ detectSpreads: on })
+          (on) => latest2 == null ? void 0 : latest2.handlers.onSetting({ detectSpreads: on })
         )
       );
       reading.appendChild(parts.spreadsRow);
       parts.offsetRow = row2(
         OFFSET_ID,
         "mangaReader.offset",
-        switchAt(OFFSET_ID, (on) => latest == null ? void 0 : latest.handlers.onOffset(on))
+        switchAt(OFFSET_ID, (on) => latest2 == null ? void 0 : latest2.handlers.onOffset(on))
       );
       reading.appendChild(parts.offsetRow);
       parts.animationRule = rule();
@@ -1509,7 +1927,7 @@
             { id: FADE_OFF_ID, textId: "mangaReader.fadeOff" },
             { id: FADE_ON_ID, textId: "mangaReader.fade" }
           ],
-          (id) => latest == null ? void 0 : latest.handlers.onSetting({ fade: id === FADE_ON_ID })
+          (id) => latest2 == null ? void 0 : latest2.handlers.onSetting({ fade: id === FADE_ON_ID })
         )
       );
       parts.progressRule = rule();
@@ -1520,7 +1938,7 @@
         "mangaReader.showProgress",
         switchAt(
           PROGRESS_ID,
-          (on) => latest == null ? void 0 : latest.handlers.onSetting({ showProgress: on })
+          (on) => latest2 == null ? void 0 : latest2.handlers.onSetting({ showProgress: on })
         )
       );
       progress.appendChild(parts.progressRow);
@@ -1529,10 +1947,33 @@
         "mangaReader.showChapterMarks",
         switchAt(
           MARKS_ID,
-          (on) => latest == null ? void 0 : latest.handlers.onSetting({ showChapterMarks: on })
+          (on) => latest2 == null ? void 0 : latest2.handlers.onSetting({ showChapterMarks: on })
         )
       );
       progress.appendChild(parts.marksRow);
+      parts.idleRow = text(CLASS_ROW, "div");
+      const idleLabel = document.createElement("label");
+      idleLabel.className = CLASS_ROW_LABEL;
+      idleLabel.htmlFor = IDLE_ID;
+      labels["mangaReader.progressIdle"] = idleLabel;
+      parts.idleReadout = text(CLASS_READOUT);
+      parts.idleRow.appendChild(idleLabel);
+      parts.idleRow.appendChild(parts.idleReadout);
+      progress.appendChild(parts.idleRow);
+      const idle2 = document.createElement("input");
+      idle2.type = "range";
+      idle2.className = "custom-range";
+      idle2.id = IDLE_ID;
+      idle2.min = "0";
+      idle2.max = String(IDLE_NEVER_STEP);
+      idle2.step = "1";
+      idle2.addEventListener("input", () => {
+        latest2 == null ? void 0 : latest2.handlers.onSetting({
+          progressIdleMs: idleMsOf(Number(idle2.value))
+        });
+      });
+      parts.idleSlider = idle2;
+      progress.appendChild(idle2);
     }
     const say = (id) => {
       const node = labels[id];
@@ -1554,6 +1995,7 @@
     say("mangaReader.groupProgress");
     say("mangaReader.showProgress");
     say("mangaReader.showChapterMarks");
+    say("mangaReader.progressIdle");
     const chosen = (id, on) => {
       const half = panel2.querySelector("#" + id);
       if (half) half.classList.toggle("is-on", on);
@@ -1579,6 +2021,19 @@
     showWhen(parts.animationGroup, screening);
     showWhen(parts.animationRule, screening);
     showWhen(parts.marksRow, state.settings.showProgress);
+    showWhen(parts.idleRow, state.settings.showProgress);
+    showWhen(parts.idleSlider, state.settings.showProgress);
+    const slider = panel2.querySelector("#" + IDLE_ID);
+    const step2 = String(idleStepOf(state.settings.progressIdleMs));
+    if (slider && slider.value !== step2) slider.value = step2;
+    const idleWords = state.settings.progressIdleMs === PROGRESS_NEVER ? stringFor(state.locale, "mangaReader.never") : numbered(
+      state.locale,
+      "mangaReader.seconds",
+      state.settings.progressIdleMs / 1e3
+    );
+    if (parts.idleReadout.textContent !== idleWords) {
+      parts.idleReadout.textContent = idleWords;
+    }
   }
   var SINGLE_PAGE_ID = "manga-reader-single-page";
   var DOUBLE_PAGE_ID = "manga-reader-double-page";
@@ -1590,6 +2045,12 @@
   var FADE_ON_ID = "manga-reader-fade-on";
   var PROGRESS_ID = "manga-reader-show-progress";
   var MARKS_ID = "manga-reader-show-marks";
+  var IDLE_ID = "manga-reader-idle";
+  var IDLE_STEP_MS = 500;
+  var IDLE_TOP_STEP = PROGRESS_IDLE_MAX_MS / IDLE_STEP_MS;
+  var IDLE_NEVER_STEP = IDLE_TOP_STEP + 1;
+  var idleStepOf = (ms) => ms === PROGRESS_NEVER ? IDLE_NEVER_STEP : Math.round(ms / IDLE_STEP_MS);
+  var idleMsOf = (step2) => step2 > IDLE_TOP_STEP ? PROGRESS_NEVER : step2 * IDLE_STEP_MS;
   function text(className, tag = "span") {
     const node = document.createElement(tag);
     node.className = className;
@@ -1605,7 +2066,7 @@
     setIcon(button2, icon);
     button2.addEventListener("click", () => {
       openMenu = openMenu === opens ? null : opens;
-      redraw();
+      redraw2();
     });
     return button2;
   }
@@ -1654,7 +2115,7 @@
     setIcon(button2, "faSearchMinus");
     button2.addEventListener("click", () => {
       openMenu = null;
-      latest == null ? void 0 : latest.handlers.onResetZoom();
+      latest2 == null ? void 0 : latest2.handlers.onResetZoom();
     });
     return button2;
   }
@@ -1679,7 +2140,7 @@
     setIcon(button2, "faTimes");
     button2.addEventListener("click", () => {
       openMenu = null;
-      latest == null ? void 0 : latest.handlers.onClose();
+      latest2 == null ? void 0 : latest2.handlers.onClose();
     });
     return button2;
   }
@@ -1860,7 +2321,7 @@
       box.appendChild(
         button("btn btn-secondary btn-sm", "mangaReader.reimportCancel", () => {
           confirming = false;
-          redraw2();
+          redraw3();
         })
       );
       return;
@@ -1882,7 +2343,7 @@
     if (!controlFor || busy) return;
     if (controlFor.own) {
       confirming = true;
-      redraw2();
+      redraw3();
       return;
     }
     importChapters();
@@ -1897,7 +2358,7 @@
       return;
     }
     busy = true;
-    redraw2();
+    redraw3();
     NS.writeChapters(target2.id, serializeChapters(target2.importable)).then(
       () => {
         busy = false;
@@ -1906,7 +2367,7 @@
           inHand.importable = target2.importable;
         }
         confirming = false;
-        redraw2();
+        redraw3();
       },
       (e) => {
         busy = false;
@@ -1915,7 +2376,7 @@
           "[mangaReader] could not import this gallery's chapters:",
           e
         );
-        redraw2();
+        redraw3();
       }
     );
   }
@@ -1924,7 +2385,7 @@
     if (!isStashButton(button2)) return;
     button2.classList.toggle(CLASS_EDITING, !shown);
   }
-  function redraw2() {
+  function redraw3() {
     if (!inHand || !panelInHand) return;
     render(panelInHand, inHand);
   }
@@ -2033,7 +2494,7 @@
     if (!gallery || !current2) return;
     if (!Number.isInteger(index) || index < 1 || index > gallery.pages.length) {
       formError = "mangaReader.chapterIndexRange";
-      redraw2();
+      redraw3();
       return;
     }
     const order = gallery.pages.map((page) => page.id);
@@ -2042,7 +2503,7 @@
       const next2 = addChapterAt(gallery.stored, order, pageId, title);
       if (!next2) {
         formError = "mangaReader.chapterStartTaken";
-        redraw2();
+        redraw3();
         return;
       }
       applyEdit(gallery, next2);
@@ -2057,7 +2518,7 @@
     }
     if (!next) {
       formError = "mangaReader.chapterNoSuch";
-      redraw2();
+      redraw3();
       return;
     }
     if (next === gallery.stored) {
@@ -2077,14 +2538,14 @@
     );
     if (!next) {
       formError = "mangaReader.chapterNoSuch";
-      redraw2();
+      redraw3();
       return;
     }
     applyEdit(gallery, next);
   }
   function applyEdit(gallery, next) {
     busy = true;
-    redraw2();
+    redraw3();
     writeChapters(gallery.id, next).then(
       () => {
         busy = false;
@@ -2096,14 +2557,14 @@
           "[mangaReader] could not write this gallery's chapters:",
           e
         );
-        redraw2();
+        redraw3();
       }
     );
   }
   function closeForm() {
     form = null;
     formError = "";
-    redraw2();
+    redraw3();
   }
   function hideImport() {
     control == null ? void 0 : control.remove();
@@ -2114,7 +2575,7 @@
     inHand.chapters = placeChapters(chapters, inHand.pages);
     inHand.own = true;
     renderedFor = "";
-    redraw2();
+    redraw3();
   });
   function row(gallery, chapter) {
     const wrap = document.createElement("div");
@@ -2158,7 +2619,7 @@
       initialIndex: chapter ? String(chapter.at + 1) : String(indexOfReadingPage(gallery))
     };
     formError = "";
-    redraw2();
+    redraw3();
   }
   function indexOfReadingPage(gallery) {
     var _a2, _b2;
@@ -2200,390 +2661,6 @@
     return path ? path.replace(/^.*[\\/]/, "") : "No File Name";
   }
 
-  // src/reader/progress.ts
-  var PROGRESS_SCRUB_MS = 120;
-  var PROGRESS_IDLE_MS = 2e3;
-  function fractionOfPage(page, total) {
-    if (total <= 1) return 0;
-    return Math.min(Math.max(page, 0), total - 1) / total;
-  }
-  function pageAtFraction(fraction, total) {
-    if (total <= 1) return 0;
-    const page = Math.round(fraction * total);
-    return Math.min(Math.max(page, 0), total - 1);
-  }
-  function progressNodes(chapters, total, locale) {
-    const nodes2 = [];
-    const seen = /* @__PURE__ */ new Set();
-    chapters.forEach((chapter, index) => {
-      if (chapter.at < 0 || chapter.at >= total || seen.has(chapter.at)) return;
-      seen.add(chapter.at);
-      nodes2.push({
-        // A chapter with no name is named by its place, through the one helper the
-        // header's menu also names it with: the two must not be able to disagree about
-        // what an unnamed chapter is called.
-        name: chapter.title || numbered(locale, "mangaReader.chapterNumber", index + 1),
-        at: chapter.at,
-        fraction: fractionOfPage(chapter.at, total)
-      });
-    });
-    return nodes2;
-  }
-  var CLASS_BAR = "manga-reader-progress";
-  var CLASS_TRACK = "manga-reader-progress-track";
-  var CLASS_READ = "manga-reader-progress-read";
-  var CLASS_THUMB = "manga-reader-progress-thumb";
-  var CLASS_NODES = "manga-reader-progress-nodes";
-  var CLASS_PAGE_WORDS = "manga-reader-progress-page";
-  var CLASS_CHAPTER_WORDS = "manga-reader-progress-chapter";
-  var CLASS_NODE = "manga-reader-progress-node";
-  var CLASS_LABEL = "manga-reader-progress-label";
-  var CLASS_SCRUBBING = "is-scrubbing";
-  var CLASS_IDLE = "is-idle";
-  var CLASS_VERTICAL = "is-vertical";
-  var CLASS_SHOWING = "is-showing";
-  var latest2 = null;
-  var bar = null;
-  var track = null;
-  var read = null;
-  var thumb = null;
-  var label = null;
-  var labelPage = null;
-  var labelChapter = null;
-  var nodes = null;
-  var drawn = null;
-  var lastVertical = null;
-  var labelWidth = 0;
-  var labelHeight = 0;
-  var bubble = null;
-  var pointer = null;
-  var target = 0;
-  var lastJump = 0;
-  var pending = null;
-  var idle = null;
-  var lastWidth = 0;
-  var owed = false;
-  function ensureProgress(lightbox, state) {
-    latest2 = state;
-    if (!lightbox.querySelector(".Lightbox-footer")) return bar;
-    if (state.total <= 1) return null;
-    const parent = parentFor(lightbox);
-    if (!parent) return null;
-    if (!bar) build();
-    place(parent);
-    if (!bar || !track || !read || !thumb || !label || !nodes) return bar;
-    update2(state);
-    return bar;
-  }
-  function removeProgress(lightbox) {
-    const node = lightbox.querySelector("." + CLASS_BAR);
-    if (node) node.remove();
-    if (node !== bar) return;
-    if (pressed) {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onRelease);
-    }
-    stopTimers();
-    bar = null;
-    track = null;
-    read = null;
-    thumb = null;
-    label = null;
-    nodes = null;
-    drawn = null;
-    latest2 = null;
-    bubble = null;
-    pointer = null;
-    pressed = false;
-    labelWidth = 0;
-    labelHeight = 0;
-    lastWidth = 0;
-    owed = false;
-  }
-  function vertical() {
-    return (latest2 == null ? void 0 : latest2.vertical) === true;
-  }
-  function barReserve(area) {
-    if (!vertical() || !bar) return 0;
-    const box = bar.getBoundingClientRect();
-    if (!box.width) return 0;
-    const right = area.left + area.width;
-    const air = right - (box.left + box.width);
-    return Math.max(0, right - box.left + air);
-  }
-  function setAlong(node, fraction) {
-    const at = (fraction * 100).toFixed(3) + "%";
-    if (vertical()) {
-      if (node.style.top !== at) node.style.top = at;
-      if (node.style.left) node.style.left = "";
-    } else {
-      if (node.style.left !== at) node.style.left = at;
-      if (node.style.top) node.style.top = "";
-    }
-  }
-  function setAlongLength(node, fraction) {
-    const at = (fraction * 100).toFixed(3) + "%";
-    if (vertical()) {
-      if (node.style.height !== at) node.style.height = at;
-      if (node.style.width) node.style.width = "";
-    } else {
-      if (node.style.width !== at) node.style.width = at;
-      if (node.style.height) node.style.height = "";
-    }
-  }
-  function build() {
-    bar = document.createElement("div");
-    bar.className = CLASS_BAR + " " + CLASS_IDLE;
-    label = document.createElement("div");
-    label.className = CLASS_LABEL;
-    labelPage = document.createElement("div");
-    labelPage.className = CLASS_PAGE_WORDS;
-    labelChapter = document.createElement("div");
-    labelChapter.className = CLASS_CHAPTER_WORDS;
-    label.appendChild(labelPage);
-    label.appendChild(labelChapter);
-    track = document.createElement("div");
-    track.className = CLASS_TRACK;
-    read = document.createElement("div");
-    read.className = CLASS_READ;
-    nodes = document.createElement("div");
-    nodes.className = CLASS_NODES;
-    thumb = document.createElement("div");
-    thumb.className = CLASS_THUMB;
-    track.appendChild(read);
-    track.appendChild(nodes);
-    track.appendChild(thumb);
-    track.appendChild(label);
-    bar.appendChild(track);
-    track.addEventListener("mousemove", onMoveOverBar);
-    track.addEventListener("mouseleave", onLeaveTrack);
-    track.addEventListener("mousedown", onPress);
-  }
-  var SELECTOR_DISPLAY2 = ".Lightbox-display";
-  function parentFor(lightbox) {
-    if (!vertical()) return lightbox;
-    return lightbox.querySelector(SELECTOR_DISPLAY2);
-  }
-  function place(parent) {
-    if (!bar || bar.parentNode === parent) return;
-    if (parent.classList.contains("Lightbox-display")) {
-      parent.appendChild(bar);
-      return;
-    }
-    const footer = parent.querySelector(".Lightbox-footer");
-    if (footer) parent.insertBefore(bar, footer);
-    else parent.appendChild(bar);
-  }
-  function update2(state) {
-    if (!bar || !track || !read || !thumb || !label || !nodes) return;
-    if (state.vertical !== lastVertical) {
-      lastVertical = state.vertical;
-      drawn = null;
-    }
-    const key = state.chapters.map((c) => c.at + ":" + c.title).join("|");
-    if (!drawn || drawn.nodes !== key || drawn.total !== state.total) {
-      drawNodes(state);
-    }
-    bar.classList.toggle(CLASS_VERTICAL, state.vertical);
-    if (state.width > 0) lastWidth = state.width;
-    if (state.vertical) {
-      if (track.style.width) track.style.width = "";
-    } else if (!pressed && lastWidth > 0) {
-      const wanted2 = Math.round(lastWidth) + "px";
-      if (track.style.width !== wanted2) track.style.width = wanted2;
-    }
-    const settled = fractionOfPage(state.at, state.total);
-    const fraction = pointer === null ? settled : pointer;
-    setAlongLength(read, fraction);
-    setAlong(thumb, fraction);
-    if (bubble) {
-      if ((labelPage == null ? void 0 : labelPage.textContent) !== bubble.page) {
-        if (labelPage) labelPage.textContent = bubble.page;
-        labelWidth = label.offsetWidth;
-        labelHeight = label.offsetHeight;
-      }
-      if ((labelChapter == null ? void 0 : labelChapter.textContent) !== bubble.chapter) {
-        if (labelChapter) labelChapter.textContent = bubble.chapter;
-        labelWidth = label.offsetWidth;
-        labelHeight = label.offsetHeight;
-      }
-    }
-    if (bubble) {
-      const half = (vertical() ? labelHeight : labelWidth) / 2;
-      const span = vertical() ? track.clientHeight : track.clientWidth;
-      const px = Math.max(
-        half,
-        Math.min(bubble.fraction * (span || 0), (span || 0) - half)
-      ).toFixed(0) + "px";
-      if (vertical()) {
-        if (label.style.top !== px) label.style.top = px;
-      } else if (label.style.left !== px) label.style.left = px;
-    }
-    if (owed && (state.vertical || state.width > 0)) {
-      owed = false;
-      wake();
-    }
-    const moved = drawn !== null && (drawn.at !== state.at || drawn.total !== state.total);
-    drawn = { nodes: key, at: state.at, total: state.total };
-    if (moved && !pressed) takeBubbleDown();
-    if (moved) wake();
-  }
-  function drawNodes(state) {
-    if (!nodes) return;
-    nodes.textContent = "";
-    for (const node of progressNodes(state.chapters, state.total, state.locale)) {
-      const tick = document.createElement("div");
-      tick.className = CLASS_NODE;
-      setAlong(tick, node.fraction);
-      tick.dataset.name = node.name;
-      tick.dataset.at = String(node.at);
-      tick.dataset.fraction = String(node.fraction);
-      nodes.appendChild(tick);
-    }
-  }
-  function onMoveOverBar(event) {
-    var _a2, _b2, _c;
-    wake();
-    if (pressed) return;
-    const node = event.target;
-    const tick = ((_a2 = node == null ? void 0 : node.classList) == null ? void 0 : _a2.contains(CLASS_NODE)) ? node : null;
-    if (!tick) {
-      takeBubbleDown();
-      return;
-    }
-    const chapter = ((_b2 = tick.dataset) == null ? void 0 : _b2.name) || "";
-    if ((bubble == null ? void 0 : bubble.chapter) === chapter) return;
-    setBubble({
-      page: "",
-      chapter,
-      fraction: Number(((_c = tick.dataset) == null ? void 0 : _c.fraction) || 0)
-    });
-    redraw3();
-  }
-  function onLeaveTrack() {
-    if (!pressed) takeBubbleDown();
-  }
-  function tickUnder(target2) {
-    var _a2;
-    const node = target2;
-    return ((_a2 = node == null ? void 0 : node.classList) == null ? void 0 : _a2.contains(CLASS_NODE)) ? node : null;
-  }
-  function setBubble(next) {
-    bubble = next;
-    bar == null ? void 0 : bar.classList.add(CLASS_SHOWING);
-  }
-  function takeBubbleDown() {
-    if (!bubble) return;
-    bubble = null;
-    bar == null ? void 0 : bar.classList.remove(CLASS_SHOWING);
-    redraw3();
-  }
-  function wake() {
-    if (!bar) return;
-    if (!vertical() && lastWidth <= 0) {
-      bar.classList.add(CLASS_IDLE);
-      owed = true;
-      return;
-    }
-    bar.classList.remove(CLASS_IDLE);
-    if (idle !== null) window.clearTimeout(idle);
-    idle = window.setTimeout(() => {
-      idle = null;
-      bar == null ? void 0 : bar.classList.add(CLASS_IDLE);
-    }, PROGRESS_IDLE_MS);
-  }
-  function stopTimers() {
-    if (idle !== null) window.clearTimeout(idle);
-    if (pending !== null) window.clearTimeout(pending);
-    idle = null;
-    pending = null;
-  }
-  var pressed = false;
-  function fractionAt(event) {
-    if (!track) return 0;
-    const rect = track.getBoundingClientRect();
-    const span = vertical() ? rect.height || track.clientHeight || 1 : rect.width || track.clientWidth || 1;
-    const from = vertical() ? event.clientY - rect.top : event.clientX - rect.left;
-    return Math.min(Math.max(from / span, 0), 1);
-  }
-  function onPress(event) {
-    var _a2, _b2, _c;
-    const press = event;
-    if (press.button !== 0 || !track) return;
-    press.preventDefault();
-    press.stopPropagation();
-    pressed = true;
-    bar == null ? void 0 : bar.classList.add(CLASS_SCRUBBING);
-    const tick = tickUnder(press.target);
-    if (tick) {
-      const fraction = Number(((_a2 = tick.dataset) == null ? void 0 : _a2.fraction) || 0);
-      target = Number(((_b2 = tick.dataset) == null ? void 0 : _b2.at) || 0);
-      pointer = fraction;
-      lastJump = Date.now();
-      setBubble({ page: "", chapter: ((_c = tick.dataset) == null ? void 0 : _c.name) || "", fraction });
-      latest2 == null ? void 0 : latest2.handlers.onSeek(target);
-      redraw3();
-    } else {
-      bubble = null;
-      scrubTo(fractionAt(press));
-    }
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onRelease);
-  }
-  function onMove(event) {
-    if (!pressed) return;
-    scrubTo(fractionAt(event));
-  }
-  function onRelease() {
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onRelease);
-    pressed = false;
-    bar == null ? void 0 : bar.classList.remove(CLASS_SCRUBBING);
-    settle();
-  }
-  function scrubTo(fraction) {
-    var _a2, _b2;
-    pointer = fraction;
-    target = pageAtFraction(fraction, (_a2 = latest2 == null ? void 0 : latest2.total) != null ? _a2 : 1);
-    setBubble({
-      page: target + 1 + " / " + ((_b2 = latest2 == null ? void 0 : latest2.total) != null ? _b2 : 1),
-      chapter: (latest2 == null ? void 0 : latest2.chapterNameAt(target)) || "",
-      fraction
-    });
-    redraw3();
-    if (!latest2 || target === latest2.at) return;
-    const since = Date.now() - lastJump;
-    if (pending !== null) {
-      window.clearTimeout(pending);
-      pending = null;
-    }
-    if (since >= PROGRESS_SCRUB_MS) {
-      lastJump = Date.now();
-      latest2.handlers.onSeek(target);
-    } else {
-      pending = window.setTimeout(() => {
-        pending = null;
-        lastJump = Date.now();
-        latest2 == null ? void 0 : latest2.handlers.onSeek(target);
-      }, PROGRESS_SCRUB_MS - since);
-    }
-  }
-  function settle() {
-    if (pending !== null) {
-      window.clearTimeout(pending);
-      pending = null;
-    }
-    lastJump = Date.now();
-    const wanted2 = target;
-    pointer = null;
-    latest2 == null ? void 0 : latest2.handlers.onSeek(wanted2);
-    takeBubbleDown();
-    redraw3();
-  }
-  function redraw3() {
-    if (latest2) update2(latest2);
-  }
-
   // src/reader/settings.ts
   var FADE_MS = 200;
   var DEFAULT_SETTINGS = {
@@ -2593,7 +2670,8 @@
     fade: true,
     offset: false,
     showProgress: true,
-    showChapterMarks: true
+    showChapterMarks: true,
+    progressIdleMs: PROGRESS_IDLE_MS
   };
   function parseSettings(raw) {
     const stored = (() => {
@@ -2606,12 +2684,24 @@
       }
     })();
     const flag = (key) => typeof stored[key] === "boolean" ? stored[key] : DEFAULT_SETTINGS[key];
+    const idleMs = () => {
+      const value = stored.progressIdleMs;
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        return DEFAULT_SETTINGS.progressIdleMs;
+      }
+      if (value === PROGRESS_NEVER || value === PROGRESS_HOLD_MS) return value;
+      return Math.min(
+        Math.max(Math.round(value), PROGRESS_HOLD_MS),
+        PROGRESS_IDLE_MAX_MS
+      );
+    };
     const readingMode = () => {
       const value = stored.readingMode;
       return value === "single" || value === "double" || value === "scroll" ? value : DEFAULT_SETTINGS.readingMode;
     };
     return {
       readingMode: readingMode(),
+      progressIdleMs: idleMs(),
       coverAlone: flag("coverAlone"),
       detectSpreads: flag("detectSpreads"),
       fade: flag("fade"),
@@ -2980,10 +3070,12 @@
     const gallery = current();
     if (!gallery) return;
     if (lightboxIsLoading(lightbox)) return;
+    let relaid = false;
     if (gallery.pairedWith !== pairingKey()) {
       gallery.screens = laidOut(gallery.pages);
       gallery.pairedWith = pairingKey();
       shownAt = -1;
+      relaid = true;
     }
     if (place2 < 0) {
       place2 = placeOf(gallery, lightbox);
@@ -3003,7 +3095,7 @@
     const scrolling = settings.readingMode === "scroll";
     if (scrolling) {
       if (settings.showProgress) {
-        ensureProgress(lightbox, progressState(gallery, at, lightbox));
+        ensureProgress(lightbox, progressState(gallery, at, lightbox, relaid));
       } else {
         removeProgress(lightbox);
       }
@@ -3012,7 +3104,7 @@
     }
     removeColumn();
     if (at >= 0 && settings.showProgress) {
-      ensureProgress(lightbox, progressState(gallery, at, lightbox));
+      ensureProgress(lightbox, progressState(gallery, at, lightbox, relaid));
     } else {
       removeProgress(lightbox);
     }
@@ -3024,7 +3116,7 @@
     if (!container) return;
     draw(gallery.screens[at], at);
   }
-  function progressState(gallery, at, lightbox) {
+  function progressState(gallery, at, lightbox, relaid) {
     var _a2;
     const screen = gallery.screens[at];
     const scrolling = settings.readingMode === "scroll";
@@ -3033,8 +3125,22 @@
       total: gallery.pages.length,
       // The column's bar is a column too, and its extent is the picture area's rather
       // than a measurement of the pages — see progress.ts.
-      width: scrolling ? 0 : pictureWidth((_a2 = screen == null ? void 0 : screen.pages.length) != null ? _a2 : 0),
+      //
+      // And on the pass that re-cut the pages there is no width to report either, because
+      // what is in the picture area is still the *previous* layout's: the old screen's
+      // images, or the column's own rows. `pictureWidth` cannot tell one from the other,
+      // and the number it gives back is not this screen's width in any sense — a column's
+      // page is as wide as the picture area, which is what made the bar flash at very
+      // nearly its full length for a moment on the way out of the column. The bar hears
+      // "no width" and does what it does for the first screen of a gallery: it stays out of
+      // the way until the screen it is about has been measured, and comes out then on the
+      // wake it was owed.
+      width: scrolling || relaid ? 0 : pictureWidth((_a2 = screen == null ? void 0 : screen.pages.length) != null ? _a2 : 0),
       vertical: scrolling,
+      idleMs: settings.progressIdleMs,
+      // …and the same fact said to the bar itself, which is where the width it was holding
+      // is forgotten. See `lastWidth` in progress.ts.
+      relaid,
       // The ticks, and only the ticks: "chapter marks" is a setting about the bar, so the
       // list the bar draws its marks from is the one that is emptied. What the drag's
       // bubble says comes from `chapterNameAt` below, which reads the chapters whatever
@@ -3221,6 +3327,9 @@
   NR.progressNodes = progressNodes;
   NR.PROGRESS_SCRUB_MS = PROGRESS_SCRUB_MS;
   NR.PROGRESS_IDLE_MS = PROGRESS_IDLE_MS;
+  NR.PROGRESS_IDLE_MAX_MS = PROGRESS_IDLE_MAX_MS;
+  NR.PROGRESS_HOLD_MS = PROGRESS_HOLD_MS;
+  NR.PROGRESS_NEVER = PROGRESS_NEVER;
   function fadeIn(element) {
     if (!settings.fade) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
