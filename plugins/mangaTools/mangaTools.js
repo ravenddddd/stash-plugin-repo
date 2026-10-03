@@ -5546,7 +5546,7 @@
   var bulkRenders = 0;
   var currentPath = window.location.pathname || "";
   function pathNow() {
-    return window.location.pathname || currentPath || "";
+    return window.location.pathname || "";
   }
   function emit() {
     listeners2.forEach((fn) => {
@@ -7083,11 +7083,15 @@
     const host = isGalleryContext() ? ensureBulkFieldHost() : null;
     const bump = React5.useState(0)[1];
     React5.useLayoutEffect(() => {
-      if (isGalleryContext()) {
-        installBulkLink();
-        if (ensureBulkFieldHost() !== host) {
-          bump((v) => v + 1);
-        }
+      if (!isGalleryContext()) return;
+      installBulkLink();
+      if (ensureBulkFieldHost() !== host) {
+        bump((v) => v + 1);
+      } else if (!host && bulkDialogUp()) {
+        noteOnce(
+          "bulk-no-host",
+          "the bulk edit dialog's mount point could not be placed \u2014 " + BULK_ANCHOR + " was not found inside the dialog's own form. MangaTools.diag() reports what it sees."
+        );
       }
     });
     React5.useEffect(
@@ -7102,22 +7106,6 @@
     );
     bulkRenders += 1;
     if (!isGalleryContext() || !Select || !host) {
-      if (!isGalleryContext() && bulkAnchor()) {
-        noteOnce(
-          "bulk-not-gallery",
-          'the gallery bulk edit dialog is open, but the plugin reads "' + pathNow() + '" as the current route, so it does not draw its manga rows there. MangaTools.diag() reports what it sees.'
-        );
-      } else if (isGalleryContext() && !Select) {
-        noteOnce(
-          "bulk-no-select",
-          "Stash's react-select is not available, so the manga rows in the bulk edit dialog are not drawn"
-        );
-      } else if (isGalleryContext() && !host) {
-        noteOnce(
-          "bulk-no-host",
-          "the bulk edit dialog's mount point could not be placed \u2014 " + BULK_ANCHOR + " was not found inside the dialog's own form"
-        );
-      }
       return null;
     }
     const cls = readNativeFieldClasses(bulkAnchor()) || {
@@ -7405,6 +7393,9 @@
     var _a2;
     const form2 = (_a2 = document.querySelector(BULK_DIALOG_MARK)) == null ? void 0 : _a2.closest("form");
     return form2 ? form2.querySelector(BULK_ANCHOR) : null;
+  }
+  function bulkDialogUp() {
+    return !!document.querySelector(BULK_DIALOG_MARK);
   }
   var fieldHosts = {
     edit: null,
