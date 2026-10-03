@@ -206,6 +206,14 @@
     return NS.fieldOriginal;
   };
   NS.anyFieldShowing = () => NS.fieldShowing("language") || NS.fieldShowing("censorship") || NS.fieldShowing("translationGroup") || NS.fieldShowing("original");
+  NS.fieldNameOf = (key) => {
+    const k = NS.ownField(key);
+    if (k === NS.FIELD_NAME) return "language";
+    if (k === NS.CENSORSHIP_FIELD_NAME) return "censorship";
+    if (k === NS.TRANSLATION_GROUP_FIELD_NAME) return "translationGroup";
+    if (k === NS.ORIGINAL_FIELD_NAME) return "original";
+    return "";
+  };
   NS.ownField = (key) => {
     const k = String(key != null ? key : "").trim().toLowerCase();
     if (k === "") return "";
@@ -909,18 +917,17 @@
     "mangaTools.settings.showCoverBadge.help": "This is only about drawing the badge: turned off, a cover carries no language. Nothing is cleared from the gallery, which keeps the value and shows it again the moment this is back on.",
     "mangaTools.settings.display.heading": "How the manga info is shown",
     "mangaTools.settings.openDetailsBlock.heading": "Start the manga info section expanded",
-    "mangaTools.settings.openDetailsBlock.description": "The Manga info section in a gallery's details tab. Collapsed, its heading is what says the section is there. This decides the state a block opens in, not whether it can be opened.",
     "mangaTools.settings.openEditBlock.heading": "Start the manga info block expanded",
-    "mangaTools.settings.openEditBlock.description": "The Manga info block in a gallery's edit form, where its language, censorship and translation group are set. This decides the state a block opens in, not whether it can be opened.",
     "mangaTools.settings.hidePerformers.heading": "Hide the performers field on the edit page",
-    "mangaTools.settings.hidePerformers.description": "A manga gallery rarely has performers, so its edit page leaves the field out. Only the field is hidden \u2014 whatever a gallery already has stays on the gallery and is kept when it is saved. The bulk edit dialog and the details tab are unaffected.",
+    "mangaTools.settings.hidePerformers.description": "A manga gallery rarely has performers, so its edit page leaves the field out to make the form easier to fill in. Whatever a gallery already has stays on the gallery.",
+    "mangaTools.settings.showDisabledFields.heading": "Show disabled plugin fields",
+    "mangaTools.settings.showDisabledFields.description": "With this on, a disabled field is no longer hidden: Stash draws its own custom-field row for it in the details tab and the edit form. The value itself is not changed.",
+    "mangaTools.settings.showDisabledFields.note": "An enabled field is always this plugin's.",
     "mangaTools.settings.mark.heading": "The manga mark",
     "mangaTools.settings.confirmUnmark.heading": "Ask before unmarking",
-    "mangaTools.settings.confirmUnmark.description": "A gallery stops being manga only after a confirmation.",
     "mangaTools.settings.deleteOnUnmark.heading": "Remove this plugin's fields when unmarking",
-    "mangaTools.settings.deleteOnUnmark.description": "On, unmarking a gallery takes its language, censorship, translation group and raw values off with the mark. Off, the values stay on the gallery \u2014 hidden, and back if it is marked again.",
+    "mangaTools.settings.deleteOnUnmark.description": "On, unmarking clears the plugin's custom fields with it. Off, the values are kept on the gallery.",
     "mangaTools.settings.coverIcon.heading": "Show the manga icon on gallery covers",
-    "mangaTools.settings.coverIcon.description": "The icon at the end of a cover's info row \u2014 the row that appears on hover, with the image count and the tag count. Turned off, the cover carries no mark, and the gallery is still managed.",
     "mangaTools.settings.coverIcon.help": "Not the same thing as the language badge: this one says the gallery is one the plugin manages, which is not a value anyone scans a cover for.",
     "mangaTools.settings.help.cover": "Cover",
     "mangaTools.settings.help.card.title": "A sample manga title",
@@ -1020,18 +1027,17 @@
     "mangaTools.settings.showCoverBadge.help": "\u53EA\u51B3\u5B9A\u753B\u4E0D\u753B\uFF1A\u5173\u6389\u540E\u5C01\u9762\u4E0D\u5E26\u8BED\u8A00\u3002\u753B\u5ECA\u4E0A\u7684\u503C\u4E00\u4E2A\u90FD\u4E0D\u4F1A\u5C11\uFF0C\u91CD\u65B0\u6253\u5F00\u5C31\u8FD8\u5728\u3002",
     "mangaTools.settings.display.heading": "\u6F2B\u753B\u4FE1\u606F\u7684\u663E\u793A",
     "mangaTools.settings.openDetailsBlock.heading": "\u6F2B\u753B\u4FE1\u606F\u8BE6\u60C5\u9ED8\u8BA4\u5C55\u5F00",
-    "mangaTools.settings.openDetailsBlock.description": "\u753B\u5ECA\u7B80\u4ECB\u9875\u91CC\u7684\u90A3\u4E00\u8282\u3002\u6536\u8D77\u65F6\uFF0C\u90A3\u4E00\u884C\u6807\u9898\u5C31\u662F\u300C\u8FD9\u91CC\u6709\u4E00\u8282\u300D\u7684\u8BF4\u660E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00\u3002",
     "mangaTools.settings.openEditBlock.heading": "\u6F2B\u753B\u4FE1\u606F\u7F16\u8F91\u9ED8\u8BA4\u5C55\u5F00",
-    "mangaTools.settings.openEditBlock.description": "\u753B\u5ECA\u7F16\u8F91\u8868\u5355\u91CC\u7684\u90A3\u4E00\u5757\uFF0C\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5728\u90A3\u91CC\u8BBE\u7F6E\u3002\u8FD9\u53EA\u51B3\u5B9A\u6253\u5F00\u65F6\u7684\u9ED8\u8BA4\u72B6\u6001\uFF0C\u4E0D\u51B3\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u5F00\u3002",
     "mangaTools.settings.hidePerformers.heading": "\u7F16\u8F91\u9875\u9690\u85CF\u6F14\u51FA\u8005",
-    "mangaTools.settings.hidePerformers.description": "\u6F2B\u753B\u4E00\u822C\u6CA1\u6709\u6F14\u51FA\u8005\uFF0C\u6240\u4EE5\u7F16\u8F91\u9875\u4E0D\u663E\u793A\u8FD9\u4E00\u680F\u3002\u53EA\u662F\u9690\u85CF\uFF1A\u753B\u5ECA\u5DF2\u6709\u7684\u6F14\u51FA\u8005\u4ECD\u7136\u7559\u5728\u753B\u5ECA\u4E0A\uFF0C\u4FDD\u5B58\u65F6\u4E5F\u4E0D\u4F1A\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7F16\u8F91\u5BF9\u8BDD\u6846\u548C\u7B80\u4ECB\u9875\u4E0D\u53D7\u5F71\u54CD\u3002",
+    "mangaTools.settings.hidePerformers.description": "\u6F2B\u753B\u4E00\u822C\u6CA1\u6709\u6F14\u51FA\u8005\uFF0C\u7F16\u8F91\u9875\u4E0D\u663E\u793A\u8FD9\u4E00\u680F\u4EE5\u65B9\u4FBF\u7F16\u8F91\u3002\u753B\u5ECA\u5DF2\u6709\u7684\u6F14\u51FA\u8005\u4ECD\u7136\u7559\u5728\u753B\u5ECA\u4E0A\u3002",
+    "mangaTools.settings.showDisabledFields.heading": "\u663E\u793A\u7981\u7528\u7684\u63D2\u4EF6\u5B57\u6BB5",
+    "mangaTools.settings.showDisabledFields.description": "\u5F00\u542F\u65F6\uFF0C\u7981\u7528\u7684\u5B57\u6BB5\u4E0D\u518D\u9690\u85CF\uFF0C\u8BE6\u60C5\u9875\u548C\u7F16\u8F91\u9875\u4E0A\u7531 Stash \u539F\u751F\u663E\u793A\u81EA\u5B9A\u4E49\u5B57\u6BB5\u3002\u8BE5\u9009\u9879\u4E0D\u4F1A\u4FEE\u6539\u5BF9\u5E94\u7684\u503C\u3002",
+    "mangaTools.settings.showDisabledFields.note": "\u542F\u7528\u7684\u5B57\u6BB5\u59CB\u7EC8\u7531\u63D2\u4EF6\u63A5\u7BA1",
     "mangaTools.settings.mark.heading": "\u6F2B\u753B\u6807\u8BB0",
     "mangaTools.settings.confirmUnmark.heading": "\u53D6\u6D88\u6F2B\u753B\u6807\u8BB0\u65F6\u786E\u8BA4",
-    "mangaTools.settings.confirmUnmark.description": "\u53D6\u6D88\u6807\u8BB0\u4E4B\u524D\u5148\u95EE\u4E00\u6B21\u3002",
     "mangaTools.settings.deleteOnUnmark.heading": "\u53D6\u6D88\u6F2B\u753B\u6807\u8BB0\u65F6\u6E05\u9664\u63D2\u4EF6\u5B57\u6BB5",
-    "mangaTools.settings.deleteOnUnmark.description": "\u5F00\u542F\u65F6\uFF0C\u53D6\u6D88\u6807\u8BB0\u4F1A\u8FDE\u540C\u8BED\u8A00\u3001\u4FEE\u6B63\u3001\u7FFB\u8BD1\u7EC4\u548C\u751F\u8089\u7684\u503C\u4E00\u8D77\u6E05\u9664\u3002\u5173\u95ED\u65F6\u8FD9\u4E9B\u503C\u7559\u5728\u753B\u5ECA\u4E0A\u2014\u2014\u53EA\u662F\u4E0D\u518D\u663E\u793A\uFF0C\u91CD\u65B0\u6807\u8BB0\u5C31\u4F1A\u56DE\u6765\u3002",
+    "mangaTools.settings.deleteOnUnmark.description": "\u5F00\u542F\u65F6\uFF0C\u53D6\u6D88\u6807\u8BB0\u4F1A\u8FDE\u540C\u63D2\u4EF6\u81EA\u5B9A\u4E49\u5B57\u6BB5\u4E00\u8D77\u6E05\u9664\u3002\u5173\u95ED\u540E\uFF0C\u53D6\u6D88\u6807\u8BB0\u65F6\u8FD9\u4E9B\u503C\u4F1A\u4FDD\u7559\u5728\u753B\u5ECA\u4E0A\u3002",
     "mangaTools.settings.coverIcon.heading": "\u5728\u5C01\u9762\u4FE1\u606F\u680F\u663E\u793A\u6F2B\u753B\u56FE\u6807",
-    "mangaTools.settings.coverIcon.description": "\u5C01\u9762\u4FE1\u606F\u680F\u672B\u5C3E\u7684\u90A3\u4E2A\u56FE\u6807\u2014\u2014\u5C31\u662F\u60AC\u505C\u65F6\u51FA\u73B0\u3001\u5E26\u56FE\u7247\u6570\u548C\u6807\u7B7E\u6570\u7684\u90A3\u4E00\u884C\u3002\u5173\u6389\u540E\u5C01\u9762\u4E0D\u5E26\u6807\u8BB0\uFF0C\u753B\u5ECA\u4F9D\u7136\u7531\u63D2\u4EF6\u7BA1\u7406\u3002",
     "mangaTools.settings.coverIcon.help": "\u548C\u8BED\u8A00\u5FBD\u7AE0\u4E0D\u662F\u4E00\u56DE\u4E8B\uFF1A\u5B83\u8BF4\u7684\u662F\u300C\u8FD9\u672C\u5F52\u63D2\u4EF6\u7BA1\u7406\u300D\uFF0C\u800C\u8FD9\u4E0D\u662F\u4E00\u4E2A\u4F1A\u5728\u5C01\u9762\u4E0A\u53BB\u626B\u7684\u503C\u3002",
     "mangaTools.settings.help.cover": "\u5C01\u9762",
     "mangaTools.settings.help.card.title": "\u793A\u4F8B\u6F2B\u753B\u6807\u9898",
@@ -1131,18 +1137,17 @@
     "mangaTools.settings.showCoverBadge.help": "\u53EA\u6C7A\u5B9A\u756B\u4E0D\u756B\uFF1A\u95DC\u6389\u5F8C\u5C01\u9762\u4E0D\u5E36\u8A9E\u8A00\u3002\u756B\u5ECA\u4E0A\u7684\u503C\u4E00\u500B\u90FD\u4E0D\u6703\u5C11\uFF0C\u91CD\u65B0\u6253\u958B\u5C31\u9084\u5728\u3002",
     "mangaTools.settings.display.heading": "\u6F2B\u756B\u8CC7\u8A0A\u7684\u986F\u793A",
     "mangaTools.settings.openDetailsBlock.heading": "\u6F2B\u756B\u8CC7\u8A0A\u8A73\u60C5\u9810\u8A2D\u5C55\u958B",
-    "mangaTools.settings.openDetailsBlock.description": "\u756B\u5ECA\u7C21\u4ECB\u9801\u88E1\u7684\u90A3\u4E00\u7BC0\u3002\u6536\u8D77\u6642\uFF0C\u90A3\u4E00\u884C\u6A19\u984C\u5C31\u662F\u300C\u9019\u88E1\u6709\u4E00\u7BC0\u300D\u7684\u8AAA\u660E\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B\u3002",
     "mangaTools.settings.openEditBlock.heading": "\u6F2B\u756B\u8CC7\u8A0A\u7DE8\u8F2F\u9810\u8A2D\u5C55\u958B",
-    "mangaTools.settings.openEditBlock.description": "\u756B\u5ECA\u7DE8\u8F2F\u8868\u55AE\u88E1\u7684\u90A3\u4E00\u584A\uFF0C\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u5728\u90A3\u88E1\u8A2D\u5B9A\u3002\u9019\u53EA\u6C7A\u5B9A\u6253\u958B\u6642\u7684\u9810\u8A2D\u72C0\u614B\uFF0C\u4E0D\u6C7A\u5B9A\u5B83\u80FD\u4E0D\u80FD\u6253\u958B\u3002",
     "mangaTools.settings.hidePerformers.heading": "\u7DE8\u8F2F\u9801\u96B1\u85CF\u6F14\u51FA\u8005",
-    "mangaTools.settings.hidePerformers.description": "\u6F2B\u756B\u4E00\u822C\u6C92\u6709\u6F14\u51FA\u8005\uFF0C\u6240\u4EE5\u7DE8\u8F2F\u9801\u4E0D\u986F\u793A\u9019\u4E00\u6B04\u3002\u53EA\u662F\u96B1\u85CF\uFF1A\u756B\u5ECA\u5DF2\u6709\u7684\u6F14\u51FA\u8005\u4ECD\u7136\u7559\u5728\u756B\u5ECA\u4E0A\uFF0C\u5132\u5B58\u6642\u4E5F\u4E0D\u6703\u88AB\u6E05\u6389\u3002\u6279\u91CF\u7DE8\u8F2F\u5C0D\u8A71\u6846\u548C\u7C21\u4ECB\u9801\u4E0D\u53D7\u5F71\u97FF\u3002",
+    "mangaTools.settings.hidePerformers.description": "\u6F2B\u756B\u4E00\u822C\u6C92\u6709\u6F14\u51FA\u8005\uFF0C\u7DE8\u8F2F\u9801\u4E0D\u986F\u793A\u9019\u4E00\u6B04\u4EE5\u65B9\u4FBF\u7DE8\u8F2F\u3002\u756B\u5ECA\u5DF2\u6709\u7684\u6F14\u51FA\u8005\u4ECD\u7136\u7559\u5728\u756B\u5ECA\u4E0A\u3002",
+    "mangaTools.settings.showDisabledFields.heading": "\u986F\u793A\u505C\u7528\u7684\u5916\u639B\u6B04\u4F4D",
+    "mangaTools.settings.showDisabledFields.description": "\u958B\u555F\u6642\uFF0C\u505C\u7528\u7684\u6B04\u4F4D\u4E0D\u518D\u96B1\u85CF\uFF0C\u8A73\u7D30\u9801\u548C\u7DE8\u8F2F\u9801\u4E0A\u7531 Stash \u539F\u751F\u986F\u793A\u81EA\u8A02\u6B04\u4F4D\u3002\u8A72\u9078\u9805\u4E0D\u6703\u4FEE\u6539\u5C0D\u61C9\u7684\u503C\u3002",
+    "mangaTools.settings.showDisabledFields.note": "\u555F\u7528\u7684\u6B04\u4F4D\u59CB\u7D42\u7531\u5916\u639B\u63A5\u7BA1",
     "mangaTools.settings.mark.heading": "\u6F2B\u756B\u6A19\u8A18",
     "mangaTools.settings.confirmUnmark.heading": "\u53D6\u6D88\u6F2B\u756B\u6A19\u8A18\u6642\u78BA\u8A8D",
-    "mangaTools.settings.confirmUnmark.description": "\u53D6\u6D88\u6A19\u8A18\u4E4B\u524D\u5148\u554F\u4E00\u6B21\u3002",
     "mangaTools.settings.deleteOnUnmark.heading": "\u53D6\u6D88\u6F2B\u756B\u6A19\u8A18\u6642\u6E05\u9664\u5916\u639B\u6B04\u4F4D",
-    "mangaTools.settings.deleteOnUnmark.description": "\u958B\u555F\u6642\uFF0C\u53D6\u6D88\u6A19\u8A18\u6703\u9023\u540C\u8A9E\u8A00\u3001\u4FEE\u6B63\u3001\u7FFB\u8B6F\u7D44\u548C\u751F\u8089\u7684\u503C\u4E00\u8D77\u6E05\u9664\u3002\u95DC\u9589\u6642\u9019\u4E9B\u503C\u7559\u5728\u756B\u5ECA\u4E0A\u2014\u2014\u53EA\u662F\u4E0D\u518D\u986F\u793A\uFF0C\u91CD\u65B0\u6A19\u8A18\u5C31\u6703\u56DE\u4F86\u3002",
+    "mangaTools.settings.deleteOnUnmark.description": "\u958B\u555F\u6642\uFF0C\u53D6\u6D88\u6A19\u8A18\u6703\u9023\u540C\u5916\u639B\u81EA\u8A02\u6B04\u4F4D\u4E00\u8D77\u6E05\u9664\u3002\u95DC\u9589\u5F8C\uFF0C\u53D6\u6D88\u6A19\u8A18\u6642\u9019\u4E9B\u503C\u6703\u4FDD\u7559\u5728\u756B\u5ECA\u4E0A\u3002",
     "mangaTools.settings.coverIcon.heading": "\u5728\u5C01\u9762\u8CC7\u8A0A\u6B04\u986F\u793A\u6F2B\u756B\u5716\u793A",
-    "mangaTools.settings.coverIcon.description": "\u5C01\u9762\u8CC7\u8A0A\u6B04\u672B\u5C3E\u7684\u90A3\u500B\u5716\u793A\u2014\u2014\u5C31\u662F\u61F8\u505C\u6642\u51FA\u73FE\u3001\u5E36\u5716\u7247\u6578\u548C\u6A19\u7C64\u6578\u7684\u90A3\u4E00\u884C\u3002\u95DC\u6389\u5F8C\u5C01\u9762\u4E0D\u5E36\u6A19\u8A18\uFF0C\u756B\u5ECA\u4F9D\u7136\u7531\u5916\u639B\u7BA1\u7406\u3002",
     "mangaTools.settings.coverIcon.help": "\u548C\u8A9E\u8A00\u5FBD\u7AE0\u4E0D\u662F\u4E00\u56DE\u4E8B\uFF1A\u5B83\u8AAA\u7684\u662F\u300C\u9019\u672C\u6B78\u5916\u639B\u7BA1\u7406\u300D\uFF0C\u800C\u9019\u4E0D\u662F\u4E00\u500B\u6703\u5728\u5C01\u9762\u4E0A\u53BB\u6383\u7684\u503C\u3002",
     "mangaTools.settings.help.cover": "\u5C01\u9762",
     "mangaTools.settings.help.card.title": "\u7BC4\u4F8B\u6F2B\u756B\u6A19\u984C",
@@ -5737,6 +5742,10 @@
         pluginCfg ? pluginCfg.hidePerformers : null,
         HIDE_PERFORMERS_BY_DEFAULT
       );
+      NS.showDisabledFields = NS.parseFlag(
+        pluginCfg ? pluginCfg.showDisabledFields : null,
+        SHOW_DISABLED_FIELDS_BY_DEFAULT
+      );
       NS.readerSettingsRaw = pluginCfg && typeof pluginCfg.readerSettings === "string" && pluginCfg.readerSettings ? pluginCfg.readerSettings : null;
       emit();
     }).catch((e) => {
@@ -6004,6 +6013,7 @@
       openDetailsBlock: NS.openDetailsBlock,
       openEditBlock: NS.openEditBlock,
       hidePerformers: NS.hidePerformers,
+      showDisabledFields: NS.showDisabledFields,
       // Absent reads as a library that has never been written to, which is what puts the
       // browser's own remembered value back in force — see readSettings in the reader.
       readerSettings: (_a2 = NS.readerSettingsRaw) != null ? _a2 : ""
@@ -6835,10 +6845,6 @@
           {
             id: "mangaTools-openDetailsBlock",
             heading: t(intl, "mangaTools.settings.openDetailsBlock.heading"),
-            subHeading: t(
-              intl,
-              "mangaTools.settings.openDetailsBlock.description"
-            ),
             checked: NS.openDetailsBlock,
             onChange: writeFlag((next) => {
               NS.openDetailsBlock = next;
@@ -6850,10 +6856,6 @@
           {
             id: "mangaTools-openEditBlock",
             heading: t(intl, "mangaTools.settings.openEditBlock.heading"),
-            subHeading: t(
-              intl,
-              "mangaTools.settings.openEditBlock.description"
-            ),
             checked: NS.openEditBlock,
             onChange: writeFlag((next) => {
               NS.openEditBlock = next;
@@ -6874,6 +6876,18 @@
               NS.hidePerformers = next;
             })
           }
+        ),
+        /* @__PURE__ */ React5.createElement(
+          BooleanSetting,
+          {
+            id: "mangaTools-showDisabledFields",
+            heading: t(intl, "mangaTools.settings.showDisabledFields.heading"),
+            subHeading: /* @__PURE__ */ React5.createElement(React5.Fragment, null, t(intl, "mangaTools.settings.showDisabledFields.description"), /* @__PURE__ */ React5.createElement(SettingsNote, null, t(intl, "mangaTools.settings.showDisabledFields.note"))),
+            checked: NS.showDisabledFields,
+            onChange: writeFlag((next) => {
+              NS.showDisabledFields = next;
+            })
+          }
         )
       )
     ), /* @__PURE__ */ React5.createElement(
@@ -6887,7 +6901,6 @@
         {
           id: "mangaTools-confirmUnmark",
           heading: t(intl, "mangaTools.settings.confirmUnmark.heading"),
-          subHeading: t(intl, "mangaTools.settings.confirmUnmark.description"),
           checked: NS.confirmUnmark,
           onChange: writeFlag((next) => {
             NS.confirmUnmark = next;
@@ -6911,7 +6924,6 @@
         {
           id: "mangaTools-coverIcon",
           heading: t(intl, "mangaTools.settings.coverIcon.heading"),
-          subHeading: t(intl, "mangaTools.settings.coverIcon.description"),
           help: {
             text: t(intl, "mangaTools.settings.coverIcon.help"),
             example: "mark"
@@ -7222,6 +7234,7 @@
   var EDIT_OPEN_BY_DEFAULT = true;
   var HIDE_PERFORMERS_BY_DEFAULT = true;
   NS.openDetailsBlock = DETAILS_OPEN_BY_DEFAULT;
+  var SHOW_DISABLED_FIELDS_BY_DEFAULT = false;
   NS.openEditBlock = EDIT_OPEN_BY_DEFAULT;
   NS.hidePerformers = HIDE_PERFORMERS_BY_DEFAULT;
   function MangaDetailsPanel(props) {
@@ -7320,12 +7333,17 @@
     });
     return /* @__PURE__ */ React5.createElement(React5.Fragment, null, isMarkedNow(currentGalleryId(), props.values) ? /* @__PURE__ */ React5.createElement(MangaFieldBlock, { values: props.values, onChange: props.onChange }) : null, /* @__PURE__ */ React5.createElement(Original, { ...props }));
   });
+  function takesOverFieldRow(key) {
+    if (!NS.ownField(key)) return false;
+    const name = NS.fieldNameOf(key);
+    if (!name) return true;
+    return !NS.showDisabledFields || NS.fieldShowing(name);
+  }
   registerPatch("instead", "CustomFieldInput", (...args) => {
     const props = args[0];
     const Original = originalFrom(args);
     noteFired("CustomFieldInput");
-    const isOwnRow = NS.isOwnField(props.field);
-    if (!props.isNew && isOwnRow) {
+    if (!props.isNew && takesOverFieldRow(props.field)) {
       return null;
     }
     return /* @__PURE__ */ React5.createElement(Original, { ...props });
@@ -7401,7 +7419,7 @@
     const rest = Object.assign({}, values);
     let lifted = false;
     Object.keys(values).forEach((k) => {
-      if (!NS.isOwnField(k)) return;
+      if (!takesOverFieldRow(k)) return;
       lifted = true;
       delete rest[k];
     });

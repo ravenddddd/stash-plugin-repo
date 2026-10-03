@@ -602,11 +602,19 @@ while the switch they belong to is on**:
 |---|---|
 | **Take over Stash's lightbox** | the switch, and — inside its description — a boxed note that the lightbox's own settings are changed on the lightbox |
 | **Take over the Chapters tab** | the switch, and — inside its description — a boxed note on what it commits to: from then on, editing chapters does not touch Stash's own chapter rows |
-| **Custom fields** | the master switch; then one switch per field, with the language's own settings under it; then a heading for the three rows that are not fields |
+| **Custom fields** | the master switch; then one switch per field, with the language's own settings under it; then a heading for the four rows that are not fields — how each of the two Manga info blocks opens, the performers field on the edit page, and whether a disabled field is Stash's to draw |
 | **The manga mark** | three siblings under a heading: unmarking, what unmarking clears, and the mark's icon on covers |
 
 Hiding is not writing. A switch turned off and on again comes back with exactly the
 sub-settings it had, and the same goes for the field values on the galleries.
+
+**The two rows that decide how a block opens decide only that.** Whether the details tab's
+Manga info section and the edit form's block are drawn expanded: a block already on screen keeps
+whatever the reader did to it, and a collapsed one opens on the click that has always opened it.
+Those two rows therefore carry no description — the heading is the whole of what they say, and a
+sentence under each restating it was a line of grey prose under every row. (The one that *was*
+there is this paragraph: a description is where a reader looks for it, and a page of nine
+descriptions is a page nobody reads.)
 
 **A group can also be folded shut, and that is a view rather than a setting.** A row
 that has rows under it carries a chevron, and so does a heading that is not a switch —
@@ -668,6 +676,16 @@ the filter dialog's card — and the values already on galleries are kept: hidde
 cleared. What it does *not* change is which keys the plugin recognises. `NS.ownField`
 goes on answering for a field nobody is showing, or a gallery's own JSON would come
 back as somebody else's custom field in Stash's edit form.
+
+**Unless the reader asks for Stash's own rows back.** "Show disabled plugin fields", at the
+bottom of that group, is about the two surfaces where Stash has a row of its own to offer: with
+it on, a field that is off is no longer *taken over* — its row in the details tab and the edit
+form is drawn by Stash, labelled with the field's name rather than this plugin's wording, and the
+value is untouched. Which is a worse-looking row and an invisible one without it. A field that is
+*on* is always this plugin's, whatever the switch says, and the chapters key is never given back
+at all: its value is JSON, and the row Stash would draw for it is a blob in the edit form. The
+bulk dialog and the sidebar have no native row to fall back to, so they are unaffected — a
+disabled field does not appear there either way.
 
 **Raw is drawn differently depending on its neighbours.** It answers the same question
 the translation group does, which is why — with the group also on — the mark is a chip
