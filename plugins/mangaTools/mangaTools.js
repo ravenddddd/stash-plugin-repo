@@ -1013,13 +1013,12 @@
     "mangaReader.chapterIndexRange": "That is not one of this gallery's pages",
     "mangaReader.chapterNoSuch": "No chapter begins here",
     "mangaReader.undoChapters": "Chapters changed \u2014 undo",
-    "mangaReader.chaptersFromList": "From a pasted list\u2026",
+    "mangaReader.chaptersFromList": "Bulk create",
     "mangaReader.bulkPaste": "One title per line",
     "mangaReader.bulkTitle": "Title",
     "mangaReader.bulkPage": "Page #",
     "mangaReader.bulkCreate": "Create {n} chapters",
     "mangaReader.bulkRemove": "Delete",
-    "mangaReader.bulkEmpty": "Nothing pasted yet",
     "mangaReader.bulkTooMany": "Too many lines \u2014 do it in parts",
     "mangaReader.bulkNoTitle": "The title is empty",
     "mangaReader.bulkNoPage": "No page yet \u2014 a chapter has to begin somewhere",
@@ -1145,13 +1144,12 @@
     "mangaReader.chapterIndexRange": "\u8FD9\u4E0D\u662F\u8FD9\u672C\u753B\u5ECA\u7684\u9875\u7801",
     "mangaReader.chapterNoSuch": "\u8FD9\u91CC\u6CA1\u6709\u7AE0\u8282\u5F00\u5934",
     "mangaReader.undoChapters": "\u7AE0\u8282\u5DF2\u6539\u52A8 \u2014 \u64A4\u9500",
-    "mangaReader.chaptersFromList": "\u4ECE\u7C98\u8D34\u7684\u5217\u8868\u521B\u5EFA\u2026",
+    "mangaReader.chaptersFromList": "\u6279\u91CF\u521B\u5EFA",
     "mangaReader.bulkPaste": "\u4E00\u884C\u4E00\u4E2A\u6807\u9898",
     "mangaReader.bulkTitle": "\u6807\u9898",
     "mangaReader.bulkPage": "\u8D77\u59CB\u9875",
     "mangaReader.bulkCreate": "\u521B\u5EFA {n} \u7AE0",
     "mangaReader.bulkRemove": "\u5220\u9664",
-    "mangaReader.bulkEmpty": "\u8FD8\u6CA1\u6709\u7C98\u8D34\u5185\u5BB9",
     "mangaReader.bulkTooMany": "\u884C\u6570\u592A\u591A\u4E86 \u2014\u2014 \u5206\u6279\u6765\u5427",
     "mangaReader.bulkNoTitle": "\u6807\u9898\u662F\u7A7A\u7684",
     "mangaReader.bulkNoPage": "\u8FD8\u6CA1\u6709\u9875\u7801 \u2014\u2014 \u6BCF\u4E00\u7AE0\u90FD\u5F97\u4ECE\u67D0\u4E00\u9875\u5F00\u59CB",
@@ -1277,13 +1275,12 @@
     "mangaReader.chapterIndexRange": "\u9019\u4E0D\u662F\u9019\u672C\u756B\u5ECA\u7684\u9801\u78BC",
     "mangaReader.chapterNoSuch": "\u9019\u88E1\u6C92\u6709\u7AE0\u7BC0\u958B\u982D",
     "mangaReader.undoChapters": "\u7AE0\u7BC0\u5DF2\u6539\u52D5 \u2014 \u64A4\u92B7",
-    "mangaReader.chaptersFromList": "\u5F9E\u8CBC\u4E0A\u7684\u5217\u8868\u5EFA\u7ACB\u2026",
+    "mangaReader.chaptersFromList": "\u6279\u6B21\u5EFA\u7ACB",
     "mangaReader.bulkPaste": "\u4E00\u884C\u4E00\u500B\u6A19\u984C",
     "mangaReader.bulkTitle": "\u6A19\u984C",
     "mangaReader.bulkPage": "\u8D77\u59CB\u9801",
     "mangaReader.bulkCreate": "\u5EFA\u7ACB {n} \u7AE0",
     "mangaReader.bulkRemove": "\u522A\u9664",
-    "mangaReader.bulkEmpty": "\u9084\u6C92\u6709\u8CBC\u4E0A\u5167\u5BB9",
     "mangaReader.bulkTooMany": "\u884C\u6578\u592A\u591A\u4E86 \u2014\u2014 \u5206\u6279\u4F86\u5427",
     "mangaReader.bulkNoTitle": "\u6A19\u984C\u662F\u7A7A\u7684",
     "mangaReader.bulkNoPage": "\u9084\u6C92\u6709\u9801\u78BC \u2014\u2014 \u6BCF\u4E00\u7AE0\u90FD\u5F97\u5F9E\u67D0\u4E00\u9801\u958B\u59CB",
@@ -2586,9 +2583,14 @@
     const panels = document.querySelectorAll(SEL_PANEL);
     for (let i = 0; i < panels.length; i++) {
       const panel2 = panels[i];
-      if (isStashButton(panel2.previousElementSibling)) return panel2;
+      if (isStashButton(stashButtonBefore(panel2))) return panel2;
     }
     return null;
+  }
+  function stashButtonBefore(panel2) {
+    let at = panel2.previousElementSibling;
+    while (at && at.id === BULK_ID) at = at.previousElementSibling;
+    return at;
   }
   function isStashButton(node) {
     return !!node && node.tagName === "BUTTON" && node.classList.contains("btn") && node.getAttribute(HIDDEN2) === null;
@@ -2623,7 +2625,7 @@
     else drawImport(panel2, gallery);
   }
   function takeOverCreate(panel2) {
-    const button2 = panel2.previousElementSibling;
+    const button2 = stashButtonBefore(panel2);
     if (!isStashButton(button2)) return;
     if (button2.getAttribute(TAKEN) !== null) return;
     button2.setAttribute(TAKEN, "");
@@ -2653,8 +2655,11 @@
         openBulk();
       });
     }
-    if (bulkButton.parentNode !== owner.parentNode) {
-      (_a3 = owner.parentNode) == null ? void 0 : _a3.insertBefore(bulkButton, owner);
+    if (bulkButton.className !== owner.className) {
+      bulkButton.className = owner.className;
+    }
+    if (owner.nextElementSibling !== bulkButton) {
+      (_a3 = owner.parentNode) == null ? void 0 : _a3.insertBefore(bulkButton, owner.nextElementSibling);
     }
     const wording = stringFor(inHand == null ? void 0 : inHand.locale, "mangaReader.chaptersFromList");
     if (bulkButton.textContent !== wording) bulkButton.textContent = wording;
@@ -2677,7 +2682,7 @@
     node.setAttribute("novalidate", "");
     node.addEventListener("submit", (event) => event.preventDefault());
     const container2 = document.createElement("div");
-    container2.className = "form-container px-3";
+    container2.className = "form-container";
     const label2 = document.createElement("label");
     label2.className = "form-label";
     label2.setAttribute("for", "chapter_list");
@@ -2695,10 +2700,6 @@
     create.type = "button";
     create.id = BULK_CREATE_ID;
     create.className = "btn btn-primary";
-    const empty = document.createElement("div");
-    empty.className = "manga-reader-bulk-empty";
-    empty.textContent = stringFor(gallery.locale, "mangaReader.bulkEmpty");
-    container2.appendChild(empty);
     let built = [];
     const rows = () => built.map((row3) => ({
       title: row3.title.value.trim(),
@@ -2732,21 +2733,20 @@
         if (mark) {
           mark.textContent = wrong ? "\u2715" : "\u2713";
           mark.className = wrong ? "manga-reader-bulk-bad" : "manga-reader-bulk-ok";
-          mark.setAttribute(
-            "title",
-            wrong ? stringFor(gallery.locale, wrong) : ""
-          );
+          if (wrong)
+            mark.setAttribute("data-why", stringFor(gallery.locale, wrong));
+          else mark.removeAttribute("data-why");
         }
         if (!wrong) good++;
       }
       bulkPages = lined;
+      table.hidden = all.length === 0;
       create.disabled = all.length === 0 || good !== all.length;
       create.textContent = numbered(
         gallery.locale,
         "mangaReader.bulkCreate",
         all.length
       );
-      empty.hidden = all.length > 0;
     };
     const build2 = () => {
       const titles = parseChapterList(area.value);
@@ -2799,7 +2799,15 @@
         const gone = document.createElement("button");
         gone.type = "button";
         gone.className = "btn btn-danger btn-sm";
-        gone.textContent = stringFor(gallery.locale, "mangaReader.bulkRemove");
+        gone.setAttribute(
+          "aria-label",
+          stringFor(gallery.locale, "mangaReader.bulkRemove")
+        );
+        gone.setAttribute(
+          "title",
+          stringFor(gallery.locale, "mangaReader.bulkRemove")
+        );
+        drawIcon(gone, "faTrash");
         gone.addEventListener("click", () => {
           bulkPages.splice(at, 1);
           const goneAt = built.findIndex((shown) => shown.tr === tr);
@@ -2820,7 +2828,7 @@
       validate();
     });
     const buttons = document.createElement("div");
-    buttons.className = "buttons-container px-3";
+    buttons.className = "buttons-container mt-3";
     const row2 = document.createElement("div");
     row2.className = "d-flex";
     create.addEventListener("click", () => {
@@ -2968,7 +2976,7 @@
     );
   }
   function toggleCreate(panel2, shown) {
-    const button2 = panel2.previousElementSibling;
+    const button2 = stashButtonBefore(panel2);
     if (!isStashButton(button2)) return;
     button2.classList.toggle(CLASS_EDITING, !shown);
   }
