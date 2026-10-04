@@ -2530,7 +2530,7 @@
     }
     if (NS.markedInStore(id) !== true) return;
     const panel2 = findPanel();
-    if (!panel2) return;
+    if (!panel2 || !tabIsShown(panel2)) return;
     if (!bridged()) return;
     if ((inHand == null ? void 0 : inHand.id) === id) {
       render(panel2, inHand);
@@ -2587,6 +2587,11 @@
     }
     return null;
   }
+  function tabIsShown(panel2) {
+    const pane = panel2.closest(".tab-pane");
+    if (!pane) return true;
+    return pane.getAttribute("aria-hidden") === "false" || pane.classList.contains("active");
+  }
   function stashButtonBefore(panel2) {
     let at = panel2.previousElementSibling;
     while (at && at.id === BULK_ID) at = at.previousElementSibling;
@@ -2611,7 +2616,7 @@
     takeOverCreate(panel2);
     ensureBulkButton(panel2);
     toggleCreate(panel2, !form && !bulk);
-    panel2.textContent = "";
+    if (panel2.children.length > 0) panel2.textContent = "";
     if (bulk) {
       drawBulk(panel2, gallery);
     } else if (form) {
