@@ -2790,9 +2790,10 @@
       var _a3;
       const all = rows();
       let good = 0;
-      const lined = [];
+      const lined = bulkPages.slice();
       for (let i = 0; i < all.length; i++) {
-        lined[i] = all[i].page;
+        const row3 = built[i];
+        if (row3) lined[row3.line] = all[i].page;
         const wrong = wrongWith(all[i], all, i);
         const mark = (_a3 = built[i]) == null ? void 0 : _a3.mark;
         if (mark) {
@@ -2859,6 +2860,7 @@
         pageInput.className = "text-input form-control";
         pageInput.value = (_a3 = bulkPages[at]) != null ? _a3 : "";
         pageInput.addEventListener("input", validate);
+        pageInput.addEventListener("change", place3);
         pageCell.appendChild(pageInput);
         tr.appendChild(pageCell);
         const pageAt2 = () => {
@@ -2925,19 +2927,35 @@
         );
         drawIcon(gone, "faTrash");
         gone.addEventListener("click", () => {
-          bulkPages.splice(at, 1);
           const goneAt = built.findIndex((shown) => shown.tr === tr);
           if (goneAt >= 0) built.splice(goneAt, 1);
           tr.remove();
-          area.value = titles.filter((_, i) => i !== at).join("\n");
-          titles.splice(at, 1);
           validate();
         });
         actsCell.appendChild(gone);
         tr.appendChild(actsCell);
         table.appendChild(tr);
-        built.push({ tr, mark, title: titleInput, page: pageInput });
+        built.push({ tr, line: at, mark, title: titleInput, page: pageInput });
       });
+      place3();
+    };
+    const place3 = () => {
+      if (built.length < 2) return;
+      const seat = (row3) => {
+        const n = Number(row3.page.value);
+        return Number.isFinite(n) && n >= 1 ? n : Number.POSITIVE_INFINITY;
+      };
+      const order = built.slice().sort((a, b) => seat(a) - seat(b));
+      let moved = false;
+      for (let i = 0; i < order.length; i++) {
+        if (order[i] !== built[i]) {
+          moved = true;
+          break;
+        }
+      }
+      if (!moved) return;
+      for (const row3 of order) table.appendChild(row3.tr);
+      built = order;
     };
     area.addEventListener("input", () => {
       build2();
