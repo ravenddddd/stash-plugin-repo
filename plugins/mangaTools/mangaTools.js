@@ -1017,7 +1017,7 @@
     "mangaReader.bulkPaste": "One title per line",
     "mangaReader.bulkTitle": "Title",
     "mangaReader.bulkPage": "Page #",
-    "mangaReader.bulkPeek": "Look at this page",
+    "mangaReader.pagePeek": "Look at this page",
     "mangaReader.bulkCreate": "Create {n} chapters",
     "mangaReader.bulkRemove": "Delete",
     "mangaReader.bulkTooMany": "Too many lines \u2014 do it in parts",
@@ -1149,7 +1149,7 @@
     "mangaReader.bulkPaste": "\u4E00\u884C\u4E00\u4E2A\u6807\u9898",
     "mangaReader.bulkTitle": "\u6807\u9898",
     "mangaReader.bulkPage": "\u8D77\u59CB\u9875",
-    "mangaReader.bulkPeek": "\u770B\u4E00\u773C\u8FD9\u4E00\u9875",
+    "mangaReader.pagePeek": "\u770B\u4E00\u773C\u8FD9\u4E00\u9875",
     "mangaReader.bulkCreate": "\u521B\u5EFA {n} \u7AE0",
     "mangaReader.bulkRemove": "\u5220\u9664",
     "mangaReader.bulkTooMany": "\u884C\u6570\u592A\u591A\u4E86 \u2014\u2014 \u5206\u6279\u6765\u5427",
@@ -1281,7 +1281,7 @@
     "mangaReader.bulkPaste": "\u4E00\u884C\u4E00\u500B\u6A19\u984C",
     "mangaReader.bulkTitle": "\u6A19\u984C",
     "mangaReader.bulkPage": "\u8D77\u59CB\u9801",
-    "mangaReader.bulkPeek": "\u770B\u4E00\u773C\u9019\u4E00\u9801",
+    "mangaReader.pagePeek": "\u770B\u4E00\u773C\u9019\u4E00\u9801",
     "mangaReader.bulkCreate": "\u5EFA\u7ACB {n} \u7AE0",
     "mangaReader.bulkRemove": "\u522A\u9664",
     "mangaReader.bulkTooMany": "\u884C\u6578\u592A\u591A\u4E86 \u2014\u2014 \u5206\u6279\u4F86\u5427",
@@ -2742,6 +2742,54 @@
     bulkPages = [];
     redraw3();
   }
+  function pageAt(input, gallery) {
+    const n = Number(input.value);
+    return Number.isFinite(n) && n >= 1 && n <= gallery.pages.length ? n - 1 : -1;
+  }
+  function pagePreview(gallery, input, host) {
+    const peek = document.createElement("button");
+    peek.type = "button";
+    peek.className = "btn btn-secondary btn-sm manga-reader-page-peek";
+    peek.setAttribute(
+      "aria-label",
+      stringFor(gallery.locale, "mangaReader.pagePeek")
+    );
+    peek.setAttribute("title", stringFor(gallery.locale, "mangaReader.pagePeek"));
+    drawIcon(peek, "faImage");
+    let box = null;
+    let picture = null;
+    let shown = "";
+    peek.addEventListener("mouseenter", () => {
+      const at = pageAt(input, gallery);
+      const src = at < 0 ? "" : pageUrl(gallery.pages[at]);
+      if (!src) return;
+      if (!box) {
+        box = document.createElement("div");
+        box.className = "manga-reader-page-peek-box";
+        picture = document.createElement("img");
+        box.appendChild(picture);
+        host.appendChild(box);
+      }
+      if (picture && shown !== src) {
+        shown = src;
+        picture.src = src;
+      }
+      if (box.hidden) box.hidden = false;
+    });
+    peek.addEventListener("mouseleave", () => {
+      if (box) box.hidden = true;
+    });
+    peek.addEventListener("click", () => {
+      const at = pageAt(input, gallery);
+      if (at < 0) return;
+      takeOver({
+        images: gallery.images,
+        totalCount: gallery.images.length,
+        at
+      });
+    });
+    return peek;
+  }
   function drawBulk(panel2, gallery) {
     const node = document.createElement("form");
     node.setAttribute("novalidate", "");
@@ -2863,57 +2911,9 @@
         pageInput.addEventListener("change", place3);
         pageCell.appendChild(pageInput);
         tr.appendChild(pageCell);
-        const pageAt2 = () => {
-          const n = Number(pageInput.value);
-          return Number.isFinite(n) && n >= 1 && n <= gallery.pages.length ? n - 1 : -1;
-        };
         const actsCell = document.createElement("td");
         actsCell.className = "manga-reader-bulk-acts";
-        const peek = document.createElement("button");
-        peek.type = "button";
-        peek.className = "btn btn-secondary btn-sm manga-reader-bulk-peek";
-        peek.setAttribute(
-          "aria-label",
-          stringFor(gallery.locale, "mangaReader.bulkPeek")
-        );
-        peek.setAttribute(
-          "title",
-          stringFor(gallery.locale, "mangaReader.bulkPeek")
-        );
-        drawIcon(peek, "faImage");
-        let peekBox = null;
-        let peekPicture = null;
-        let peekSrc = "";
-        peek.addEventListener("mouseenter", () => {
-          const index = pageAt2();
-          const src = index < 0 ? "" : pageUrl(gallery.pages[index]);
-          if (!src) return;
-          if (!peekBox) {
-            peekBox = document.createElement("div");
-            peekBox.className = "manga-reader-bulk-peek-box";
-            peekPicture = document.createElement("img");
-            peekBox.appendChild(peekPicture);
-            actsCell.appendChild(peekBox);
-          }
-          if (peekPicture && peekSrc !== src) {
-            peekSrc = src;
-            peekPicture.src = src;
-          }
-          if (peekBox.hidden) peekBox.hidden = false;
-        });
-        peek.addEventListener("mouseleave", () => {
-          if (peekBox) peekBox.hidden = true;
-        });
-        peek.addEventListener("click", () => {
-          const index = pageAt2();
-          if (index < 0) return;
-          takeOver({
-            images: gallery.images,
-            totalCount: gallery.images.length,
-            at: index
-          });
-        });
-        actsCell.appendChild(peek);
+        actsCell.appendChild(pagePreview(gallery, pageInput, actsCell));
         const gone = document.createElement("button");
         gone.type = "button";
         gone.className = "btn btn-danger btn-sm";
@@ -3143,6 +3143,11 @@
       (_b3 = form == null ? void 0 : form.initialIndex) != null ? _b3 : "1"
     );
     node.appendChild(container2);
+    indexField.column.classList.add("manga-reader-chapter-page");
+    indexField.column.insertBefore(
+      pagePreview(gallery, indexField.input, indexField.column),
+      indexField.error
+    );
     if (formError) refuse(indexField.error, stringFor(gallery.locale, formError));
     const title = titleField.input;
     const index = indexField.input;
@@ -3208,11 +3213,13 @@
     column2.appendChild(error);
     group.appendChild(column2);
     parent.appendChild(group);
-    return { input, error };
+    return { input, error, column: column2 };
   }
   function refuse(error, message2) {
     var _a3;
-    const input = (_a3 = error == null ? void 0 : error.parentNode) == null ? void 0 : _a3.children[0];
+    const input = (_a3 = error == null ? void 0 : error.parentNode) == null ? void 0 : _a3.querySelector(
+      "input"
+    );
     if (!error || !input) return;
     input.classList.add("is-invalid");
     error.textContent = message2;
@@ -3838,7 +3845,7 @@
     ensureChrome(lightbox, chromeState(gallery, lightbox));
     lightbox.classList.add(CLASS_TAKEOVER);
     const at = screenNow(gallery);
-    const page = pageAt(gallery, at);
+    const page = pageAt2(gallery, at);
     syncFooter(lightbox, page < 0 ? null : gallery.images[page] || null);
     const scrolling = settings.readingMode === "scroll";
     if (scrolling) {
@@ -3869,7 +3876,7 @@
     const screen = gallery.screens[at];
     const scrolling = settings.readingMode === "scroll";
     return {
-      at: Math.max(pageAt(gallery, at), 0),
+      at: Math.max(pageAt2(gallery, at), 0),
       total: gallery.pages.length,
       // The column's bar is a column too, and its extent is the picture area's rather
       // than a measurement of the pages — see progress.ts.
@@ -3909,7 +3916,7 @@
     var _a3;
     const at = screenNow(gallery);
     const image = at < 0 ? null : gallery.images[gallery.screens[at].start] || null;
-    const pageId = ((_a3 = gallery.pages[pageAt(gallery, at)]) == null ? void 0 : _a3.id) || "";
+    const pageId = ((_a3 = gallery.pages[pageAt2(gallery, at)]) == null ? void 0 : _a3.id) || "";
     return {
       image,
       number: Math.max(place2, 0) + 1,
@@ -4151,7 +4158,7 @@
       }
     }
   }
-  function pageAt(gallery, at) {
+  function pageAt2(gallery, at) {
     if (settings.readingMode === "scroll") return Math.max(place2, 0);
     return at < 0 ? -1 : gallery.screens[at].start;
   }
