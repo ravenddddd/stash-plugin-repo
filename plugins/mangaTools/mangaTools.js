@@ -3222,7 +3222,8 @@
   var galleryId = null;
   var pageGalleryId = null;
   var clickedGalleryId = null;
-  var askedImage = null;
+  var askedAboutImage = {};
+  var galleriesOfImage = {};
   var shownAt = -1;
   var drawGeneration = 0;
   var awaiting = -1;
@@ -3243,22 +3244,14 @@
     }
     const image = carouselImage(lightbox);
     if (!image) return null;
-    if (askedImage !== image.id) {
-      askedImage = image.id;
-      galleryIdOfImage(image.id).then(
-        (id) => {
-          pageGalleryId = id;
-          if (root) step();
-        },
-        (e) => {
-          askedImage = null;
-          console.error(
-            "[mangaReader] could not ask which gallery this image is in:",
-            e
-          );
-        }
-      );
+    if (image.id in galleriesOfImage) {
+      pageGalleryId = galleriesOfImage[image.id];
+      return pageGalleryId;
     }
+    askAboutImage(image.id, () => {
+      pageGalleryId = galleriesOfImage[image.id];
+      if (root) step();
+    });
     return pageGalleryId;
   }
   function step() {
@@ -3273,7 +3266,6 @@
       root = lightbox;
       galleryId = null;
       pageGalleryId = null;
-      askedImage = null;
       shownAt = -1;
       place2 = -1;
       reinsers = 0;
@@ -3851,6 +3843,34 @@
     const match = /^\/galleries\/(\d+)/.exec((link == null ? void 0 : link.getAttribute("href")) || "");
     if (match) clickedGalleryId = match[1];
   }
+  function askAboutImage(imageId, whenAnswered) {
+    if (askedAboutImage[imageId]) {
+      if (imageId in galleriesOfImage) whenAnswered();
+      return;
+    }
+    askedAboutImage[imageId] = true;
+    galleryIdOfImage(imageId).then(
+      (galleryId2) => {
+        galleriesOfImage[imageId] = galleryId2;
+        whenAnswered();
+      },
+      (e) => {
+        delete askedAboutImage[imageId];
+        console.error(
+          "[mangaReader] could not ask which gallery this image is in:",
+          e
+        );
+      }
+    );
+  }
+  function prefetchImage(event) {
+    var _a3;
+    if (galleryIdFromPath(window.location.pathname)) return;
+    const target2 = event.target;
+    const imageId = (_a3 = /\/image\/([^/]+)\//.exec((target2 == null ? void 0 : target2.src) || "")) == null ? void 0 : _a3[1];
+    if (imageId) askAboutImage(imageId, () => {
+    });
+  }
   function onKeyDown(event) {
     if (!event.isTrusted || !wanted() || !root) return;
     const lightbox = root;
@@ -4134,6 +4154,7 @@
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("keydown", onKeyDown, true);
     document.addEventListener("click", noteClickedCard, true);
+    document.addEventListener("pointerdown", prefetchImage, true);
     document.addEventListener("fullscreenchange", measureAgain);
     window.addEventListener("resize", measureAgain);
     const api = requirePluginApi();
