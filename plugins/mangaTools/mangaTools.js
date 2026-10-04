@@ -1017,6 +1017,7 @@
     "mangaReader.bulkPaste": "One title per line",
     "mangaReader.bulkTitle": "Title",
     "mangaReader.bulkPage": "Page #",
+    "mangaReader.bulkPeek": "Look at this page",
     "mangaReader.bulkCreate": "Create {n} chapters",
     "mangaReader.bulkRemove": "Delete",
     "mangaReader.bulkTooMany": "Too many lines \u2014 do it in parts",
@@ -1148,6 +1149,7 @@
     "mangaReader.bulkPaste": "\u4E00\u884C\u4E00\u4E2A\u6807\u9898",
     "mangaReader.bulkTitle": "\u6807\u9898",
     "mangaReader.bulkPage": "\u8D77\u59CB\u9875",
+    "mangaReader.bulkPeek": "\u770B\u4E00\u773C\u8FD9\u4E00\u9875",
     "mangaReader.bulkCreate": "\u521B\u5EFA {n} \u7AE0",
     "mangaReader.bulkRemove": "\u5220\u9664",
     "mangaReader.bulkTooMany": "\u884C\u6570\u592A\u591A\u4E86 \u2014\u2014 \u5206\u6279\u6765\u5427",
@@ -1279,6 +1281,7 @@
     "mangaReader.bulkPaste": "\u4E00\u884C\u4E00\u500B\u6A19\u984C",
     "mangaReader.bulkTitle": "\u6A19\u984C",
     "mangaReader.bulkPage": "\u8D77\u59CB\u9801",
+    "mangaReader.bulkPeek": "\u770B\u4E00\u773C\u9019\u4E00\u9801",
     "mangaReader.bulkCreate": "\u5EFA\u7ACB {n} \u7AE0",
     "mangaReader.bulkRemove": "\u522A\u9664",
     "mangaReader.bulkTooMany": "\u884C\u6578\u592A\u591A\u4E86 \u2014\u2014 \u5206\u6279\u4F86\u5427",
@@ -2521,7 +2524,6 @@
   var bulkButton = null;
   var bulk = false;
   var bulkPages = [];
-  var renders = 0;
   var BULK_LIMIT = 64;
   function syncChaptersTab() {
     const id = galleryIdFromPath(window.location.pathname);
@@ -2606,10 +2608,6 @@
       bulk ? "bulk" : form ? "form:" + ((_a3 = form.startPageId) != null ? _a3 : "new") + (formError ? ":bad" : "") : "list",
       ...gallery.chapters.map((c) => c.title + "@" + c.at)
     ].join("|");
-    renders += 1;
-    if (renders % 200 === 0) {
-      console.warn("[mangaReader] render pass", renders, "|", key.slice(0, 90));
-    }
     const wanted2 = bulk || form ? 1 : gallery.chapters.length;
     if (key === renderedFor && panel2.children.length >= wanted2) return;
     renderedFor = key;
@@ -2661,9 +2659,8 @@
         openBulk();
       });
     }
-    if (bulkButton.className !== owner.className) {
-      bulkButton.className = owner.className;
-    }
+    const wanted2 = owner.className + " ml-2";
+    if (bulkButton.className !== wanted2) bulkButton.className = wanted2;
     if (owner.nextElementSibling !== bulkButton) {
       (_a3 = owner.parentNode) == null ? void 0 : _a3.insertBefore(bulkButton, owner.nextElementSibling);
     }
@@ -2800,6 +2797,52 @@
         pageInput.value = (_a3 = bulkPages[at]) != null ? _a3 : "";
         pageInput.addEventListener("input", validate);
         pageCell.appendChild(pageInput);
+        const peek = document.createElement("button");
+        peek.type = "button";
+        peek.className = "btn btn-secondary btn-sm manga-reader-bulk-peek";
+        peek.setAttribute(
+          "aria-label",
+          stringFor(gallery.locale, "mangaReader.bulkPeek")
+        );
+        peek.setAttribute(
+          "title",
+          stringFor(gallery.locale, "mangaReader.bulkPeek")
+        );
+        drawIcon(peek, "faImage");
+        const pageAt2 = () => {
+          const n = Number(pageInput.value);
+          return Number.isFinite(n) && n >= 1 && n <= gallery.pages.length ? n - 1 : -1;
+        };
+        let peekBox = null;
+        peek.addEventListener("mouseenter", () => {
+          var _a4, _b3;
+          const index = pageAt2();
+          const src = index < 0 ? "" : (_b3 = (_a4 = gallery.images[index]) == null ? void 0 : _a4.paths) == null ? void 0 : _b3.image;
+          if (!src) return;
+          if (!peekBox) {
+            peekBox = document.createElement("div");
+            peekBox.className = "manga-reader-bulk-peek-box";
+            pageCell.appendChild(peekBox);
+          }
+          peekBox.textContent = "";
+          const picture = document.createElement("img");
+          picture.src = src;
+          peekBox.appendChild(picture);
+          peekBox.hidden = false;
+        });
+        peek.addEventListener("mouseleave", () => {
+          if (peekBox) peekBox.hidden = true;
+        });
+        peek.addEventListener("click", () => {
+          const index = pageAt2();
+          if (index < 0) return;
+          takeOver({
+            images: gallery.images,
+            totalCount: gallery.images.length,
+            at: index
+          });
+        });
+        pageCell.appendChild(peek);
         tr.appendChild(pageCell);
         const goneCell = document.createElement("td");
         const gone = document.createElement("button");
