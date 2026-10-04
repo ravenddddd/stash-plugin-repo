@@ -2521,6 +2521,7 @@
   var bulkButton = null;
   var bulk = false;
   var bulkPages = [];
+  var renders = 0;
   var BULK_LIMIT = 64;
   function syncChaptersTab() {
     const id = galleryIdFromPath(window.location.pathname);
@@ -2530,7 +2531,7 @@
     }
     if (NS.markedInStore(id) !== true) return;
     const panel2 = findPanel();
-    if (!panel2 || !tabIsShown(panel2)) return;
+    if (!panel2) return;
     if (!bridged()) return;
     if ((inHand == null ? void 0 : inHand.id) === id) {
       render(panel2, inHand);
@@ -2587,11 +2588,6 @@
     }
     return null;
   }
-  function tabIsShown(panel2) {
-    const pane = panel2.closest(".tab-pane");
-    if (!pane) return true;
-    return pane.getAttribute("aria-hidden") === "false" || pane.classList.contains("active");
-  }
   function stashButtonBefore(panel2) {
     let at = panel2.previousElementSibling;
     while (at && at.id === BULK_ID) at = at.previousElementSibling;
@@ -2610,6 +2606,10 @@
       bulk ? "bulk" : form ? "form:" + ((_a3 = form.startPageId) != null ? _a3 : "new") + (formError ? ":bad" : "") : "list",
       ...gallery.chapters.map((c) => c.title + "@" + c.at)
     ].join("|");
+    renders += 1;
+    if (renders % 200 === 0) {
+      console.warn("[mangaReader] render pass", renders, "|", key.slice(0, 90));
+    }
     if (key === renderedFor && panel2.childElementCount > 0) return;
     renderedFor = key;
     panelInHand = panel2;
