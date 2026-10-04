@@ -961,11 +961,10 @@
     "mangaTools.bulk.remove": "Remove",
     "mangaTools.bulk.unmarkWarning": "Unmarking removes every one of this plugin's custom fields from the selected galleries (chapters included).",
     "mangaTools.bulk.unmarkWarningKeep": "Only the manga mark is removed; this plugin's custom fields are kept.",
-    "mangaTools.filter.group.any": "Any translation group",
-    "mangaTools.filter.group.none": "No translation group",
     "mangaTools.filter.original.heading": "Original text",
     "mangaTools.filter.original.raw": "Raw",
-    "mangaTools.filter.original.cooked": "Translated"
+    "mangaTools.filter.original.cooked": "Translated",
+    "mangaTools.filter.original.isOriginal": "Is the original"
   };
 
   // src/messages/zh-Hans.json
@@ -1078,11 +1077,10 @@
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E0A\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u5168\u90E8\u81EA\u5B9A\u4E49\u5B57\u6BB5\uFF08\u5305\u62EC\u7AE0\u8282\uFF09\u3002",
     "mangaTools.bulk.unmarkWarningKeep": "\u53EA\u79FB\u9664\u6F2B\u753B\u6807\u8BB0\uFF0C\u4E0D\u4F1A\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u81EA\u5B9A\u4E49\u5B57\u6BB5\u3002",
-    "mangaTools.filter.group.any": "\u4EFB\u610F\u7FFB\u8BD1\u7EC4",
-    "mangaTools.filter.group.none": "\u6CA1\u6709\u7FFB\u8BD1\u7EC4",
     "mangaTools.filter.original.heading": "\u539F\u6587",
     "mangaTools.filter.original.raw": "\u751F\u8089",
-    "mangaTools.filter.original.cooked": "\u719F\u8089"
+    "mangaTools.filter.original.cooked": "\u719F\u8089",
+    "mangaTools.filter.original.isOriginal": "\u662F\u5426\u4E3A\u751F\u8089"
   };
 
   // src/messages/zh-Hant.json
@@ -1195,11 +1193,10 @@
     "mangaTools.bulk.remove": "\u79FB\u9664",
     "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E0A\u79FB\u9664\u672C\u5916\u639B\u7684\u5168\u90E8\u81EA\u8A02\u6B04\u4F4D\uFF08\u5305\u62EC\u7AE0\u7BC0\uFF09\u3002",
     "mangaTools.bulk.unmarkWarningKeep": "\u53EA\u79FB\u9664\u6F2B\u756B\u6A19\u8A18\uFF0C\u4E0D\u6703\u79FB\u9664\u672C\u5916\u639B\u7684\u81EA\u8A02\u6B04\u4F4D\u3002",
-    "mangaTools.filter.group.any": "\u4EFB\u610F\u7FFB\u8B6F\u7D44",
-    "mangaTools.filter.group.none": "\u6C92\u6709\u7FFB\u8B6F\u7D44",
     "mangaTools.filter.original.heading": "\u539F\u6587",
     "mangaTools.filter.original.raw": "\u751F\u8089",
-    "mangaTools.filter.original.cooked": "\u719F\u8089"
+    "mangaTools.filter.original.cooked": "\u719F\u8089",
+    "mangaTools.filter.original.isOriginal": "\u662F\u5426\u70BA\u751F\u8089"
   };
 
   // src/i18n.ts
@@ -4829,7 +4826,11 @@
             className: "fa-fw " + (excluded ? "exclude-icon" : "include-button") + (props.singleValue ? " single-value" : ""),
             icon
           }
-        ), props.leading != null ? props.leading : props.flag ? /* @__PURE__ */ React2.createElement(Flag, { flag: props.flag }) : null, sidebar ? /* @__PURE__ */ React2.createElement("span", { className: "TruncatedText inline " + labelClass }, props.label) : /* @__PURE__ */ React2.createElement("span", { className: labelClass }, props.label)),
+        ), props.leading != null ? props.leading : props.flag ? (
+          // The gap between flag and label is this class's one job — flag-icons
+          // leaves `.fi` with a width and no margin, so without it they touch.
+          /* @__PURE__ */ React2.createElement(Flag, { flag: props.flag, className: "manga-tools-row-flag" })
+        ) : null, sidebar ? /* @__PURE__ */ React2.createElement("span", { className: "TruncatedText inline " + labelClass }, props.label) : /* @__PURE__ */ React2.createElement("span", { className: labelClass }, props.label)),
         !selected || !sidebar ? /* @__PURE__ */ React2.createElement("div", null, props.canExclude && !selected && Bootstrap ? /* @__PURE__ */ React2.createElement(
           Bootstrap.Button,
           {
@@ -5337,15 +5338,6 @@
       )
     )), props.chosenItems.length ? /* @__PURE__ */ React4.createElement("ul", { className: "selected-list" }, props.chosenItems) : null, props.excludedItems.length ? /* @__PURE__ */ React4.createElement("ul", { className: "selected-list excluded-list" }, props.excludedItems) : null, /* @__PURE__ */ React4.createElement(Bootstrap.Collapse, { in: props.open, mountOnEnter: true, unmountOnExit: true }, /* @__PURE__ */ React4.createElement("div", null, /* @__PURE__ */ React4.createElement("div", { className: "queryable-candidate-list" }, props.children))));
   }
-  function steakLeading(raw) {
-    return /* @__PURE__ */ React4.createElement(
-      "span",
-      {
-        className: "fa-fw " + (raw ? "manga-tools-raw-icon" : "manga-tools-cooked-icon"),
-        "aria-hidden": "true"
-      }
-    );
-  }
   function censorshipLeading(value) {
     const Icon = PluginApi4.components.Icon;
     const icon = NS.censorshipIcon(value);
@@ -5422,7 +5414,6 @@
             variant: "sidebar",
             key: "in-" + o.value,
             label: o.label,
-            flag: flagOf(o),
             state: "included",
             onClick: () => {
               toggleInclude(o.value);
@@ -5437,7 +5428,6 @@
         variant: "sidebar",
         key: "ex-" + o.value,
         label: o.label,
-        flag: flagOf(o),
         state: "excluded",
         onClick: () => {
           toggleExclude(o.value);
@@ -5732,16 +5722,8 @@
       if (tagLabelsFor) relabelOriginalTags(tagLabelsFor);
     });
     const options = [
-      {
-        value: "marked",
-        label: t(intl, "mangaTools.filter.original.raw"),
-        raw: true
-      },
-      {
-        value: "unmarked",
-        label: t(intl, "mangaTools.filter.original.cooked"),
-        raw: false
-      }
+      { value: "marked", label: message(intl, "true", "Yes") },
+      { value: "unmarked", label: message(intl, "false", "No") }
     ];
     function choose(value) {
       applyOriginal(props.filter, history, state === value ? "" : value);
@@ -5754,7 +5736,6 @@
         variant: "sidebar",
         key: o.value,
         label: o.label,
-        leading: steakLeading(o.raw),
         state: "included",
         canExclude: false,
         onClick: () => {
@@ -5765,7 +5746,7 @@
     return /* @__PURE__ */ React4.createElement(
       SidebarSection,
       {
-        heading: t(intl, "mangaTools.translationGroup.original"),
+        heading: t(intl, "mangaTools.filter.original.isOriginal"),
         open,
         onToggle: toggleOpen,
         chosenItems,
@@ -5778,7 +5759,6 @@
           variant: "sidebar",
           key: o.value,
           label: o.label,
-          leading: steakLeading(o.raw),
           state: "candidate",
           canExclude: false,
           singleValue: true,
@@ -5789,17 +5769,12 @@
       )))
     );
   }
-  function translationGroupOptions(intl, selection) {
-    const usual = NS.usualLanguages();
-    const options = NS.translationGroups().map((name) => {
-      const language2 = usual[NS.groupKey(name)];
-      const described = language2 ? NS.describe(language2.code, intl.locale) : null;
-      return {
-        value: name,
-        label: name,
-        flag: described ? described.flag : null
-      };
-    });
+  function translationGroupOptions(selection) {
+    const options = NS.translationGroups().map((name) => ({
+      value: name,
+      label: name,
+      flag: null
+    }));
     const known = {};
     options.forEach((o) => {
       known[o.value] = true;
@@ -5850,7 +5825,7 @@
     function clearModifier() {
       update3(withoutModifier(selection));
     }
-    const options = translationGroupOptions(intl, selection);
+    const options = translationGroupOptions(selection);
     const chosen = options.filter(
       (o) => selection.included.indexOf(o.value) !== -1
     );
@@ -5943,7 +5918,7 @@
         LanguageRow,
         {
           variant: "sidebar",
-          label: t(intl, "mangaTools.filter.group.any"),
+          label: "(" + message(intl, "criterion_modifier_values.any", "Any") + ")",
           state: "candidate",
           canExclude: false,
           modifier: true,
@@ -5955,7 +5930,7 @@
         LanguageRow,
         {
           variant: "sidebar",
-          label: t(intl, "mangaTools.filter.group.none"),
+          label: "(" + message(intl, "criterion_modifier_values.none", "None") + ")",
           state: "candidate",
           canExclude: false,
           modifier: true,
@@ -5969,7 +5944,6 @@
           variant: "sidebar",
           key: o.value,
           label: o.label,
-          flag: flagOf(o),
           state: "candidate",
           onClick: () => {
             toggleInclude(o.value);
@@ -6477,7 +6451,6 @@
     return props.raw ? /* @__PURE__ */ React5.createElement(AssetIcon, { className: "manga-tools-raw-icon", file: "raw.svg" }) : /* @__PURE__ */ React5.createElement(AssetIcon, { className: "manga-tools-cooked-icon", file: "cooked.svg" });
   }
   NS.translationGroups = () => knownTranslationGroups();
-  NS.usualLanguages = () => NS.usualLanguagesOf(store);
   function knownTranslationGroups() {
     if (!store) return [];
     const seen = {};
