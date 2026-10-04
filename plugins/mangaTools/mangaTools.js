@@ -552,6 +552,18 @@
     const match = /^\/galleries\/(\d+)/.exec(pathname);
     return match ? match[1] : null;
   }
+  function galleryIdFromImage(imageId) {
+    var _a3;
+    const images = document.querySelectorAll(
+      'img[src*="/image/' + imageId + '/"]'
+    );
+    for (let i = 0; i < images.length; i++) {
+      const link = (_a3 = images[i].closest(".gallery-card")) == null ? void 0 : _a3.querySelector('a[href^="/galleries/"]');
+      const match = /^\/galleries\/(\d+)/.exec((link == null ? void 0 : link.getAttribute("href")) || "");
+      if (match) return match[1];
+    }
+    return null;
+  }
   function inFullscreen(lightbox) {
     const element = document.fullscreenElement;
     return element ? lightbox.contains(element) : false;
@@ -729,6 +741,7 @@
   }
   NR.parseIndicator = parseIndicator;
   NR.galleryIdFromPath = galleryIdFromPath;
+  NR.galleryIdFromImage = galleryIdFromImage;
   NR.lightboxOrder = lightboxOrder;
   function lightboxIsLoading(lightbox) {
     return lightbox.querySelector("." + CLASS_LOADING) !== null;
@@ -3185,6 +3198,7 @@
   var view = fitView();
   var loaded = /* @__PURE__ */ new Map();
   var galleryId = null;
+  var pageGalleryId = null;
   var shownAt = -1;
   var drawGeneration = 0;
   var awaiting = -1;
@@ -3195,6 +3209,14 @@
   var pending2 = null;
   var handedFor = null;
   var place2 = -1;
+  function galleryOf(lightbox) {
+    const fromPath = galleryIdFromPath(window.location.pathname);
+    if (fromPath) return fromPath;
+    if (pageGalleryId) return pageGalleryId;
+    const image = carouselImage(lightbox);
+    pageGalleryId = image ? galleryIdFromImage(image.id) : null;
+    return pageGalleryId;
+  }
   function step() {
     syncChaptersTab();
     const lightbox = document.querySelector(SELECTOR_LIGHTBOX);
@@ -3206,13 +3228,14 @@
       closeLightbox();
       root = lightbox;
       galleryId = null;
+      pageGalleryId = null;
       shownAt = -1;
       place2 = -1;
       reinsers = 0;
       logged = false;
       handedFor = null;
     }
-    const wantedId = galleryIdFromPath(window.location.pathname);
+    const wantedId = galleryOf(lightbox);
     if (!wantedId) return;
     const marked = NS.markedInStore(wantedId);
     if (marked !== true) {
@@ -3239,7 +3262,7 @@
   }
   function wanted() {
     if (!NS.readerTakeover) return false;
-    const id = galleryIdFromPath(window.location.pathname);
+    const id = root ? galleryOf(root) : null;
     return root !== null && id !== null && NS.markedInStore(id) === true;
   }
   function leaveUnmarked(lightbox) {
@@ -7423,7 +7446,7 @@
     ) : null, original && !language2 ? (
       // Raw with no language row to carry the mark, so it stands on its own —
       // and without the group's label, for the reason above. The wording carries
-      // the rest: a bare "原文" under that label would read like a group called
+      // the rest: a bare "original" under that label would read like a group called
       // that, which is why the string says what it does.
       //
       // "No language row" rather than "no language set": with the language field
