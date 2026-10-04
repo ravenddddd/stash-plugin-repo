@@ -1419,10 +1419,23 @@ mangaTools/
 │   ├── languages.ts          Codes, flags, and the name lookup (pure, no DOM)
 │   ├── messages/             One JSON catalog per locale: en / zh-Hans / zh-Hant
 │   ├── tools/                The managing half
-│   │   ├── index.tsx         Badge, panels, dropdown, bulk row, toolbar switch, settings, patches
-│   │   ├── filter-model.ts   Criterion read/write for all three fields (pure, no DOM)
+│   │   ├── core.ts           The state every surface reads: the store, the fetch behind it, the settings
+│   │   ├── mark.ts           Whether a gallery is manga now, and the one function that writes a field
+│   │   ├── edit-page.tsx     The manga block on Stash's gallery edit form, and its group memory
+│   │   ├── details.tsx       The manga block in the details tab, and the boundary around it
+│   │   ├── cards.tsx         The cover badge and the mark on the card's popover row
+│   │   ├── toolbar.tsx       The manga switch in the gallery toolbar, and the question before it
+│   │   ├── bulk.tsx          The bulk edit dialog's rows, their pending state and the mutation hookup
+│   │   ├── patches.ts        Registering a patch, and the two once-only logs
+│   │   ├── index.tsx         Every patch registration, and `install()`
+│   │   ├── diag.ts           `MangaTools.diag()`: the inputs the guards read, for a console
+│   │   ├── settings-page.tsx   The plugin's own settings page, and the multiselect it draws
+│   │   ├── fields-ui.tsx     The flag, the badge chip, the select resolver, the option formatter
+│   │   ├── icons.tsx         The mark's icon and the two steaks
+│   │   ├── hosts.ts          The mount points: the anchors, the host nodes, and the hook that finds them
+│   │   ├── filter-model.ts   Criterion read/write for every field (pure, no DOM)
 │   │   ├── filter-ui.tsx     The rows and tag DOM both filter surfaces share
-│   │   ├── sidebar-filter.tsx  The three sidebar filter sections
+│   │   ├── sidebar-filter.tsx  The five sidebar filter sections
 │   │   ├── dialog-filter.tsx   The dialog's language card
 │   │   ├── censorship.tsx    The censorship vocabulary and its icons
 │   │   └── fields.ts         The custom fields this plugin owns, and how to
@@ -1462,7 +1475,7 @@ kept apart rather than concatenated.
 time and each inside its own guard.** What that guard cannot catch is anything
 evaluated in a module *body* — a class derived from `React.Component` at the top
 of a file, a startup call made where it stands — so neither half resolves Stash's
-API there. That is the whole reason `guardedBlock` in `tools/index.tsx` is a
+API there. That is the whole reason `guardedBlock` in `tools/details.tsx` is a
 factory rather than a class.
 
 `languages.ts` and `fields.ts` still publish themselves at `window.MangaTools` as
