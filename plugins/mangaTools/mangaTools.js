@@ -552,15 +552,36 @@
     const match = /^\/galleries\/(\d+)/.exec(pathname);
     return match ? match[1] : null;
   }
-  function galleryIdFromImage(imageId) {
-    var _a3;
-    const images = document.querySelectorAll(
-      'img[src*="/image/' + imageId + '/"]'
-    );
-    for (let i = 0; i < images.length; i++) {
-      const link = (_a3 = images[i].closest(".gallery-card")) == null ? void 0 : _a3.querySelector('a[href^="/galleries/"]');
-      const match = /^\/galleries\/(\d+)/.exec((link == null ? void 0 : link.getAttribute("href")) || "");
-      if (match) return match[1];
+  var IMAGE_GALLERIES_QUERY_TEXT = [
+    "query MangaReaderImageGalleries($id: ID) {",
+    "  findImage(id: $id) {",
+    "    id",
+    "    galleries {",
+    "      id",
+    "    }",
+    "  }",
+    "}"
+  ].join("\n");
+  var imageGalleriesQuery = null;
+  async function galleryIdOfImage(imageId) {
+    var _a3, _b3;
+    if (!imageGalleriesQuery) {
+      imageGalleriesQuery = gqlDoc(
+        IMAGE_GALLERIES_QUERY_TEXT,
+        "build the image's galleries query"
+      );
+    }
+    const query = imageGalleriesQuery;
+    if (!query) return null;
+    const data = await requirePluginApi().utils.StashService.getClient().query({
+      query,
+      variables: { id: imageId },
+      fetchPolicy: "no-cache"
+    }).then((res) => res == null ? void 0 : res.data);
+    const galleries = ((_a3 = data == null ? void 0 : data.findImage) == null ? void 0 : _a3.galleries) || [];
+    for (let i = 0; i < galleries.length; i++) {
+      const id = ((_b3 = galleries[i]) == null ? void 0 : _b3.id) ? String(galleries[i].id) : "";
+      if (id && NS.markedInStore(id) === true) return id;
     }
     return null;
   }
@@ -741,7 +762,8 @@
   }
   NR.parseIndicator = parseIndicator;
   NR.galleryIdFromPath = galleryIdFromPath;
-  NR.galleryIdFromImage = galleryIdFromImage;
+  NR.IMAGE_GALLERIES_QUERY_TEXT = IMAGE_GALLERIES_QUERY_TEXT;
+  NR.galleryIdOfImage = galleryIdOfImage;
   NR.lightboxOrder = lightboxOrder;
   function lightboxIsLoading(lightbox) {
     return lightbox.querySelector("." + CLASS_LOADING) !== null;
@@ -3199,6 +3221,7 @@
   var loaded = /* @__PURE__ */ new Map();
   var galleryId = null;
   var pageGalleryId = null;
+  var askedImage = null;
   var shownAt = -1;
   var drawGeneration = 0;
   var awaiting = -1;
@@ -3214,7 +3237,23 @@
     if (fromPath) return fromPath;
     if (pageGalleryId) return pageGalleryId;
     const image = carouselImage(lightbox);
-    pageGalleryId = image ? galleryIdFromImage(image.id) : null;
+    if (!image) return null;
+    if (askedImage !== image.id) {
+      askedImage = image.id;
+      galleryIdOfImage(image.id).then(
+        (id) => {
+          pageGalleryId = id;
+          if (root) step();
+        },
+        (e) => {
+          askedImage = null;
+          console.error(
+            "[mangaReader] could not ask which gallery this image is in:",
+            e
+          );
+        }
+      );
+    }
     return pageGalleryId;
   }
   function step() {
@@ -3229,6 +3268,7 @@
       root = lightbox;
       galleryId = null;
       pageGalleryId = null;
+      askedImage = null;
       shownAt = -1;
       place2 = -1;
       reinsers = 0;
