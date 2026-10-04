@@ -4681,6 +4681,53 @@
     included: [],
     excluded: []
   };
+  var VALUED_FIELDS = {
+    language: {
+      key: NS.FIELD_NAME,
+      // Stash's own word for it, out of its locale files — see fieldLabel
+      heading: fieldLabel,
+      valueName: (intl, code) => NS.name(code, intl.locale)
+    },
+    censorship: {
+      key: NS.CENSORSHIP_FIELD_NAME,
+      heading: censorshipHeading,
+      valueName: NS.censorshipLabel
+    },
+    translationGroup: {
+      key: NS.TRANSLATION_GROUP_FIELD_NAME,
+      heading: translationGroupHeading,
+      valueName: (_intl, value) => value
+    }
+  };
+  var PRESENCE_FIELDS = {
+    manga: {
+      key: NS.MANGA_FIELD_NAME,
+      // The mark's own name rather than the verb: "Manga is Marked" is the
+      // sentence a reader filtering a shelf is looking for.
+      heading: (intl) => t(intl, "mangaTools.manga.marked"),
+      on: (intl) => t(intl, "mangaTools.filter.manga.marked"),
+      off: (intl) => t(intl, "mangaTools.filter.manga.unmarked")
+    },
+    original: {
+      key: NS.ORIGINAL_FIELD_NAME,
+      // Not the field's own name — see originalHeading, which says why
+      heading: originalHeading,
+      on: (intl) => t(intl, "mangaTools.filter.original.raw"),
+      off: (intl) => t(intl, "mangaTools.filter.original.cooked")
+    }
+  };
+  function valuedFieldOf(key) {
+    for (const name in VALUED_FIELDS) {
+      if (VALUED_FIELDS[name].key === key) return VALUED_FIELDS[name];
+    }
+    return null;
+  }
+  function presenceFieldOf(key) {
+    for (const name in PRESENCE_FIELDS) {
+      if (PRESENCE_FIELDS[name].key === key) return PRESENCE_FIELDS[name];
+    }
+    return null;
+  }
   function registerLanguageCriterionOption(filter) {
     var _a3;
     const options = (_a3 = filter == null ? void 0 : filter.options) == null ? void 0 : _a3.criterionOptions;
@@ -4719,8 +4766,8 @@
     }
     return null;
   }
-  function isLanguageCondition(condition) {
-    return !!condition && NS.ownField(condition.field) === NS.FIELD_NAME;
+  function isConditionOf(key, condition) {
+    return !!condition && NS.ownField(condition.field) === key;
   }
   function conditionValues(condition) {
     const values = condition.value || [];
@@ -4730,7 +4777,7 @@
     const conditions = (criterion == null ? void 0 : criterion.value) || [];
     if (!conditions.length) return false;
     for (let i = 0; i < conditions.length; i++) {
-      if (!isLanguageCondition(conditions[i])) return false;
+      if (!isConditionOf(NS.FIELD_NAME, conditions[i])) return false;
     }
     return true;
   }
@@ -4756,7 +4803,7 @@
       return { type: CUSTOM_FIELDS_TYPE, value: this.value };
     };
   }
-  function readLanguageFilter(filter) {
+  function readValued(filter, key) {
     const criterion = customFieldsCriterion(filter);
     if (!(criterion == null ? void 0 : criterion.value)) return EMPTY_SELECTION;
     const selection = {
@@ -4765,7 +4812,7 @@
       excluded: []
     };
     criterion.value.forEach((condition) => {
-      if (!isLanguageCondition(condition)) return;
+      if (!isConditionOf(key, condition)) return;
       if (condition.modifier === "NOT_NULL") selection.modifier = "any";
       else if (condition.modifier === "IS_NULL") selection.modifier = "none";
       else if (condition.modifier === "EQUALS") {
@@ -4775,6 +4822,32 @@
       }
     });
     return selection;
+  }
+  function readPresence(filter, key) {
+    const criterion = customFieldsCriterion(filter);
+    if (!(criterion == null ? void 0 : criterion.value)) return "";
+    let state = "";
+    criterion.value.forEach((condition) => {
+      if (!isConditionOf(key, condition)) return;
+      if (condition.modifier === "NOT_NULL") state = "marked";
+      else if (condition.modifier === "IS_NULL") state = "unmarked";
+    });
+    return state;
+  }
+  function readLanguageFilter(filter) {
+    return readValued(filter, NS.FIELD_NAME);
+  }
+  function readCensorshipFilter(filter) {
+    return readValued(filter, NS.CENSORSHIP_FIELD_NAME);
+  }
+  function readGroupFilter(filter) {
+    return readValued(filter, NS.TRANSLATION_GROUP_FIELD_NAME);
+  }
+  function readMangaFilter(filter) {
+    return readPresence(filter, NS.MANGA_FIELD_NAME);
+  }
+  function readOriginalFilter(filter) {
+    return readPresence(filter, NS.ORIGINAL_FIELD_NAME);
   }
   function toggleIncluded(selection, code) {
     const already = selection.included.indexOf(code) !== -1;
@@ -4834,77 +4907,36 @@
     }
     return null;
   }
-  function languageConditionLabel(intl, condition) {
+  function valuedConditionLabel(intl, condition, field2) {
     const word = modifierWord(intl, condition.modifier);
     if (word === null) return null;
     return intl.formatMessage(
       { id: "criterion_modifier.format_string" },
       {
-        criterion: fieldLabel(intl),
+        criterion: field2.heading(intl),
         modifierString: word,
-        valueString: conditionValues(condition).map((code) => NS.name(code, intl.locale)).join(", ")
+        valueString: conditionValues(condition).map((value) => field2.valueName(intl, value)).join(", ")
       }
     );
   }
-  function censorshipConditionLabel(intl, condition) {
-    const word = modifierWord(intl, condition.modifier);
-    if (word === null) return null;
-    return intl.formatMessage(
-      { id: "criterion_modifier.format_string" },
-      {
-        criterion: censorshipHeading(intl),
-        modifierString: word,
-        valueString: conditionValues(condition).map((value) => NS.censorshipLabel(intl, value)).join(", ")
-      }
-    );
-  }
-  function mangaConditionLabel(intl, condition) {
-    const state = condition.modifier === "NOT_NULL" ? t(intl, "mangaTools.filter.manga.marked") : condition.modifier === "IS_NULL" ? t(intl, "mangaTools.filter.manga.unmarked") : null;
+  function presenceConditionLabel(intl, condition, field2) {
+    const state = condition.modifier === "NOT_NULL" ? field2.on(intl) : condition.modifier === "IS_NULL" ? field2.off(intl) : null;
     if (state === null) return null;
     return intl.formatMessage(
       { id: "criterion_modifier.format_string" },
       {
-        criterion: t(intl, "mangaTools.manga.marked"),
-        modifierString: message(intl, "criterion_modifier.equals", "is"),
-        valueString: state
-      }
-    );
-  }
-  function groupConditionLabel(intl, condition) {
-    const word = modifierWord(intl, condition.modifier);
-    if (word === null) return null;
-    return intl.formatMessage(
-      { id: "criterion_modifier.format_string" },
-      {
-        criterion: translationGroupHeading(intl),
-        modifierString: word,
-        valueString: conditionValues(condition).join(", ")
-      }
-    );
-  }
-  function originalConditionLabel(intl, condition) {
-    const state = condition.modifier === "NOT_NULL" ? t(intl, "mangaTools.filter.original.raw") : condition.modifier === "IS_NULL" ? t(intl, "mangaTools.filter.original.cooked") : null;
-    if (state === null) return null;
-    return intl.formatMessage(
-      { id: "criterion_modifier.format_string" },
-      {
-        criterion: originalHeading(intl),
+        criterion: field2.heading(intl),
         modifierString: message(intl, "criterion_modifier.equals", "is"),
         valueString: state
       }
     );
   }
   function conditionLabel(intl, condition) {
-    const field2 = NS.ownField(condition.field);
-    if (field2 === NS.FIELD_NAME) return languageConditionLabel(intl, condition);
-    if (field2 === NS.CENSORSHIP_FIELD_NAME)
-      return censorshipConditionLabel(intl, condition);
-    if (field2 === NS.TRANSLATION_GROUP_FIELD_NAME)
-      return groupConditionLabel(intl, condition);
-    if (field2 === NS.ORIGINAL_FIELD_NAME)
-      return originalConditionLabel(intl, condition);
-    if (field2 === NS.MANGA_FIELD_NAME)
-      return mangaConditionLabel(intl, condition);
+    const key = NS.ownField(condition.field);
+    const valued = valuedFieldOf(key);
+    if (valued) return valuedConditionLabel(intl, condition, valued);
+    const presence = presenceFieldOf(key);
+    if (presence) return presenceConditionLabel(intl, condition, presence);
     return null;
   }
   function tagLabels(intl, criterion) {
@@ -4929,373 +4961,133 @@
     }
     return labels2.length ? labels2 : null;
   }
-  function selectionConditions(selection) {
+  function valuedConditions(key, selection) {
     if (selection.modifier === "any") {
-      return [{ field: NS.FIELD_NAME, modifier: "NOT_NULL" }];
+      return [{ field: key, modifier: "NOT_NULL" }];
     }
     if (selection.modifier === "none") {
-      return [{ field: NS.FIELD_NAME, modifier: "IS_NULL" }];
+      return [{ field: key, modifier: "IS_NULL" }];
     }
     const conditions = [];
     if (selection.included.length) {
       conditions.push({
-        field: NS.FIELD_NAME,
+        field: key,
         modifier: "EQUALS",
         value: selection.included.slice()
       });
     }
     if (selection.excluded.length) {
       conditions.push({
-        field: NS.FIELD_NAME,
+        field: key,
         modifier: "NOT_EQUALS",
         value: selection.excluded.slice()
       });
     }
     return conditions;
+  }
+  function presenceConditions(key, state) {
+    if (state === "marked") return [{ field: key, modifier: "NOT_NULL" }];
+    if (state === "unmarked") return [{ field: key, modifier: "IS_NULL" }];
+    return [];
+  }
+  function selectionConditions(selection) {
+    return valuedConditions(NS.FIELD_NAME, selection);
+  }
+  function queryFor(filter, key, conditions, adopt) {
+    var _a3;
+    if (!filter || typeof filter.clone !== "function") return null;
+    const options = ((_a3 = filter.options) == null ? void 0 : _a3.criterionOptions) || [];
+    let option = null;
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
+      if (adopt && options[i].type === LANGUAGE_TYPE) option = options[i];
+    }
+    if (!option) return null;
+    const criterionOption = option;
+    const next = filter.clone();
+    let criterion = customFieldsCriterion(next);
+    const kept = [];
+    if (criterion == null ? void 0 : criterion.value) {
+      for (let j = 0; j < criterion.value.length; j++) {
+        if (!isConditionOf(key, criterion.value[j]))
+          kept.push(criterion.value[j]);
+      }
+    }
+    const all = kept.concat(conditions);
+    if (!all.length) {
+      next.criteria = (next.criteria || []).filter((c) => c !== criterion);
+    } else {
+      if (!criterion) {
+        criterion = criterionOption.makeCriterion();
+        next.criteria = (next.criteria || []).concat([criterion]);
+      }
+      criterion.value = all;
+    }
+    return next.makeQueryParameters();
+  }
+  function applyQuery(history, search, what) {
+    if (search === null) {
+      console.error(
+        "[mangaTools] this list has no custom-fields filter, so the " + what + " filter is unavailable"
+      );
+      return;
+    }
+    history.replace(Object.assign({}, history.location, { search }));
   }
   function languageFilterQuery(filter, selection) {
-    var _a3;
-    if (!filter || typeof filter.clone !== "function") return null;
-    const options = ((_a3 = filter.options) == null ? void 0 : _a3.criterionOptions) || [];
-    let option = null;
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
-      if (options[i].type === LANGUAGE_TYPE) option = options[i];
-    }
-    if (!option) return null;
-    const criterionOption = option;
-    const next = filter.clone();
-    let criterion = customFieldsCriterion(next);
-    const kept = [];
-    if (criterion == null ? void 0 : criterion.value) {
-      for (let j = 0; j < criterion.value.length; j++) {
-        if (!isLanguageCondition(criterion.value[j]))
-          kept.push(criterion.value[j]);
-      }
-    }
-    const conditions = kept.concat(selectionConditions(selection));
-    if (!conditions.length) {
-      next.criteria = (next.criteria || []).filter((c) => c !== criterion);
-    } else {
-      if (!criterion) {
-        criterion = criterionOption.makeCriterion();
-        next.criteria = (next.criteria || []).concat([criterion]);
-      }
-      criterion.value = conditions;
-    }
-    return next.makeQueryParameters();
+    return queryFor(
+      filter,
+      NS.FIELD_NAME,
+      valuedConditions(NS.FIELD_NAME, selection),
+      true
+    );
   }
   function applyLanguage(filter, history, selection) {
-    const search = languageFilterQuery(filter, selection);
-    if (search === null) {
-      console.error(
-        "[mangaTools] this list has no custom-fields filter, so the language filter is unavailable"
-      );
-      return;
-    }
-    history.replace(Object.assign({}, history.location, { search }));
-  }
-  function isCensorshipCondition(condition) {
-    return !!condition && NS.ownField(condition.field) === NS.CENSORSHIP_FIELD_NAME;
-  }
-  function readCensorshipFilter(filter) {
-    const criterion = customFieldsCriterion(filter);
-    if (!(criterion == null ? void 0 : criterion.value)) return EMPTY_SELECTION;
-    const selection = {
-      modifier: "",
-      included: [],
-      excluded: []
-    };
-    criterion.value.forEach((condition) => {
-      if (!isCensorshipCondition(condition)) return;
-      if (condition.modifier === "NOT_NULL") selection.modifier = "any";
-      else if (condition.modifier === "IS_NULL") selection.modifier = "none";
-      else if (condition.modifier === "EQUALS") {
-        selection.included = conditionValues(condition);
-      } else if (condition.modifier === "NOT_EQUALS") {
-        selection.excluded = conditionValues(condition);
-      }
-    });
-    return selection;
-  }
-  function censorshipSelectionConditions(selection) {
-    if (selection.modifier === "any") {
-      return [{ field: NS.CENSORSHIP_FIELD_NAME, modifier: "NOT_NULL" }];
-    }
-    if (selection.modifier === "none") {
-      return [{ field: NS.CENSORSHIP_FIELD_NAME, modifier: "IS_NULL" }];
-    }
-    const conditions = [];
-    if (selection.included.length) {
-      conditions.push({
-        field: NS.CENSORSHIP_FIELD_NAME,
-        modifier: "EQUALS",
-        value: selection.included.slice()
-      });
-    }
-    if (selection.excluded.length) {
-      conditions.push({
-        field: NS.CENSORSHIP_FIELD_NAME,
-        modifier: "NOT_EQUALS",
-        value: selection.excluded.slice()
-      });
-    }
-    return conditions;
+    applyQuery(history, languageFilterQuery(filter, selection), "language");
   }
   function censorshipFilterQuery(filter, selection) {
-    var _a3;
-    if (!filter || typeof filter.clone !== "function") return null;
-    const options = ((_a3 = filter.options) == null ? void 0 : _a3.criterionOptions) || [];
-    let option = null;
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
-    }
-    if (!option) return null;
-    const criterionOption = option;
-    const next = filter.clone();
-    let criterion = customFieldsCriterion(next);
-    const kept = [];
-    if (criterion == null ? void 0 : criterion.value) {
-      for (let j = 0; j < criterion.value.length; j++) {
-        if (!isCensorshipCondition(criterion.value[j]))
-          kept.push(criterion.value[j]);
-      }
-    }
-    const conditions = kept.concat(censorshipSelectionConditions(selection));
-    if (!conditions.length) {
-      next.criteria = (next.criteria || []).filter((c) => c !== criterion);
-    } else {
-      if (!criterion) {
-        criterion = criterionOption.makeCriterion();
-        next.criteria = (next.criteria || []).concat([criterion]);
-      }
-      criterion.value = conditions;
-    }
-    return next.makeQueryParameters();
+    return queryFor(
+      filter,
+      NS.CENSORSHIP_FIELD_NAME,
+      valuedConditions(NS.CENSORSHIP_FIELD_NAME, selection),
+      false
+    );
   }
   function applyCensorship(filter, history, selection) {
-    const search = censorshipFilterQuery(filter, selection);
-    if (search === null) {
-      console.error(
-        "[mangaTools] this list has no custom-fields filter, so the censorship filter is unavailable"
-      );
-      return;
-    }
-    history.replace(Object.assign({}, history.location, { search }));
-  }
-  function isGroupCondition(condition) {
-    return !!condition && NS.ownField(condition.field) === NS.TRANSLATION_GROUP_FIELD_NAME;
-  }
-  function readGroupFilter(filter) {
-    const criterion = customFieldsCriterion(filter);
-    if (!(criterion == null ? void 0 : criterion.value)) return EMPTY_SELECTION;
-    const selection = {
-      modifier: "",
-      included: [],
-      excluded: []
-    };
-    criterion.value.forEach((condition) => {
-      if (!isGroupCondition(condition)) return;
-      if (condition.modifier === "NOT_NULL") selection.modifier = "any";
-      else if (condition.modifier === "IS_NULL") selection.modifier = "none";
-      else if (condition.modifier === "EQUALS") {
-        selection.included = conditionValues(condition);
-      } else if (condition.modifier === "NOT_EQUALS") {
-        selection.excluded = conditionValues(condition);
-      }
-    });
-    return selection;
-  }
-  function groupSelectionConditions(selection) {
-    if (selection.modifier === "any") {
-      return [{ field: NS.TRANSLATION_GROUP_FIELD_NAME, modifier: "NOT_NULL" }];
-    }
-    if (selection.modifier === "none") {
-      return [{ field: NS.TRANSLATION_GROUP_FIELD_NAME, modifier: "IS_NULL" }];
-    }
-    const conditions = [];
-    if (selection.included.length) {
-      conditions.push({
-        field: NS.TRANSLATION_GROUP_FIELD_NAME,
-        modifier: "EQUALS",
-        value: selection.included.slice()
-      });
-    }
-    if (selection.excluded.length) {
-      conditions.push({
-        field: NS.TRANSLATION_GROUP_FIELD_NAME,
-        modifier: "NOT_EQUALS",
-        value: selection.excluded.slice()
-      });
-    }
-    return conditions;
+    applyQuery(history, censorshipFilterQuery(filter, selection), "censorship");
   }
   function groupFilterQuery(filter, selection) {
-    var _a3;
-    if (!filter || typeof filter.clone !== "function") return null;
-    const options = ((_a3 = filter.options) == null ? void 0 : _a3.criterionOptions) || [];
-    let option = null;
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
-    }
-    if (!option) return null;
-    const criterionOption = option;
-    const next = filter.clone();
-    let criterion = customFieldsCriterion(next);
-    const kept = [];
-    if (criterion == null ? void 0 : criterion.value) {
-      for (let j = 0; j < criterion.value.length; j++) {
-        if (!isGroupCondition(criterion.value[j])) kept.push(criterion.value[j]);
-      }
-    }
-    const conditions = kept.concat(groupSelectionConditions(selection));
-    if (!conditions.length) {
-      next.criteria = (next.criteria || []).filter((c) => c !== criterion);
-    } else {
-      if (!criterion) {
-        criterion = criterionOption.makeCriterion();
-        next.criteria = (next.criteria || []).concat([criterion]);
-      }
-      criterion.value = conditions;
-    }
-    return next.makeQueryParameters();
+    return queryFor(
+      filter,
+      NS.TRANSLATION_GROUP_FIELD_NAME,
+      valuedConditions(NS.TRANSLATION_GROUP_FIELD_NAME, selection),
+      false
+    );
   }
   function applyGroup(filter, history, selection) {
-    const search = groupFilterQuery(filter, selection);
-    if (search === null) {
-      console.error(
-        "[mangaTools] this list has no custom-fields filter, so the translation group filter is unavailable"
-      );
-      return;
-    }
-    history.replace(Object.assign({}, history.location, { search }));
-  }
-  function isMangaCondition(condition) {
-    return !!condition && NS.ownField(condition.field) === NS.MANGA_FIELD_NAME;
-  }
-  function readMangaFilter(filter) {
-    const criterion = customFieldsCriterion(filter);
-    if (!(criterion == null ? void 0 : criterion.value)) return "";
-    let state = "";
-    criterion.value.forEach((condition) => {
-      if (!isMangaCondition(condition)) return;
-      if (condition.modifier === "NOT_NULL") state = "marked";
-      else if (condition.modifier === "IS_NULL") state = "unmarked";
-    });
-    return state;
-  }
-  function mangaSelectionConditions(state) {
-    if (state === "marked") {
-      return [{ field: NS.MANGA_FIELD_NAME, modifier: "NOT_NULL" }];
-    }
-    if (state === "unmarked") {
-      return [{ field: NS.MANGA_FIELD_NAME, modifier: "IS_NULL" }];
-    }
-    return [];
+    applyQuery(history, groupFilterQuery(filter, selection), "translation group");
   }
   function mangaFilterQuery(filter, state) {
-    var _a3;
-    if (!filter || typeof filter.clone !== "function") return null;
-    const options = ((_a3 = filter.options) == null ? void 0 : _a3.criterionOptions) || [];
-    let option = null;
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
-    }
-    if (!option) return null;
-    const criterionOption = option;
-    const next = filter.clone();
-    let criterion = customFieldsCriterion(next);
-    const kept = [];
-    if (criterion == null ? void 0 : criterion.value) {
-      for (let j = 0; j < criterion.value.length; j++) {
-        if (!isMangaCondition(criterion.value[j])) kept.push(criterion.value[j]);
-      }
-    }
-    const conditions = kept.concat(mangaSelectionConditions(state));
-    if (!conditions.length) {
-      next.criteria = (next.criteria || []).filter((c) => c !== criterion);
-    } else {
-      if (!criterion) {
-        criterion = criterionOption.makeCriterion();
-        next.criteria = (next.criteria || []).concat([criterion]);
-      }
-      criterion.value = conditions;
-    }
-    return next.makeQueryParameters();
+    return queryFor(
+      filter,
+      NS.MANGA_FIELD_NAME,
+      presenceConditions(NS.MANGA_FIELD_NAME, state),
+      false
+    );
   }
   function applyManga(filter, history, state) {
-    const search = mangaFilterQuery(filter, state);
-    if (search === null) {
-      console.error(
-        "[mangaTools] this list has no custom-fields filter, so the manga filter is unavailable"
-      );
-      return;
-    }
-    history.replace(Object.assign({}, history.location, { search }));
-  }
-  function isOriginalCondition(condition) {
-    return !!condition && NS.ownField(condition.field) === NS.ORIGINAL_FIELD_NAME;
-  }
-  function readOriginalFilter(filter) {
-    const criterion = customFieldsCriterion(filter);
-    if (!(criterion == null ? void 0 : criterion.value)) return "";
-    let state = "";
-    criterion.value.forEach((condition) => {
-      if (!isOriginalCondition(condition)) return;
-      if (condition.modifier === "NOT_NULL") state = "marked";
-      else if (condition.modifier === "IS_NULL") state = "unmarked";
-    });
-    return state;
-  }
-  function originalSelectionConditions(state) {
-    if (state === "marked") {
-      return [{ field: NS.ORIGINAL_FIELD_NAME, modifier: "NOT_NULL" }];
-    }
-    if (state === "unmarked") {
-      return [{ field: NS.ORIGINAL_FIELD_NAME, modifier: "IS_NULL" }];
-    }
-    return [];
+    applyQuery(history, mangaFilterQuery(filter, state), "manga");
   }
   function originalFilterQuery(filter, state) {
-    var _a3;
-    if (!filter || typeof filter.clone !== "function") return null;
-    const options = ((_a3 = filter.options) == null ? void 0 : _a3.criterionOptions) || [];
-    let option = null;
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
-    }
-    if (!option) return null;
-    const criterionOption = option;
-    const next = filter.clone();
-    let criterion = customFieldsCriterion(next);
-    const kept = [];
-    if (criterion == null ? void 0 : criterion.value) {
-      for (let j = 0; j < criterion.value.length; j++) {
-        if (!isOriginalCondition(criterion.value[j]))
-          kept.push(criterion.value[j]);
-      }
-    }
-    const conditions = kept.concat(originalSelectionConditions(state));
-    if (!conditions.length) {
-      next.criteria = (next.criteria || []).filter((c) => c !== criterion);
-    } else {
-      if (!criterion) {
-        criterion = criterionOption.makeCriterion();
-        next.criteria = (next.criteria || []).concat([criterion]);
-      }
-      criterion.value = conditions;
-    }
-    return next.makeQueryParameters();
+    return queryFor(
+      filter,
+      NS.ORIGINAL_FIELD_NAME,
+      presenceConditions(NS.ORIGINAL_FIELD_NAME, state),
+      false
+    );
   }
   function applyOriginal(filter, history, state) {
-    const search = originalFilterQuery(filter, state);
-    if (search === null) {
-      console.error(
-        "[mangaTools] this list has no custom-fields filter, so the raw filter is unavailable"
-      );
-      return;
-    }
-    history.replace(Object.assign({}, history.location, { search }));
+    applyQuery(history, originalFilterQuery(filter, state), "raw");
   }
   function fieldLabel(intl) {
     return intl.formatMessage({
@@ -6332,21 +6124,34 @@
   function isTouchDevice() {
     return window.matchMedia("(pointer: coarse)").matches;
   }
-  var CENSORSHIP_TAG_MARK = "data-manga-tools-censorship";
-  var MANGA_TAG_MARK = "data-manga-tools-manga";
-  var GROUP_TAG_MARK = "data-manga-tools-group";
-  var ORIGINAL_TAG_MARK = "data-manga-tools-original";
-  function isCensorshipTag(tag) {
-    return isFieldTag(tag, NS.CENSORSHIP_FIELD_NAME, CENSORSHIP_TAG_MARK);
+  var TAGGED_FIELDS = [
+    { name: "language", key: NS.FIELD_NAME, mark: TAG_MARK },
+    {
+      name: "censorship",
+      key: NS.CENSORSHIP_FIELD_NAME,
+      mark: "data-manga-tools-censorship"
+    },
+    { name: "manga", key: NS.MANGA_FIELD_NAME, mark: "data-manga-tools-manga" },
+    {
+      name: "translationGroup",
+      key: NS.TRANSLATION_GROUP_FIELD_NAME,
+      mark: "data-manga-tools-group"
+    },
+    {
+      name: "original",
+      key: NS.ORIGINAL_FIELD_NAME,
+      mark: "data-manga-tools-original"
+    }
+  ];
+  function taggedField(name) {
+    for (let i = 0; i < TAGGED_FIELDS.length; i++) {
+      if (TAGGED_FIELDS[i].name === name) return TAGGED_FIELDS[i];
+    }
+    return TAGGED_FIELDS[0];
   }
-  function isMangaTag(tag) {
-    return isFieldTag(tag, NS.MANGA_FIELD_NAME, MANGA_TAG_MARK);
-  }
-  function isGroupTag(tag) {
-    return isFieldTag(tag, NS.TRANSLATION_GROUP_FIELD_NAME, GROUP_TAG_MARK);
-  }
-  function isOriginalTag(tag) {
-    return isFieldTag(tag, NS.ORIGINAL_FIELD_NAME, ORIGINAL_TAG_MARK);
+  function isTagOf(name, tag) {
+    const field2 = taggedField(name);
+    return isFieldTag(tag, field2.key, field2.mark);
   }
   function listFieldTags(isField) {
     const all = document.querySelectorAll(TAG_SELECTOR);
@@ -6357,20 +6162,8 @@
     }
     return ours;
   }
-  function listLanguageTags() {
-    return listFieldTags(isLanguageTag);
-  }
-  function listCensorshipTags() {
-    return listFieldTags(isCensorshipTag);
-  }
-  function listMangaTags() {
-    return listFieldTags(isMangaTag);
-  }
-  function listGroupTags() {
-    return listFieldTags(isGroupTag);
-  }
-  function listOriginalTags() {
-    return listFieldTags(isOriginalTag);
+  function listTagsOf(name) {
+    return listFieldTags((tag) => isTagOf(name, tag));
   }
   function writeTagLabels(tags, labels2, mark) {
     for (let i = 0; i < tags.length && i < labels2.length; i++) {
@@ -6379,19 +6172,27 @@
     }
   }
   function relabelTags(labels2) {
-    writeTagLabels(listLanguageTags(), labels2, TAG_MARK);
+    writeTagLabels(listTagsOf("language"), labels2, TAG_MARK);
   }
   function relabelCensorshipTags(labels2) {
-    writeTagLabels(listCensorshipTags(), labels2, CENSORSHIP_TAG_MARK);
+    writeTagLabels(
+      listTagsOf("censorship"),
+      labels2,
+      taggedField("censorship").mark
+    );
   }
   function relabelMangaTags(labels2) {
-    writeTagLabels(listMangaTags(), labels2, MANGA_TAG_MARK);
+    writeTagLabels(listTagsOf("manga"), labels2, taggedField("manga").mark);
   }
   function relabelGroupTags(labels2) {
-    writeTagLabels(listGroupTags(), labels2, GROUP_TAG_MARK);
+    writeTagLabels(
+      listTagsOf("translationGroup"),
+      labels2,
+      taggedField("translationGroup").mark
+    );
   }
   function relabelOriginalTags(labels2) {
-    writeTagLabels(listOriginalTags(), labels2, ORIGINAL_TAG_MARK);
+    writeTagLabels(listTagsOf("original"), labels2, taggedField("original").mark);
   }
   var sidebarFilter = null;
   function publishSidebarFilter(filter) {
@@ -6469,32 +6270,35 @@
       flag: null
     }));
   }
-  function SidebarLanguageFilter(props) {
-    const { intl, history, open, toggleOpen } = useSidebarSection(SECTION_STATE_KEY);
+  function decoration(field2, option) {
+    return field2.leading ? { leading: field2.leading(option) } : { flag: flagOf(option) };
+  }
+  function useValuedSection(props) {
+    const { intl, history, open, toggleOpen } = useSidebarSection(props.stateKey);
     const queryState = React9.useState("");
     const query = queryState[0];
     const setQuery = queryState[1];
     const searchRef = React9.useRef(null);
-    const selection = readLanguageFilter(props.filter);
-    const tagLabelsFor = fieldTagLabels(intl, props.filter, NS.FIELD_NAME);
+    const selection = props.read(props.filter);
+    const tagLabelsFor = fieldTagLabels(intl, props.filter, props.fieldKey);
     React9.useLayoutEffect(() => {
-      adoptLanguageCriterion(props.filter);
-      if (tagLabelsFor) relabelTags(tagLabelsFor);
+      if (props.adopt) props.adopt(props.filter);
+      if (tagLabelsFor) props.relabel(tagLabelsFor);
     });
     const Solid = PluginApi11.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi11.components.Icon;
     const Bootstrap = PluginApi11.libraries.Bootstrap;
     function update3(next) {
-      applyLanguage(props.filter, history, next);
+      props.apply(props.filter, history, next);
       if (!isTouchDevice() && searchRef.current) {
         searchRef.current.focus();
       }
     }
-    function toggleInclude(code) {
-      update3(toggleIncluded(selection, code));
+    function toggleInclude(value) {
+      update3(toggleIncluded(selection, value));
     }
-    function toggleExclude(code) {
-      update3(toggleExcluded(selection, code));
+    function toggleExclude(value) {
+      update3(toggleExcluded(selection, value));
     }
     function setModifier(modifier) {
       update3(withModifier(selection, modifier));
@@ -6502,15 +6306,23 @@
     function clearModifier() {
       update3(withoutModifier(selection));
     }
-    const options = visibleOptions(intl, selection);
-    const selectable = selectableOptions(selection, options);
-    const chosen = selectable.filter(
+    function pick(value) {
+      toggleInclude(value);
+      setQuery("");
+    }
+    function unpick(value) {
+      toggleExclude(value);
+      setQuery("");
+    }
+    const options = props.options(intl, selection);
+    const listed = selectableOptions(selection, options);
+    const chosen = listed.filter(
       (o) => selection.included.indexOf(o.value) !== -1
     );
-    const excludedChosen = selectable.filter(
+    const excludedChosen = listed.filter(
       (o) => selection.excluded.indexOf(o.value) !== -1
     );
-    const candidates = selectable.filter(
+    const candidates = listed.filter(
       (o) => selection.included.indexOf(o.value) === -1 && selection.excluded.indexOf(o.value) === -1 && matchesQuery(o, query)
     );
     const showModifiers = isEmptySelection(selection);
@@ -6532,6 +6344,7 @@
             variant: "sidebar",
             key: "in-" + o.value,
             label: o.label,
+            ...decoration(props, o),
             state: "included",
             onClick: () => {
               toggleInclude(o.value);
@@ -6546,6 +6359,7 @@
         variant: "sidebar",
         key: "ex-" + o.value,
         label: o.label,
+        ...decoration(props, o),
         state: "excluded",
         onClick: () => {
           toggleExclude(o.value);
@@ -6555,41 +6369,45 @@
     return /* @__PURE__ */ React9.createElement(
       SidebarSection,
       {
-        heading: fieldLabel(intl),
+        heading: props.heading(intl),
         open,
         onToggle: toggleOpen,
         chosenItems,
         excludedItems,
-        what: "language"
+        what: props.what
       },
-      /* @__PURE__ */ React9.createElement("div", { className: "clearable-input-group" }, /* @__PURE__ */ React9.createElement(
-        "input",
-        {
-          ref: searchRef,
-          className: "clearable-text-field form-control",
-          value: query,
-          placeholder: message(intl, "actions.search", "Search") + "\u2026",
-          onChange: (e) => {
-            setQuery(e.target.value);
+      props.search ? (
+        /* Stash searches its candidates server-side and debounces the input;
+           these are already in memory, so filtering is immediate. */
+        /* @__PURE__ */ React9.createElement("div", { className: "clearable-input-group" }, /* @__PURE__ */ React9.createElement(
+          "input",
+          {
+            ref: searchRef,
+            className: "clearable-text-field form-control",
+            value: query,
+            placeholder: message(intl, "actions.search", "Search") + "\u2026",
+            onChange: (e) => {
+              setQuery(e.target.value);
+            },
+            onKeyDown: (e) => {
+              if (e.key !== "Enter" || candidates.length !== 1) return;
+              toggleInclude(candidates[0].value);
+              setQuery("");
+            }
+          }
+        ), query && Bootstrap ? /* @__PURE__ */ React9.createElement(
+          Bootstrap.Button,
+          {
+            variant: "secondary",
+            className: "clearable-text-field-clear",
+            title: message(intl, "actions.clear", "Clear"),
+            onClick: () => {
+              setQuery("");
+            }
           },
-          onKeyDown: (e) => {
-            if (e.key !== "Enter" || candidates.length !== 1) return;
-            toggleInclude(candidates[0].value);
-            setQuery("");
-          }
-        }
-      ), query && Bootstrap ? /* @__PURE__ */ React9.createElement(
-        Bootstrap.Button,
-        {
-          variant: "secondary",
-          className: "clearable-text-field-clear",
-          title: message(intl, "actions.clear", "Clear"),
-          onClick: () => {
-            setQuery("");
-          }
-        },
-        /* @__PURE__ */ React9.createElement(Icon, { icon: Solid.faTimes })
-      ) : null),
+          /* @__PURE__ */ React9.createElement(Icon, { icon: Solid.faTimes })
+        ) : null)
+      ) : null,
       /* @__PURE__ */ React9.createElement("ul", null, showModifiers ? /* @__PURE__ */ React9.createElement(
         LanguageRow,
         {
@@ -6620,170 +6438,81 @@
           variant: "sidebar",
           key: o.value,
           label: o.label,
-          flag: flagOf(o),
+          ...props.plainCandidates ? {} : decoration(props, o),
           state: "candidate",
           canExclude: true,
           onClick: () => {
-            toggleInclude(o.value);
-            setQuery("");
+            pick(o.value);
           },
           onExclude: () => {
-            toggleExclude(o.value);
-            setQuery("");
+            unpick(o.value);
           }
         }
       )))
     );
+  }
+  var VALUED_SECTIONS = {
+    language: {
+      fieldKey: NS.FIELD_NAME,
+      stateKey: SECTION_STATE_KEY,
+      heading: fieldLabel,
+      what: "language",
+      read: readLanguageFilter,
+      apply: applyLanguage,
+      relabel: relabelTags,
+      options: visibleOptions,
+      search: true,
+      adopt: adoptLanguageCriterion
+    },
+    censorship: {
+      fieldKey: NS.CENSORSHIP_FIELD_NAME,
+      stateKey: CENSORSHIP_SECTION_STATE_KEY,
+      heading: censorshipHeading,
+      what: "censorship",
+      read: readCensorshipFilter,
+      apply: applyCensorship,
+      relabel: relabelCensorshipTags,
+      options: (intl) => censorshipOptions(intl),
+      leading: (o) => censorshipLeading(o.value)
+    },
+    translationGroup: {
+      fieldKey: NS.TRANSLATION_GROUP_FIELD_NAME,
+      stateKey: GROUP_SECTION_STATE_KEY,
+      heading: translationGroupHeading,
+      what: "translation group",
+      read: readGroupFilter,
+      apply: applyGroup,
+      relabel: relabelGroupTags,
+      options: (_intl, selection) => translationGroupOptions(selection),
+      search: true,
+      plainCandidates: true
+    }
+  };
+  function SidebarLanguageFilter(props) {
+    return useValuedSection({
+      ...VALUED_SECTIONS.language,
+      filter: props.filter
+    });
   }
   function SidebarCensorshipFilter(props) {
-    const { intl, history, open, toggleOpen } = useSidebarSection(
-      CENSORSHIP_SECTION_STATE_KEY
-    );
-    const selection = readCensorshipFilter(props.filter);
-    const tagLabelsFor = fieldTagLabels(
-      intl,
-      props.filter,
-      NS.CENSORSHIP_FIELD_NAME
-    );
-    React9.useLayoutEffect(() => {
-      if (tagLabelsFor) relabelCensorshipTags(tagLabelsFor);
+    return useValuedSection({
+      ...VALUED_SECTIONS.censorship,
+      filter: props.filter
     });
-    const Solid = PluginApi11.libraries.FontAwesomeSolid || {};
-    const Icon = PluginApi11.components.Icon;
-    function update3(next) {
-      applyCensorship(props.filter, history, next);
-    }
-    function toggleInclude(value) {
-      update3(toggleIncluded(selection, value));
-    }
-    function toggleExclude(value) {
-      update3(toggleExcluded(selection, value));
-    }
-    function setModifier(modifier) {
-      update3(withModifier(selection, modifier));
-    }
-    function clearModifier() {
-      update3(withoutModifier(selection));
-    }
-    const options = censorshipOptions(intl);
-    const chosen = options.filter(
-      (o) => selection.included.indexOf(o.value) !== -1
-    );
-    const excludedChosen = options.filter(
-      (o) => selection.excluded.indexOf(o.value) !== -1
-    );
-    const candidates = selectableOptions(selection, options).filter(
-      (o) => selection.included.indexOf(o.value) === -1 && selection.excluded.indexOf(o.value) === -1
-    );
-    const showModifiers = isEmptySelection(selection);
-    const chosenItems = [];
-    if (selection.modifier) {
-      chosenItems.push(
-        /* @__PURE__ */ React9.createElement("li", { className: "selected-object modifier-object", key: "modifier" }, /* @__PURE__ */ React9.createElement("a", { tabIndex: 0, onClick: clearModifier }, /* @__PURE__ */ React9.createElement("div", { className: "label-group" }, /* @__PURE__ */ React9.createElement(Icon, { className: "fa-fw include-button", icon: Solid.faCheckCircle }), /* @__PURE__ */ React9.createElement("span", { className: "TruncatedText inline selected-object-label" }, "(" + message(
-          intl,
-          "criterion_modifier_values." + selection.modifier,
-          selection.modifier === "any" ? "Any" : "None"
-        ) + ")"))))
-      );
-    }
-    chosen.forEach((o) => {
-      chosenItems.push(
-        /* @__PURE__ */ React9.createElement(
-          LanguageRow,
-          {
-            variant: "sidebar",
-            key: "in-" + o.value,
-            label: o.label,
-            leading: censorshipLeading(o.value),
-            state: "included",
-            onClick: () => {
-              toggleInclude(o.value);
-            }
-          }
-        )
-      );
-    });
-    const excludedItems = excludedChosen.map((o) => /* @__PURE__ */ React9.createElement(
-      LanguageRow,
-      {
-        variant: "sidebar",
-        key: "ex-" + o.value,
-        label: o.label,
-        leading: censorshipLeading(o.value),
-        state: "excluded",
-        onClick: () => {
-          toggleExclude(o.value);
-        }
-      }
-    ));
-    return /* @__PURE__ */ React9.createElement(
-      SidebarSection,
-      {
-        heading: censorshipHeading(intl),
-        open,
-        onToggle: toggleOpen,
-        chosenItems,
-        excludedItems,
-        what: "censorship"
-      },
-      /* @__PURE__ */ React9.createElement("ul", null, showModifiers ? /* @__PURE__ */ React9.createElement(
-        LanguageRow,
-        {
-          variant: "sidebar",
-          label: "(" + message(intl, "criterion_modifier_values.any", "Any") + ")",
-          state: "candidate",
-          modifier: true,
-          canExclude: false,
-          onClick: () => {
-            setModifier("any");
-          }
-        }
-      ) : null, showModifiers ? /* @__PURE__ */ React9.createElement(
-        LanguageRow,
-        {
-          variant: "sidebar",
-          label: "(" + message(intl, "criterion_modifier_values.none", "None") + ")",
-          state: "candidate",
-          modifier: true,
-          canExclude: false,
-          onClick: () => {
-            setModifier("none");
-          }
-        }
-      ) : null, candidates.map((o) => /* @__PURE__ */ React9.createElement(
-        LanguageRow,
-        {
-          variant: "sidebar",
-          key: o.value,
-          label: o.label,
-          leading: censorshipLeading(o.value),
-          state: "candidate",
-          canExclude: true,
-          onClick: () => {
-            toggleInclude(o.value);
-          },
-          onExclude: () => {
-            toggleExclude(o.value);
-          }
-        }
-      )))
-    );
   }
-  function SidebarMangaFilter(props) {
-    const { intl, history, open, toggleOpen } = useSidebarSection(
-      MANGA_SECTION_STATE_KEY
-    );
-    const state = readMangaFilter(props.filter);
-    const tagLabelsFor = fieldTagLabels(intl, props.filter, NS.MANGA_FIELD_NAME);
+  function usePresenceSection(props) {
+    const { intl, history, open, toggleOpen } = useSidebarSection(props.stateKey);
+    const state = props.read(props.filter);
+    const tagLabelsFor = fieldTagLabels(intl, props.filter, props.fieldKey);
     React9.useLayoutEffect(() => {
-      if (tagLabelsFor) relabelMangaTags(tagLabelsFor);
+      if (tagLabelsFor) props.relabel(tagLabelsFor);
     });
     const options = [
       { value: "marked", label: message(intl, "true", "Yes") },
       { value: "unmarked", label: message(intl, "false", "No") }
     ];
     function choose(value) {
-      applyManga(props.filter, history, state === value ? "" : value);
+      props.apply(props.filter, history, state === value ? "" : value);
     }
     const chosen = options.filter((o) => o.value === state);
     const candidates = options.filter((o) => o.value !== state);
@@ -6803,12 +6532,12 @@
     return /* @__PURE__ */ React9.createElement(
       SidebarSection,
       {
-        heading: t(intl, "mangaTools.manga.isManga"),
+        heading: props.heading(intl),
         open,
         onToggle: toggleOpen,
         chosenItems,
         excludedItems: [],
-        what: "manga"
+        what: props.what
       },
       /* @__PURE__ */ React9.createElement("ul", null, candidates.map((o) => /* @__PURE__ */ React9.createElement(
         LanguageRow,
@@ -6825,67 +6554,38 @@
         }
       )))
     );
+  }
+  var PRESENCE_SECTIONS = {
+    manga: {
+      fieldKey: NS.MANGA_FIELD_NAME,
+      stateKey: MANGA_SECTION_STATE_KEY,
+      heading: (intl) => t(intl, "mangaTools.manga.isManga"),
+      what: "manga",
+      read: readMangaFilter,
+      apply: applyManga,
+      relabel: relabelMangaTags
+    },
+    original: {
+      fieldKey: NS.ORIGINAL_FIELD_NAME,
+      stateKey: ORIGINAL_SECTION_STATE_KEY,
+      heading: (intl) => t(intl, "mangaTools.filter.original.isOriginal"),
+      what: "raw",
+      read: readOriginalFilter,
+      apply: applyOriginal,
+      relabel: relabelOriginalTags
+    }
+  };
+  function SidebarMangaFilter(props) {
+    return usePresenceSection({
+      ...PRESENCE_SECTIONS.manga,
+      filter: props.filter
+    });
   }
   function SidebarOriginalFilter(props) {
-    const { intl, history, open, toggleOpen } = useSidebarSection(
-      ORIGINAL_SECTION_STATE_KEY
-    );
-    const state = readOriginalFilter(props.filter);
-    const tagLabelsFor = fieldTagLabels(
-      intl,
-      props.filter,
-      NS.ORIGINAL_FIELD_NAME
-    );
-    React9.useLayoutEffect(() => {
-      if (tagLabelsFor) relabelOriginalTags(tagLabelsFor);
+    return usePresenceSection({
+      ...PRESENCE_SECTIONS.original,
+      filter: props.filter
     });
-    const options = [
-      { value: "marked", label: message(intl, "true", "Yes") },
-      { value: "unmarked", label: message(intl, "false", "No") }
-    ];
-    function choose(value) {
-      applyOriginal(props.filter, history, state === value ? "" : value);
-    }
-    const chosen = options.filter((o) => o.value === state);
-    const candidates = options.filter((o) => o.value !== state);
-    const chosenItems = chosen.map((o) => /* @__PURE__ */ React9.createElement(
-      LanguageRow,
-      {
-        variant: "sidebar",
-        key: o.value,
-        label: o.label,
-        state: "included",
-        canExclude: false,
-        onClick: () => {
-          choose(o.value);
-        }
-      }
-    ));
-    return /* @__PURE__ */ React9.createElement(
-      SidebarSection,
-      {
-        heading: t(intl, "mangaTools.filter.original.isOriginal"),
-        open,
-        onToggle: toggleOpen,
-        chosenItems,
-        excludedItems: [],
-        what: "raw"
-      },
-      /* @__PURE__ */ React9.createElement("ul", null, candidates.map((o) => /* @__PURE__ */ React9.createElement(
-        LanguageRow,
-        {
-          variant: "sidebar",
-          key: o.value,
-          label: o.label,
-          state: "candidate",
-          canExclude: false,
-          singleValue: true,
-          onClick: () => {
-            choose(o.value);
-          }
-        }
-      )))
-    );
   }
   function translationGroupOptions(selection) {
     const options = NS.translationGroups().map((name) => ({
@@ -6906,172 +6606,10 @@
     return options;
   }
   function SidebarTranslationGroupFilter(props) {
-    const { intl, history, open, toggleOpen } = useSidebarSection(
-      GROUP_SECTION_STATE_KEY
-    );
-    const queryState = React9.useState("");
-    const query = queryState[0];
-    const setQuery = queryState[1];
-    const searchRef = React9.useRef(null);
-    const selection = readGroupFilter(props.filter);
-    const tagLabelsFor = fieldTagLabels(
-      intl,
-      props.filter,
-      NS.TRANSLATION_GROUP_FIELD_NAME
-    );
-    React9.useLayoutEffect(() => {
-      if (tagLabelsFor) relabelGroupTags(tagLabelsFor);
+    return useValuedSection({
+      ...VALUED_SECTIONS.translationGroup,
+      filter: props.filter
     });
-    const Solid = PluginApi11.libraries.FontAwesomeSolid || {};
-    const Icon = PluginApi11.components.Icon;
-    const Bootstrap = PluginApi11.libraries.Bootstrap;
-    function update3(next) {
-      applyGroup(props.filter, history, next);
-      if (!isTouchDevice() && searchRef.current) {
-        searchRef.current.focus();
-      }
-    }
-    function toggleInclude(name) {
-      update3(toggleIncluded(selection, name));
-    }
-    function toggleExclude(name) {
-      update3(toggleExcluded(selection, name));
-    }
-    function setModifier(modifier) {
-      update3(withModifier(selection, modifier));
-    }
-    function clearModifier() {
-      update3(withoutModifier(selection));
-    }
-    const options = translationGroupOptions(selection);
-    const chosen = options.filter(
-      (o) => selection.included.indexOf(o.value) !== -1
-    );
-    const excludedChosen = options.filter(
-      (o) => selection.excluded.indexOf(o.value) !== -1
-    );
-    const candidates = options.filter(
-      (o) => selection.included.indexOf(o.value) === -1 && selection.excluded.indexOf(o.value) === -1 && matchesQuery(o, query)
-    );
-    const showModifiers = isEmptySelection(selection);
-    const chosenItems = [];
-    if (selection.modifier) {
-      chosenItems.push(
-        /* @__PURE__ */ React9.createElement("li", { className: "selected-object modifier-object", key: "modifier" }, /* @__PURE__ */ React9.createElement("a", { tabIndex: 0, onClick: clearModifier }, /* @__PURE__ */ React9.createElement("div", { className: "label-group" }, /* @__PURE__ */ React9.createElement(Icon, { className: "fa-fw include-button", icon: Solid.faCheckCircle }), /* @__PURE__ */ React9.createElement("span", { className: "TruncatedText inline selected-object-label" }, "(" + message(
-          intl,
-          "criterion_modifier_values." + selection.modifier,
-          selection.modifier === "any" ? "Any" : "None"
-        ) + ")"))))
-      );
-    }
-    chosen.forEach((o) => {
-      chosenItems.push(
-        /* @__PURE__ */ React9.createElement(
-          LanguageRow,
-          {
-            variant: "sidebar",
-            key: "in-" + o.value,
-            label: o.label,
-            flag: flagOf(o),
-            state: "included",
-            onClick: () => {
-              toggleInclude(o.value);
-            }
-          }
-        )
-      );
-    });
-    const excludedItems = excludedChosen.map((o) => /* @__PURE__ */ React9.createElement(
-      LanguageRow,
-      {
-        variant: "sidebar",
-        key: "ex-" + o.value,
-        label: o.label,
-        flag: flagOf(o),
-        state: "excluded",
-        onClick: () => {
-          toggleExclude(o.value);
-        }
-      }
-    ));
-    return /* @__PURE__ */ React9.createElement(
-      SidebarSection,
-      {
-        heading: t(intl, "mangaTools.translationGroup.heading"),
-        open,
-        onToggle: toggleOpen,
-        chosenItems,
-        excludedItems,
-        what: "translation group"
-      },
-      /* @__PURE__ */ React9.createElement("div", { className: "clearable-input-group" }, /* @__PURE__ */ React9.createElement(
-        "input",
-        {
-          ref: searchRef,
-          className: "clearable-text-field form-control",
-          value: query,
-          placeholder: message(intl, "actions.search", "Search") + "\u2026",
-          onChange: (e) => {
-            setQuery(e.target.value);
-          },
-          onKeyDown: (e) => {
-            if (e.key !== "Enter" || candidates.length !== 1) return;
-            toggleInclude(candidates[0].value);
-            setQuery("");
-          }
-        }
-      ), query && Bootstrap ? /* @__PURE__ */ React9.createElement(
-        Bootstrap.Button,
-        {
-          variant: "secondary",
-          className: "clearable-text-field-clear",
-          title: message(intl, "actions.clear", "Clear"),
-          onClick: () => {
-            setQuery("");
-          }
-        },
-        /* @__PURE__ */ React9.createElement(Icon, { icon: Solid.faTimes })
-      ) : null),
-      /* @__PURE__ */ React9.createElement("ul", null, showModifiers ? /* @__PURE__ */ React9.createElement(
-        LanguageRow,
-        {
-          variant: "sidebar",
-          label: "(" + message(intl, "criterion_modifier_values.any", "Any") + ")",
-          state: "candidate",
-          canExclude: false,
-          modifier: true,
-          onClick: () => {
-            setModifier("any");
-          }
-        }
-      ) : null, showModifiers ? /* @__PURE__ */ React9.createElement(
-        LanguageRow,
-        {
-          variant: "sidebar",
-          label: "(" + message(intl, "criterion_modifier_values.none", "None") + ")",
-          state: "candidate",
-          canExclude: false,
-          modifier: true,
-          onClick: () => {
-            setModifier("none");
-          }
-        }
-      ) : null, candidates.map((o) => /* @__PURE__ */ React9.createElement(
-        LanguageRow,
-        {
-          variant: "sidebar",
-          key: o.value,
-          label: o.label,
-          state: "candidate",
-          onClick: () => {
-            toggleInclude(o.value);
-          },
-          onExclude: () => {
-            toggleExclude(o.value);
-          }
-        }
-      )))
-    );
   }
   NS.relabelTags = relabelTags;
   NS.relabelCensorshipTags = relabelCensorshipTags;
