@@ -2656,11 +2656,10 @@
     if (bulkButton.parentNode !== owner.parentNode) {
       (_a3 = owner.parentNode) == null ? void 0 : _a3.insertBefore(bulkButton, owner);
     }
-    bulkButton.textContent = stringFor(
-      inHand == null ? void 0 : inHand.locale,
-      "mangaReader.chaptersFromList"
-    );
-    bulkButton.hidden = bulk || form !== null;
+    const wording = stringFor(inHand == null ? void 0 : inHand.locale, "mangaReader.chaptersFromList");
+    if (bulkButton.textContent !== wording) bulkButton.textContent = wording;
+    const away = bulk || form !== null;
+    if (bulkButton.hidden !== away) bulkButton.hidden = away;
   }
   function openBulk() {
     if (!inHand) return;
