@@ -211,18 +211,23 @@
     "translationGroup",
     "original"
   ];
+  var SIDEBAR_FILTERS_NONE = "none";
   NS.parseSidebarFilters = (raw) => {
     if (raw === null || raw === void 0) return null;
     const s = String(raw).trim();
     if (s === "") return null;
+    if (s === SIDEBAR_FILTERS_NONE) return /* @__PURE__ */ new Set();
     const out = /* @__PURE__ */ new Set();
     s.split(",").forEach((piece) => {
       const name = piece.trim();
       if (NS.SIDEBAR_FILTERS.includes(name)) out.add(name);
     });
-    return out.size ? out : null;
+    return out;
   };
-  NS.serializeSidebarFilters = (names) => Array.from(names).sort().join(",");
+  NS.serializeSidebarFilters = (names) => {
+    const all = Array.from(names).sort();
+    return all.length ? all.join(",") : SIDEBAR_FILTERS_NONE;
+  };
   NS.filterShowing = (field2) => NS.fieldShowing(field2) && (NS.sidebarFilters === null || NS.sidebarFilters.has(field2));
   NS.sidebarFilters = null;
   NS.anyFieldShowing = () => NS.fieldShowing("language") || NS.fieldShowing("censorship") || NS.fieldShowing("translationGroup") || NS.fieldShowing("original");
