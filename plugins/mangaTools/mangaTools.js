@@ -7893,6 +7893,8 @@
   });
   registerPatch("after", "RatingSystem", (...args) => {
     noteFired("RatingSystem");
+    const props = args[0];
+    if (props.clickToRate || props.withoutContext) return resultFrom(args);
     return /* @__PURE__ */ React15.createElement(React15.Fragment, null, resultFrom(args), /* @__PURE__ */ React15.createElement(BulkFieldsRow, null));
   });
   function install2() {
