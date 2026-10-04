@@ -768,7 +768,7 @@
         height: (file == null ? void 0 : file.height) || 0,
         // Stash's own URL for the image, kept for the query on it — which is a
         // version stamp, and is the whole reason this field is fetched at all. See
-        // pageUrl in takeover.ts.
+        // pageUrl in spreads.ts.
         url: ((_a4 = image.paths) == null ? void 0 : _a4.image) || ""
       };
     });
@@ -2504,6 +2504,68 @@
   }
   NR.fitShift = fitShift;
 
+  // src/reader/spreads.ts
+  function pageUrl(page) {
+    const query = /\?.*$/.exec(page.url || "");
+    return "/image/" + page.id + "/image" + (query ? query[0] : "");
+  }
+  var DEFAULT_SPREAD_OPTIONS = {
+    coverAlone: true,
+    offset: 0,
+    detectSpreads: true,
+    double: true
+  };
+  var SPREAD_RATIO = 1;
+  function isWideSpreadPage(page) {
+    if (!page.height || page.width <= 0) return false;
+    return page.width / page.height > SPREAD_RATIO;
+  }
+  function layout(pages, options) {
+    const opts = {
+      ...DEFAULT_SPREAD_OPTIONS,
+      ...options || {}
+    };
+    const screens = [];
+    const pairable = (page) => !(opts.detectSpreads && isWideSpreadPage(page));
+    let i = 0;
+    const standAlone = () => {
+      screens.push({ start: i, pages: [pages[i]] });
+      i += 1;
+    };
+    if (opts.coverAlone && i < pages.length) standAlone();
+    if (opts.offset === 1 && i < pages.length) standAlone();
+    while (i < pages.length) {
+      const next = opts.double ? pages[i + 1] : void 0;
+      if (next && pairable(pages[i]) && pairable(next)) {
+        screens.push({ start: i, pages: [pages[i], next] });
+        i += 2;
+      } else {
+        standAlone();
+      }
+    }
+    return screens;
+  }
+  function screenAt(screens, pageIndex) {
+    for (let i = 0; i < screens.length; i++) {
+      const screen = screens[i];
+      if (pageIndex >= screen.start && pageIndex < screen.start + screen.pages.length) {
+        return i;
+      }
+    }
+    return -1;
+  }
+  function stepsToAdjacent(screens, pageIndex, direction) {
+    const at = screenAt(screens, pageIndex);
+    if (at < 0) return 0;
+    const target2 = screens[at + direction];
+    if (!target2) return 0;
+    return target2.start - pageIndex;
+  }
+  NR.isWideSpreadPage = isWideSpreadPage;
+  NR.layout = layout;
+  NR.screenAt = screenAt;
+  NR.stepsToAdjacent = stepsToAdjacent;
+
   // src/reader/chapters-tab.ts
   var SEL_PANEL = ".container";
   var HIDDEN2 = "data-manga-reader-hidden";
@@ -2734,8 +2796,9 @@
         const wrong = wrongWith(all[i], all, i);
         const mark = (_a3 = built[i]) == null ? void 0 : _a3.mark;
         if (mark) {
-          mark.textContent = wrong ? "\u2715" : "\u2713";
-          mark.className = wrong ? "manga-reader-bulk-bad" : "manga-reader-bulk-ok";
+          setIcon(mark, wrong ? "faTimes" : "faCheck");
+          const look = wrong ? "manga-reader-bulk-bad" : "manga-reader-bulk-ok";
+          if (mark.className !== look) mark.className = look;
           if (wrong)
             mark.setAttribute("data-why", stringFor(gallery.locale, wrong));
           else mark.removeAttribute("data-why");
@@ -2797,6 +2860,13 @@
         pageInput.value = (_a3 = bulkPages[at]) != null ? _a3 : "";
         pageInput.addEventListener("input", validate);
         pageCell.appendChild(pageInput);
+        tr.appendChild(pageCell);
+        const pageAt2 = () => {
+          const n = Number(pageInput.value);
+          return Number.isFinite(n) && n >= 1 && n <= gallery.pages.length ? n - 1 : -1;
+        };
+        const actsCell = document.createElement("td");
+        actsCell.className = "manga-reader-bulk-acts";
         const peek = document.createElement("button");
         peek.type = "button";
         peek.className = "btn btn-secondary btn-sm manga-reader-bulk-peek";
@@ -2809,26 +2879,25 @@
           stringFor(gallery.locale, "mangaReader.bulkPeek")
         );
         drawIcon(peek, "faImage");
-        const pageAt2 = () => {
-          const n = Number(pageInput.value);
-          return Number.isFinite(n) && n >= 1 && n <= gallery.pages.length ? n - 1 : -1;
-        };
         let peekBox = null;
+        let peekPicture = null;
+        let peekSrc = "";
         peek.addEventListener("mouseenter", () => {
-          var _a4, _b3;
           const index = pageAt2();
-          const src = index < 0 ? "" : (_b3 = (_a4 = gallery.images[index]) == null ? void 0 : _a4.paths) == null ? void 0 : _b3.image;
+          const src = index < 0 ? "" : pageUrl(gallery.pages[index]);
           if (!src) return;
           if (!peekBox) {
             peekBox = document.createElement("div");
             peekBox.className = "manga-reader-bulk-peek-box";
-            pageCell.appendChild(peekBox);
+            peekPicture = document.createElement("img");
+            peekBox.appendChild(peekPicture);
+            actsCell.appendChild(peekBox);
           }
-          peekBox.textContent = "";
-          const picture = document.createElement("img");
-          picture.src = src;
-          peekBox.appendChild(picture);
-          peekBox.hidden = false;
+          if (peekPicture && peekSrc !== src) {
+            peekSrc = src;
+            peekPicture.src = src;
+          }
+          if (peekBox.hidden) peekBox.hidden = false;
         });
         peek.addEventListener("mouseleave", () => {
           if (peekBox) peekBox.hidden = true;
@@ -2842,9 +2911,7 @@
             at: index
           });
         });
-        pageCell.appendChild(peek);
-        tr.appendChild(pageCell);
-        const goneCell = document.createElement("td");
+        actsCell.appendChild(peek);
         const gone = document.createElement("button");
         gone.type = "button";
         gone.className = "btn btn-danger btn-sm";
@@ -2866,8 +2933,8 @@
           titles.splice(at, 1);
           validate();
         });
-        goneCell.appendChild(gone);
-        tr.appendChild(goneCell);
+        actsCell.appendChild(gone);
+        tr.appendChild(actsCell);
         table.appendChild(tr);
         built.push({ tr, mark, title: titleInput, page: pageInput });
       });
@@ -3533,64 +3600,6 @@
   NR.zoomedBy = zoomedBy;
   NR.columnFitted = columnFitted;
 
-  // src/reader/spreads.ts
-  var DEFAULT_SPREAD_OPTIONS = {
-    coverAlone: true,
-    offset: 0,
-    detectSpreads: true,
-    double: true
-  };
-  var SPREAD_RATIO = 1;
-  function isWideSpreadPage(page) {
-    if (!page.height || page.width <= 0) return false;
-    return page.width / page.height > SPREAD_RATIO;
-  }
-  function layout(pages, options) {
-    const opts = {
-      ...DEFAULT_SPREAD_OPTIONS,
-      ...options || {}
-    };
-    const screens = [];
-    const pairable = (page) => !(opts.detectSpreads && isWideSpreadPage(page));
-    let i = 0;
-    const standAlone = () => {
-      screens.push({ start: i, pages: [pages[i]] });
-      i += 1;
-    };
-    if (opts.coverAlone && i < pages.length) standAlone();
-    if (opts.offset === 1 && i < pages.length) standAlone();
-    while (i < pages.length) {
-      const next = opts.double ? pages[i + 1] : void 0;
-      if (next && pairable(pages[i]) && pairable(next)) {
-        screens.push({ start: i, pages: [pages[i], next] });
-        i += 2;
-      } else {
-        standAlone();
-      }
-    }
-    return screens;
-  }
-  function screenAt(screens, pageIndex) {
-    for (let i = 0; i < screens.length; i++) {
-      const screen = screens[i];
-      if (pageIndex >= screen.start && pageIndex < screen.start + screen.pages.length) {
-        return i;
-      }
-    }
-    return -1;
-  }
-  function stepsToAdjacent(screens, pageIndex, direction) {
-    const at = screenAt(screens, pageIndex);
-    if (at < 0) return 0;
-    const target2 = screens[at + direction];
-    if (!target2) return 0;
-    return target2.start - pageIndex;
-  }
-  NR.isWideSpreadPage = isWideSpreadPage;
-  NR.layout = layout;
-  NR.screenAt = screenAt;
-  NR.stepsToAdjacent = stepsToAdjacent;
-
   // src/reader/takeover.ts
   var CLASS_SINGLE = "is-single";
   var CLASS_ZOOMED = "is-zoomed";
@@ -4058,10 +4067,6 @@
       duration: FADE_MS,
       easing: "ease-out"
     });
-  }
-  function pageUrl(page) {
-    const query = /\?.*$/.exec(page.url || "");
-    return "/image/" + page.id + "/image" + (query ? query[0] : "");
   }
   function decodedImage(image) {
     return typeof image.decode === "function" ? image.decode().catch(() => {
