@@ -4122,7 +4122,7 @@
     return version;
   }
   function isGalleryContext() {
-    return pathNow().indexOf("/galleries") === 0;
+    return pathNow().split("/").indexOf("galleries") !== -1;
   }
   function currentGalleryId() {
     const m = /^\/galleries\/(\d+)(?:\/|$)/.exec(pathNow());
