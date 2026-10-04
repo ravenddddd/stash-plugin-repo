@@ -4380,6 +4380,10 @@
       event.stopPropagation();
     }
   }
+  function isOnPage(event) {
+    var _a3;
+    return ((_a3 = event.target) == null ? void 0 : _a3.tagName) === "IMG";
+  }
   function onSpreadClick(event) {
     const lightbox = root;
     if (!lightbox || !container) return;
@@ -4387,9 +4391,8 @@
       held = false;
       return;
     }
-    const target2 = event.target;
-    if (settings.readingMode === "scroll" && (target2 == null ? void 0 : target2.tagName) === "IMG") return;
-    if ((target2 == null ? void 0 : target2.tagName) !== "IMG") {
+    if (settings.readingMode === "scroll" && isOnPage(event)) return;
+    if (!isOnPage(event)) {
       if (inFullscreen(lightbox)) {
         event.stopPropagation();
         return;
@@ -4399,7 +4402,7 @@
       return;
     }
     const click = event;
-    const width = target2.offsetWidth;
+    const width = event.target.offsetWidth;
     const forward = !width || click.offsetX >= width / 2;
     if (turnBy(lightbox, forward ? 1 : -1)) event.stopPropagation();
   }
@@ -4469,6 +4472,12 @@
   function onSpreadPress(event) {
     const press = event;
     if (press.button !== 0) return;
+    if (!isOnPage(event)) {
+      pressed2 = null;
+      dragFrom = null;
+      held = false;
+      return;
+    }
     if (settings.readingMode === "scroll") {
       if (!container) return;
       dragFrom = {
