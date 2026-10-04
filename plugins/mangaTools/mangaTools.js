@@ -205,6 +205,26 @@
     if (field2 === "translationGroup") return NS.fieldTranslationGroup;
     return NS.fieldOriginal;
   };
+  NS.SIDEBAR_FILTERS = [
+    "language",
+    "censorship",
+    "translationGroup",
+    "original"
+  ];
+  NS.parseSidebarFilters = (raw) => {
+    if (raw === null || raw === void 0) return null;
+    const s = String(raw).trim();
+    if (s === "") return null;
+    const out = /* @__PURE__ */ new Set();
+    s.split(",").forEach((piece) => {
+      const name = piece.trim();
+      if (NS.SIDEBAR_FILTERS.includes(name)) out.add(name);
+    });
+    return out.size ? out : null;
+  };
+  NS.serializeSidebarFilters = (names) => Array.from(names).sort().join(",");
+  NS.filterShowing = (field2) => NS.fieldShowing(field2) && (NS.sidebarFilters === null || NS.sidebarFilters.has(field2));
+  NS.sidebarFilters = null;
   NS.anyFieldShowing = () => NS.fieldShowing("language") || NS.fieldShowing("censorship") || NS.fieldShowing("translationGroup") || NS.fieldShowing("original");
   NS.fieldNameOf = (key) => {
     const k = NS.ownField(key);
@@ -964,7 +984,10 @@
     "mangaTools.filter.original.heading": "Original text",
     "mangaTools.filter.original.raw": "Raw",
     "mangaTools.filter.original.cooked": "Translated",
-    "mangaTools.filter.original.isOriginal": "Is the original"
+    "mangaTools.filter.original.isOriginal": "Is the original",
+    "mangaTools.settings.sidebarFilters.heading": "Sidebar filters",
+    "mangaTools.settings.sidebarFilters.description": "Which of this plugin's filters the gallery list's sidebar offers. A filter whose field is switched off cannot be shown, and is not remembered while it is hidden \u2014 turning the field back on brings its filter back.",
+    "mangaTools.settings.sidebarFilters.placeholder": "No filters"
   };
 
   // src/messages/zh-Hans.json
@@ -1080,7 +1103,10 @@
     "mangaTools.filter.original.heading": "\u539F\u6587",
     "mangaTools.filter.original.raw": "\u751F\u8089",
     "mangaTools.filter.original.cooked": "\u719F\u8089",
-    "mangaTools.filter.original.isOriginal": "\u662F\u5426\u4E3A\u751F\u8089"
+    "mangaTools.filter.original.isOriginal": "\u662F\u5426\u4E3A\u751F\u8089",
+    "mangaTools.settings.sidebarFilters.heading": "\u4FA7\u680F\u7B5B\u9009",
+    "mangaTools.settings.sidebarFilters.description": "\u753B\u5ECA\u5217\u8868\u7684\u4FA7\u680F\u91CC\u663E\u793A\u54EA\u4E9B\u7B5B\u9009\u3002\u5B57\u6BB5\u5173\u6389\u7684\u7B5B\u9009\u663E\u793A\u4E0D\u51FA\u6765\uFF0C\u9690\u85CF\u671F\u95F4\u4E5F\u4E0D\u8BB0\u72B6\u6001\u2014\u2014\u91CD\u65B0\u6253\u5F00\u5B57\u6BB5\uFF0C\u5B83\u7684\u7B5B\u9009\u5C31\u56DE\u6765\u3002",
+    "mangaTools.settings.sidebarFilters.placeholder": "\u4E0D\u663E\u793A\u4EFB\u4F55\u7B5B\u9009"
   };
 
   // src/messages/zh-Hant.json
@@ -1196,7 +1222,10 @@
     "mangaTools.filter.original.heading": "\u539F\u6587",
     "mangaTools.filter.original.raw": "\u751F\u8089",
     "mangaTools.filter.original.cooked": "\u719F\u8089",
-    "mangaTools.filter.original.isOriginal": "\u662F\u5426\u70BA\u751F\u8089"
+    "mangaTools.filter.original.isOriginal": "\u662F\u5426\u70BA\u751F\u8089",
+    "mangaTools.settings.sidebarFilters.heading": "\u5074\u6B04\u7BE9\u9078",
+    "mangaTools.settings.sidebarFilters.description": "\u756B\u5ECA\u5217\u8868\u7684\u5074\u6B04\u88E1\u986F\u793A\u54EA\u4E9B\u7BE9\u9078\u3002\u6B04\u4F4D\u95DC\u6389\u7684\u7BE9\u9078\u986F\u793A\u4E0D\u51FA\u4F86\uFF0C\u96B1\u85CF\u671F\u9593\u4E5F\u4E0D\u8A18\u72C0\u614B\u2014\u2014\u91CD\u65B0\u6253\u958B\u6B04\u4F4D\uFF0C\u5B83\u7684\u7BE9\u9078\u5C31\u56DE\u4F86\u3002",
+    "mangaTools.settings.sidebarFilters.placeholder": "\u4E0D\u986F\u793A\u4EFB\u4F55\u7BE9\u9078"
   };
 
   // src/i18n.ts
@@ -6183,6 +6212,9 @@
       NS.enabledLanguages = NS.parseEnabledLanguages(
         pluginCfg ? pluginCfg.enabledLanguages : null
       );
+      NS.sidebarFilters = NS.parseSidebarFilters(
+        pluginCfg ? pluginCfg.sidebarFilters : null
+      );
       NS.readerTakeover = NS.parseFlag(
         pluginCfg ? pluginCfg.readerTakeover : null,
         FEATURE_ON_BY_DEFAULT
@@ -6502,6 +6534,13 @@
     var _a2;
     return {
       enabledLanguages: NS.enabledLanguages ? NS.serializeEnabledLanguages(NS.enabledLanguages) : "",
+      // An empty list serialises to "", which parses back as null ("every filter whose
+      // field is on") — the same round trip enabledLanguages makes, with the opposite
+      // default at the end of it: absence there means "no restriction", here it means
+      // "all of them", and both are what an install that predates the setting did.
+      sidebarFilters: NS.serializeSidebarFilters(
+        NS.sidebarFilters || NS.SIDEBAR_FILTERS
+      ),
       readerTakeover: NS.readerTakeover,
       manageChapters: NS.manageChapters,
       fields: NS.fields,
@@ -7019,6 +7058,61 @@
     const icon = Solid.faInfoCircle || null;
     return /* @__PURE__ */ React5.createElement("span", { className: "manga-tools-settings-note" }, icon ? /* @__PURE__ */ React5.createElement(Icon, { icon }) : null, /* @__PURE__ */ React5.createElement("span", null, props.children));
   }
+  function SidebarFiltersSetting(props) {
+    const intl = PluginApi5.libraries.Intl.useIntl();
+    const Select = resolveSelect();
+    const persist = props.persist;
+    if (!Select) return null;
+    if (!NS.anyFieldShowing()) return null;
+    const available = NS.SIDEBAR_FILTERS.filter(
+      (name) => NS.fieldShowing(name)
+    );
+    const labelOf = (name) => {
+      if (name === "language") return fieldLabel2(intl);
+      if (name === "censorship") return t(intl, "mangaTools.censorship.heading");
+      if (name === "translationGroup")
+        return t(intl, "mangaTools.translationGroup.heading");
+      return t(intl, "mangaTools.filter.original.isOriginal");
+    };
+    const options = available.map((name) => ({
+      value: name,
+      label: labelOf(name),
+      flag: null
+    }));
+    const value = options.filter(
+      (o) => NS.sidebarFilters === null || NS.sidebarFilters.has(o.value)
+    );
+    return /* @__PURE__ */ React5.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React5.createElement("h3", null, t(intl, "mangaTools.settings.sidebarFilters.heading")), /* @__PURE__ */ React5.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.sidebarFilters.description")), /* @__PURE__ */ React5.createElement("div", { className: "manga-tools-settings-control" }, /* @__PURE__ */ React5.createElement(
+      Select,
+      {
+        className: "manga-tools-settings-select",
+        classNamePrefix: "react-select",
+        inputId: "mangaTools-sidebarFilters",
+        isMulti: true,
+        isClearable: true,
+        menuPlacement: "auto",
+        placeholder: t(
+          intl,
+          "mangaTools.settings.sidebarFilters.placeholder"
+        ),
+        value,
+        options,
+        components: { IndicatorSeparator: () => null },
+        onChange: (selected) => {
+          const ticked = (selected || []).map((o) => o.value);
+          const hidden = NS.SIDEBAR_FILTERS.filter(
+            (name) => available.indexOf(name) === -1
+          );
+          const all = ticked.concat(hidden);
+          NS.sidebarFilters = NS.parseSidebarFilters(
+            NS.serializeSidebarFilters(all)
+          );
+          emit();
+          persist();
+        }
+      }
+    ))));
+  }
   function sampleLanguageCode(uiLocale) {
     const parts2 = String(uiLocale || "").split(/[-_]/);
     for (let n = parts2.length; n > 0; n--) {
@@ -7392,7 +7486,8 @@
               NS.showDisabledFields = next;
             })
           }
-        )
+        ),
+        /* @__PURE__ */ React5.createElement(SidebarFiltersSetting, { persist })
       )
     ), /* @__PURE__ */ React5.createElement(
       SettingsGroup,
@@ -8168,7 +8263,7 @@
     noteFired("FilteredGalleryList.SidebarSections");
     const filter = currentSidebarFilter();
     if (!filter) return result;
-    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(SidebarMangaFilter, { filter }), NS.fieldShowing("language") ? /* @__PURE__ */ React5.createElement(SidebarLanguageFilter, { filter }) : null, NS.fieldShowing("censorship") ? /* @__PURE__ */ React5.createElement(SidebarCensorshipFilter, { filter }) : null, NS.fieldShowing("translationGroup") ? /* @__PURE__ */ React5.createElement(SidebarTranslationGroupFilter, { filter }) : null, NS.fieldShowing("original") ? /* @__PURE__ */ React5.createElement(SidebarOriginalFilter, { filter }) : null, result);
+    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(SidebarMangaFilter, { filter }), NS.filterShowing("language") ? /* @__PURE__ */ React5.createElement(SidebarLanguageFilter, { filter }) : null, NS.filterShowing("censorship") ? /* @__PURE__ */ React5.createElement(SidebarCensorshipFilter, { filter }) : null, NS.filterShowing("translationGroup") ? /* @__PURE__ */ React5.createElement(SidebarTranslationGroupFilter, { filter }) : null, NS.filterShowing("original") ? /* @__PURE__ */ React5.createElement(SidebarOriginalFilter, { filter }) : null, result);
   });
   registerPatch("after", "FilteredGalleryList", (...args) => {
     const result = resultFrom(args);
