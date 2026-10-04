@@ -3221,6 +3221,7 @@
   var loaded = /* @__PURE__ */ new Map();
   var galleryId = null;
   var pageGalleryId = null;
+  var clickedGalleryId = null;
   var askedImage = null;
   var shownAt = -1;
   var drawGeneration = 0;
@@ -3236,6 +3237,10 @@
     const fromPath = galleryIdFromPath(window.location.pathname);
     if (fromPath) return fromPath;
     if (pageGalleryId) return pageGalleryId;
+    if (clickedGalleryId) {
+      pageGalleryId = clickedGalleryId;
+      return pageGalleryId;
+    }
     const image = carouselImage(lightbox);
     if (!image) return null;
     if (askedImage !== image.id) {
@@ -3838,6 +3843,14 @@
       "week"
     ].indexOf(type) !== -1;
   }
+  function noteClickedCard(event) {
+    var _a3;
+    const target2 = event.target;
+    if (!target2 || typeof target2.closest !== "function") return;
+    const link = (_a3 = target2.closest(".gallery-card")) == null ? void 0 : _a3.querySelector('a[href^="/galleries/"]');
+    const match = /^\/galleries\/(\d+)/.exec((link == null ? void 0 : link.getAttribute("href")) || "");
+    if (match) clickedGalleryId = match[1];
+  }
   function onKeyDown(event) {
     if (!event.isTrusted || !wanted() || !root) return;
     const lightbox = root;
@@ -4120,6 +4133,7 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("click", noteClickedCard, true);
     document.addEventListener("fullscreenchange", measureAgain);
     window.addEventListener("resize", measureAgain);
     const api = requirePluginApi();
