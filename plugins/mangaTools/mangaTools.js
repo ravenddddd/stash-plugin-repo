@@ -2610,7 +2610,8 @@
     if (renders % 200 === 0) {
       console.warn("[mangaReader] render pass", renders, "|", key.slice(0, 90));
     }
-    if (key === renderedFor && panel2.childElementCount > 0) return;
+    const wanted2 = bulk || form ? 1 : gallery.chapters.length;
+    if (key === renderedFor && panel2.children.length >= wanted2) return;
     renderedFor = key;
     panelInHand = panel2;
     takeOverCreate(panel2);
