@@ -959,7 +959,13 @@
     "mangaTools.translationGroup.originalMixed": "Some of these are raw \u2014 click to mark them all",
     "mangaTools.translationGroup.suggestedLanguage": "This group's galleries usually carry this language",
     "mangaTools.bulk.remove": "Remove",
-    "mangaTools.bulk.unmarkWarning": "Unmarking removes this plugin's manga, language, censorship and translation group fields from the selected galleries."
+    "mangaTools.bulk.unmarkWarning": "Unmarking removes every one of this plugin's custom fields from the selected galleries (chapters included).",
+    "mangaTools.bulk.unmarkWarningKeep": "Only the manga mark is removed; this plugin's custom fields are kept.",
+    "mangaTools.filter.group.any": "Any translation group",
+    "mangaTools.filter.group.none": "No translation group",
+    "mangaTools.filter.original.heading": "Original text",
+    "mangaTools.filter.original.raw": "Raw",
+    "mangaTools.filter.original.cooked": "Translated"
   };
 
   // src/messages/zh-Hans.json
@@ -1070,7 +1076,13 @@
     "mangaTools.translationGroup.originalMixed": "\u90E8\u5206\u5DF2\u6807\u4E3A\u751F\u8089 \u2014\u2014 \u70B9\u51FB\u5168\u90E8\u6807\u4E0A",
     "mangaTools.translationGroup.suggestedLanguage": "\u8BE5\u7FFB\u8BD1\u7EC4\u7684\u753B\u5ECA\u901A\u5E38\u662F\u8FD9\u79CD\u8BED\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
-    "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E2D\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u6F2B\u753B\u3001\u8BED\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8BD1\u7EC4\u5B57\u6BB5\u3002"
+    "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6807\u8BB0\u4F1A\u4ECE\u9009\u4E2D\u7684\u753B\u5ECA\u4E0A\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u5168\u90E8\u81EA\u5B9A\u4E49\u5B57\u6BB5\uFF08\u5305\u62EC\u7AE0\u8282\uFF09\u3002",
+    "mangaTools.bulk.unmarkWarningKeep": "\u53EA\u79FB\u9664\u6F2B\u753B\u6807\u8BB0\uFF0C\u4E0D\u4F1A\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u81EA\u5B9A\u4E49\u5B57\u6BB5\u3002",
+    "mangaTools.filter.group.any": "\u4EFB\u610F\u7FFB\u8BD1\u7EC4",
+    "mangaTools.filter.group.none": "\u6CA1\u6709\u7FFB\u8BD1\u7EC4",
+    "mangaTools.filter.original.heading": "\u539F\u6587",
+    "mangaTools.filter.original.raw": "\u751F\u8089",
+    "mangaTools.filter.original.cooked": "\u719F\u8089"
   };
 
   // src/messages/zh-Hant.json
@@ -1181,7 +1193,13 @@
     "mangaTools.translationGroup.originalMixed": "\u90E8\u5206\u5DF2\u6A19\u70BA\u751F\u8089 \u2014\u2014 \u9EDE\u64CA\u5168\u90E8\u6A19\u4E0A",
     "mangaTools.translationGroup.suggestedLanguage": "\u8A72\u7FFB\u8B6F\u7D44\u7684\u756B\u5ECA\u901A\u5E38\u662F\u9019\u7A2E\u8A9E\u8A00",
     "mangaTools.bulk.remove": "\u79FB\u9664",
-    "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E2D\u79FB\u9664\u672C\u5916\u639B\u7684\u6F2B\u756B\u3001\u8A9E\u8A00\u3001\u4FEE\u6B63\u548C\u7FFB\u8B6F\u7D44\u6B04\u4F4D\u3002"
+    "mangaTools.bulk.unmarkWarning": "\u53D6\u6D88\u6A19\u8A18\u6703\u5F9E\u9078\u4E2D\u7684\u756B\u5ECA\u4E0A\u79FB\u9664\u672C\u5916\u639B\u7684\u5168\u90E8\u81EA\u8A02\u6B04\u4F4D\uFF08\u5305\u62EC\u7AE0\u7BC0\uFF09\u3002",
+    "mangaTools.bulk.unmarkWarningKeep": "\u53EA\u79FB\u9664\u6F2B\u756B\u6A19\u8A18\uFF0C\u4E0D\u6703\u79FB\u9664\u672C\u5916\u639B\u7684\u81EA\u8A02\u6B04\u4F4D\u3002",
+    "mangaTools.filter.group.any": "\u4EFB\u610F\u7FFB\u8B6F\u7D44",
+    "mangaTools.filter.group.none": "\u6C92\u6709\u7FFB\u8B6F\u7D44",
+    "mangaTools.filter.original.heading": "\u539F\u6587",
+    "mangaTools.filter.original.raw": "\u751F\u8089",
+    "mangaTools.filter.original.cooked": "\u719F\u8089"
   };
 
   // src/i18n.ts
@@ -4277,11 +4295,39 @@
       }
     );
   }
+  function groupConditionLabel(intl, condition) {
+    const word = modifierWord(intl, condition.modifier);
+    if (word === null) return null;
+    return intl.formatMessage(
+      { id: "criterion_modifier.format_string" },
+      {
+        criterion: translationGroupHeading(intl),
+        modifierString: word,
+        valueString: conditionValues(condition).join(", ")
+      }
+    );
+  }
+  function originalConditionLabel(intl, condition) {
+    const state = condition.modifier === "NOT_NULL" ? t(intl, "mangaTools.filter.original.raw") : condition.modifier === "IS_NULL" ? t(intl, "mangaTools.filter.original.cooked") : null;
+    if (state === null) return null;
+    return intl.formatMessage(
+      { id: "criterion_modifier.format_string" },
+      {
+        criterion: originalHeading(intl),
+        modifierString: message(intl, "criterion_modifier.equals", "is"),
+        valueString: state
+      }
+    );
+  }
   function conditionLabel(intl, condition) {
     const field2 = NS.ownField(condition.field);
     if (field2 === NS.FIELD_NAME) return languageConditionLabel(intl, condition);
     if (field2 === NS.CENSORSHIP_FIELD_NAME)
       return censorshipConditionLabel(intl, condition);
+    if (field2 === NS.TRANSLATION_GROUP_FIELD_NAME)
+      return groupConditionLabel(intl, condition);
+    if (field2 === NS.ORIGINAL_FIELD_NAME)
+      return originalConditionLabel(intl, condition);
     if (field2 === NS.MANGA_FIELD_NAME)
       return mangaConditionLabel(intl, condition);
     return null;
@@ -4462,6 +4508,93 @@
     }
     history.replace(Object.assign({}, history.location, { search }));
   }
+  function isGroupCondition(condition) {
+    return !!condition && NS.ownField(condition.field) === NS.TRANSLATION_GROUP_FIELD_NAME;
+  }
+  function readGroupFilter(filter) {
+    const criterion = customFieldsCriterion(filter);
+    if (!(criterion == null ? void 0 : criterion.value)) return EMPTY_SELECTION;
+    const selection = {
+      modifier: "",
+      included: [],
+      excluded: []
+    };
+    criterion.value.forEach((condition) => {
+      if (!isGroupCondition(condition)) return;
+      if (condition.modifier === "NOT_NULL") selection.modifier = "any";
+      else if (condition.modifier === "IS_NULL") selection.modifier = "none";
+      else if (condition.modifier === "EQUALS") {
+        selection.included = conditionValues(condition);
+      } else if (condition.modifier === "NOT_EQUALS") {
+        selection.excluded = conditionValues(condition);
+      }
+    });
+    return selection;
+  }
+  function groupSelectionConditions(selection) {
+    if (selection.modifier === "any") {
+      return [{ field: NS.TRANSLATION_GROUP_FIELD_NAME, modifier: "NOT_NULL" }];
+    }
+    if (selection.modifier === "none") {
+      return [{ field: NS.TRANSLATION_GROUP_FIELD_NAME, modifier: "IS_NULL" }];
+    }
+    const conditions = [];
+    if (selection.included.length) {
+      conditions.push({
+        field: NS.TRANSLATION_GROUP_FIELD_NAME,
+        modifier: "EQUALS",
+        value: selection.included.slice()
+      });
+    }
+    if (selection.excluded.length) {
+      conditions.push({
+        field: NS.TRANSLATION_GROUP_FIELD_NAME,
+        modifier: "NOT_EQUALS",
+        value: selection.excluded.slice()
+      });
+    }
+    return conditions;
+  }
+  function groupFilterQuery(filter, selection) {
+    var _a2;
+    if (!filter || typeof filter.clone !== "function") return null;
+    const options = ((_a2 = filter.options) == null ? void 0 : _a2.criterionOptions) || [];
+    let option = null;
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
+    }
+    if (!option) return null;
+    const criterionOption = option;
+    const next = filter.clone();
+    let criterion = customFieldsCriterion(next);
+    const kept = [];
+    if (criterion == null ? void 0 : criterion.value) {
+      for (let j = 0; j < criterion.value.length; j++) {
+        if (!isGroupCondition(criterion.value[j])) kept.push(criterion.value[j]);
+      }
+    }
+    const conditions = kept.concat(groupSelectionConditions(selection));
+    if (!conditions.length) {
+      next.criteria = (next.criteria || []).filter((c) => c !== criterion);
+    } else {
+      if (!criterion) {
+        criterion = criterionOption.makeCriterion();
+        next.criteria = (next.criteria || []).concat([criterion]);
+      }
+      criterion.value = conditions;
+    }
+    return next.makeQueryParameters();
+  }
+  function applyGroup(filter, history, selection) {
+    const search = groupFilterQuery(filter, selection);
+    if (search === null) {
+      console.error(
+        "[mangaTools] this list has no custom-fields filter, so the translation group filter is unavailable"
+      );
+      return;
+    }
+    history.replace(Object.assign({}, history.location, { search }));
+  }
   function isMangaCondition(condition) {
     return !!condition && NS.ownField(condition.field) === NS.MANGA_FIELD_NAME;
   }
@@ -4525,6 +4658,70 @@
     }
     history.replace(Object.assign({}, history.location, { search }));
   }
+  function isOriginalCondition(condition) {
+    return !!condition && NS.ownField(condition.field) === NS.ORIGINAL_FIELD_NAME;
+  }
+  function readOriginalFilter(filter) {
+    const criterion = customFieldsCriterion(filter);
+    if (!(criterion == null ? void 0 : criterion.value)) return "";
+    let state = "";
+    criterion.value.forEach((condition) => {
+      if (!isOriginalCondition(condition)) return;
+      if (condition.modifier === "NOT_NULL") state = "marked";
+      else if (condition.modifier === "IS_NULL") state = "unmarked";
+    });
+    return state;
+  }
+  function originalSelectionConditions(state) {
+    if (state === "marked") {
+      return [{ field: NS.ORIGINAL_FIELD_NAME, modifier: "NOT_NULL" }];
+    }
+    if (state === "unmarked") {
+      return [{ field: NS.ORIGINAL_FIELD_NAME, modifier: "IS_NULL" }];
+    }
+    return [];
+  }
+  function originalFilterQuery(filter, state) {
+    var _a2;
+    if (!filter || typeof filter.clone !== "function") return null;
+    const options = ((_a2 = filter.options) == null ? void 0 : _a2.criterionOptions) || [];
+    let option = null;
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].type === CUSTOM_FIELDS_TYPE) option = options[i];
+    }
+    if (!option) return null;
+    const criterionOption = option;
+    const next = filter.clone();
+    let criterion = customFieldsCriterion(next);
+    const kept = [];
+    if (criterion == null ? void 0 : criterion.value) {
+      for (let j = 0; j < criterion.value.length; j++) {
+        if (!isOriginalCondition(criterion.value[j]))
+          kept.push(criterion.value[j]);
+      }
+    }
+    const conditions = kept.concat(originalSelectionConditions(state));
+    if (!conditions.length) {
+      next.criteria = (next.criteria || []).filter((c) => c !== criterion);
+    } else {
+      if (!criterion) {
+        criterion = criterionOption.makeCriterion();
+        next.criteria = (next.criteria || []).concat([criterion]);
+      }
+      criterion.value = conditions;
+    }
+    return next.makeQueryParameters();
+  }
+  function applyOriginal(filter, history, state) {
+    const search = originalFilterQuery(filter, state);
+    if (search === null) {
+      console.error(
+        "[mangaTools] this list has no custom-fields filter, so the raw filter is unavailable"
+      );
+      return;
+    }
+    history.replace(Object.assign({}, history.location, { search }));
+  }
   function fieldLabel(intl) {
     return intl.formatMessage({
       id: "config.ui.language.heading",
@@ -4533,6 +4730,12 @@
   }
   function censorshipHeading(intl) {
     return t(intl, "mangaTools.censorship.heading");
+  }
+  function translationGroupHeading(intl) {
+    return t(intl, "mangaTools.translationGroup.heading");
+  }
+  function originalHeading(intl) {
+    return t(intl, "mangaTools.filter.original.heading");
   }
   function message(intl, id, fallback) {
     return intl.formatMessage({ id, defaultMessage: fallback });
@@ -4552,6 +4755,10 @@
   NS.censorshipFilterQuery = censorshipFilterQuery;
   NS.readMangaFilter = readMangaFilter;
   NS.mangaFilterQuery = mangaFilterQuery;
+  NS.readGroupFilter = readGroupFilter;
+  NS.groupFilterQuery = groupFilterQuery;
+  NS.readOriginalFilter = readOriginalFilter;
+  NS.originalFilterQuery = originalFilterQuery;
   NS.registerLanguageCriterionOption = registerLanguageCriterionOption;
   NS.adoptLanguageCriterion = adoptLanguageCriterion;
 
@@ -5001,16 +5208,26 @@
   var SECTION_STATE_KEY = "mangaToolsLanguageOpen";
   var CENSORSHIP_SECTION_STATE_KEY = "mangaToolsCensorshipOpen";
   var MANGA_SECTION_STATE_KEY = "mangaToolsMangaOpen";
+  var GROUP_SECTION_STATE_KEY = "mangaToolsTranslationGroupOpen";
+  var ORIGINAL_SECTION_STATE_KEY = "mangaToolsOriginalOpen";
   function isTouchDevice() {
     return window.matchMedia("(pointer: coarse)").matches;
   }
   var CENSORSHIP_TAG_MARK = "data-manga-tools-censorship";
   var MANGA_TAG_MARK = "data-manga-tools-manga";
+  var GROUP_TAG_MARK = "data-manga-tools-group";
+  var ORIGINAL_TAG_MARK = "data-manga-tools-original";
   function isCensorshipTag(tag) {
     return isFieldTag(tag, NS.CENSORSHIP_FIELD_NAME, CENSORSHIP_TAG_MARK);
   }
   function isMangaTag(tag) {
     return isFieldTag(tag, NS.MANGA_FIELD_NAME, MANGA_TAG_MARK);
+  }
+  function isGroupTag(tag) {
+    return isFieldTag(tag, NS.TRANSLATION_GROUP_FIELD_NAME, GROUP_TAG_MARK);
+  }
+  function isOriginalTag(tag) {
+    return isFieldTag(tag, NS.ORIGINAL_FIELD_NAME, ORIGINAL_TAG_MARK);
   }
   function listFieldTags(isField) {
     const all = document.querySelectorAll(TAG_SELECTOR);
@@ -5030,6 +5247,12 @@
   function listMangaTags() {
     return listFieldTags(isMangaTag);
   }
+  function listGroupTags() {
+    return listFieldTags(isGroupTag);
+  }
+  function listOriginalTags() {
+    return listFieldTags(isOriginalTag);
+  }
   function writeTagLabels(tags, labels2, mark) {
     for (let i = 0; i < tags.length && i < labels2.length; i++) {
       tagText(tags[i]).nodeValue = labels2[i];
@@ -5044,6 +5267,12 @@
   }
   function relabelMangaTags(labels2) {
     writeTagLabels(listMangaTags(), labels2, MANGA_TAG_MARK);
+  }
+  function relabelGroupTags(labels2) {
+    writeTagLabels(listGroupTags(), labels2, GROUP_TAG_MARK);
+  }
+  function relabelOriginalTags(labels2) {
+    writeTagLabels(listOriginalTags(), labels2, ORIGINAL_TAG_MARK);
   }
   var sidebarFilter = null;
   function publishSidebarFilter(filter) {
@@ -5098,8 +5327,24 @@
           fixedWidth: true
         }
       ),
-      /* @__PURE__ */ React4.createElement("span", null, props.heading)
+      /* @__PURE__ */ React4.createElement("span", null, props.heading),
+      /* @__PURE__ */ React4.createElement(
+        "span",
+        {
+          className: "manga-tools-manga-icon manga-tools-sidebar-mark",
+          "aria-hidden": "true"
+        }
+      )
     )), props.chosenItems.length ? /* @__PURE__ */ React4.createElement("ul", { className: "selected-list" }, props.chosenItems) : null, props.excludedItems.length ? /* @__PURE__ */ React4.createElement("ul", { className: "selected-list excluded-list" }, props.excludedItems) : null, /* @__PURE__ */ React4.createElement(Bootstrap.Collapse, { in: props.open, mountOnEnter: true, unmountOnExit: true }, /* @__PURE__ */ React4.createElement("div", null, /* @__PURE__ */ React4.createElement("div", { className: "queryable-candidate-list" }, props.children))));
+  }
+  function steakLeading(raw) {
+    return /* @__PURE__ */ React4.createElement(
+      "span",
+      {
+        className: "fa-fw " + (raw ? "manga-tools-raw-icon" : "manga-tools-cooked-icon"),
+        "aria-hidden": "true"
+      }
+    );
   }
   function censorshipLeading(value) {
     const Icon = PluginApi4.components.Icon;
@@ -5473,9 +5718,274 @@
       )))
     );
   }
+  function SidebarOriginalFilter(props) {
+    const { intl, history, open, toggleOpen } = useSidebarSection(
+      ORIGINAL_SECTION_STATE_KEY
+    );
+    const state = readOriginalFilter(props.filter);
+    const tagLabelsFor = fieldTagLabels(
+      intl,
+      props.filter,
+      NS.ORIGINAL_FIELD_NAME
+    );
+    React4.useLayoutEffect(() => {
+      if (tagLabelsFor) relabelOriginalTags(tagLabelsFor);
+    });
+    const options = [
+      {
+        value: "marked",
+        label: t(intl, "mangaTools.filter.original.raw"),
+        raw: true
+      },
+      {
+        value: "unmarked",
+        label: t(intl, "mangaTools.filter.original.cooked"),
+        raw: false
+      }
+    ];
+    function choose(value) {
+      applyOriginal(props.filter, history, state === value ? "" : value);
+    }
+    const chosen = options.filter((o) => o.value === state);
+    const candidates = options.filter((o) => o.value !== state);
+    const chosenItems = chosen.map((o) => /* @__PURE__ */ React4.createElement(
+      LanguageRow,
+      {
+        variant: "sidebar",
+        key: o.value,
+        label: o.label,
+        leading: steakLeading(o.raw),
+        state: "included",
+        canExclude: false,
+        onClick: () => {
+          choose(o.value);
+        }
+      }
+    ));
+    return /* @__PURE__ */ React4.createElement(
+      SidebarSection,
+      {
+        heading: t(intl, "mangaTools.translationGroup.original"),
+        open,
+        onToggle: toggleOpen,
+        chosenItems,
+        excludedItems: [],
+        what: "raw"
+      },
+      /* @__PURE__ */ React4.createElement("ul", null, candidates.map((o) => /* @__PURE__ */ React4.createElement(
+        LanguageRow,
+        {
+          variant: "sidebar",
+          key: o.value,
+          label: o.label,
+          leading: steakLeading(o.raw),
+          state: "candidate",
+          canExclude: false,
+          singleValue: true,
+          onClick: () => {
+            choose(o.value);
+          }
+        }
+      )))
+    );
+  }
+  function translationGroupOptions(intl, selection) {
+    const usual = NS.usualLanguages();
+    const options = NS.translationGroups().map((name) => {
+      const language2 = usual[NS.groupKey(name)];
+      const described = language2 ? NS.describe(language2.code, intl.locale) : null;
+      return {
+        value: name,
+        label: name,
+        flag: described ? described.flag : null
+      };
+    });
+    const known = {};
+    options.forEach((o) => {
+      known[o.value] = true;
+    });
+    const asked = selection.included.concat(selection.excluded);
+    asked.forEach((name) => {
+      if (known[name]) return;
+      known[name] = true;
+      options.push({ value: name, label: name, flag: null });
+    });
+    return options;
+  }
+  function SidebarTranslationGroupFilter(props) {
+    const { intl, history, open, toggleOpen } = useSidebarSection(
+      GROUP_SECTION_STATE_KEY
+    );
+    const queryState = React4.useState("");
+    const query = queryState[0];
+    const setQuery = queryState[1];
+    const searchRef = React4.useRef(null);
+    const selection = readGroupFilter(props.filter);
+    const tagLabelsFor = fieldTagLabels(
+      intl,
+      props.filter,
+      NS.TRANSLATION_GROUP_FIELD_NAME
+    );
+    React4.useLayoutEffect(() => {
+      if (tagLabelsFor) relabelGroupTags(tagLabelsFor);
+    });
+    const Solid = PluginApi4.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi4.components.Icon;
+    const Bootstrap = PluginApi4.libraries.Bootstrap;
+    function update3(next) {
+      applyGroup(props.filter, history, next);
+      if (!isTouchDevice() && searchRef.current) {
+        searchRef.current.focus();
+      }
+    }
+    function toggleInclude(name) {
+      update3(toggleIncluded(selection, name));
+    }
+    function toggleExclude(name) {
+      update3(toggleExcluded(selection, name));
+    }
+    function setModifier(modifier) {
+      update3(withModifier(selection, modifier));
+    }
+    function clearModifier() {
+      update3(withoutModifier(selection));
+    }
+    const options = translationGroupOptions(intl, selection);
+    const chosen = options.filter(
+      (o) => selection.included.indexOf(o.value) !== -1
+    );
+    const excludedChosen = options.filter(
+      (o) => selection.excluded.indexOf(o.value) !== -1
+    );
+    const candidates = options.filter(
+      (o) => selection.included.indexOf(o.value) === -1 && selection.excluded.indexOf(o.value) === -1 && matchesQuery(o, query)
+    );
+    const showModifiers = isEmptySelection(selection);
+    const chosenItems = [];
+    if (selection.modifier) {
+      chosenItems.push(
+        /* @__PURE__ */ React4.createElement("li", { className: "selected-object modifier-object", key: "modifier" }, /* @__PURE__ */ React4.createElement("a", { tabIndex: 0, onClick: clearModifier }, /* @__PURE__ */ React4.createElement("div", { className: "label-group" }, /* @__PURE__ */ React4.createElement(Icon, { className: "fa-fw include-button", icon: Solid.faCheckCircle }), /* @__PURE__ */ React4.createElement("span", { className: "TruncatedText inline selected-object-label" }, "(" + message(
+          intl,
+          "criterion_modifier_values." + selection.modifier,
+          selection.modifier === "any" ? "Any" : "None"
+        ) + ")"))))
+      );
+    }
+    chosen.forEach((o) => {
+      chosenItems.push(
+        /* @__PURE__ */ React4.createElement(
+          LanguageRow,
+          {
+            variant: "sidebar",
+            key: "in-" + o.value,
+            label: o.label,
+            flag: flagOf(o),
+            state: "included",
+            onClick: () => {
+              toggleInclude(o.value);
+            }
+          }
+        )
+      );
+    });
+    const excludedItems = excludedChosen.map((o) => /* @__PURE__ */ React4.createElement(
+      LanguageRow,
+      {
+        variant: "sidebar",
+        key: "ex-" + o.value,
+        label: o.label,
+        flag: flagOf(o),
+        state: "excluded",
+        onClick: () => {
+          toggleExclude(o.value);
+        }
+      }
+    ));
+    return /* @__PURE__ */ React4.createElement(
+      SidebarSection,
+      {
+        heading: t(intl, "mangaTools.translationGroup.heading"),
+        open,
+        onToggle: toggleOpen,
+        chosenItems,
+        excludedItems,
+        what: "translation group"
+      },
+      /* @__PURE__ */ React4.createElement("div", { className: "clearable-input-group" }, /* @__PURE__ */ React4.createElement(
+        "input",
+        {
+          ref: searchRef,
+          className: "clearable-text-field form-control",
+          value: query,
+          placeholder: message(intl, "actions.search", "Search") + "\u2026",
+          onChange: (e) => {
+            setQuery(e.target.value);
+          },
+          onKeyDown: (e) => {
+            if (e.key !== "Enter" || candidates.length !== 1) return;
+            toggleInclude(candidates[0].value);
+            setQuery("");
+          }
+        }
+      ), query && Bootstrap ? /* @__PURE__ */ React4.createElement(
+        Bootstrap.Button,
+        {
+          variant: "secondary",
+          className: "clearable-text-field-clear",
+          title: message(intl, "actions.clear", "Clear"),
+          onClick: () => {
+            setQuery("");
+          }
+        },
+        /* @__PURE__ */ React4.createElement(Icon, { icon: Solid.faTimes })
+      ) : null),
+      /* @__PURE__ */ React4.createElement("ul", null, showModifiers ? /* @__PURE__ */ React4.createElement(
+        LanguageRow,
+        {
+          variant: "sidebar",
+          label: t(intl, "mangaTools.filter.group.any"),
+          state: "candidate",
+          canExclude: false,
+          modifier: true,
+          onClick: () => {
+            setModifier("any");
+          }
+        }
+      ) : null, showModifiers ? /* @__PURE__ */ React4.createElement(
+        LanguageRow,
+        {
+          variant: "sidebar",
+          label: t(intl, "mangaTools.filter.group.none"),
+          state: "candidate",
+          canExclude: false,
+          modifier: true,
+          onClick: () => {
+            setModifier("none");
+          }
+        }
+      ) : null, candidates.map((o) => /* @__PURE__ */ React4.createElement(
+        LanguageRow,
+        {
+          variant: "sidebar",
+          key: o.value,
+          label: o.label,
+          flag: flagOf(o),
+          state: "candidate",
+          onClick: () => {
+            toggleInclude(o.value);
+          },
+          onExclude: () => {
+            toggleExclude(o.value);
+          }
+        }
+      )))
+    );
+  }
   NS.relabelTags = relabelTags;
   NS.relabelCensorshipTags = relabelCensorshipTags;
   NS.relabelMangaTags = relabelMangaTags;
+  NS.relabelGroupTags = relabelGroupTags;
+  NS.relabelOriginalTags = relabelOriginalTags;
 
   // src/tools/index.tsx
   var PluginApi5 = requirePluginApi();
@@ -5966,6 +6476,8 @@
   function SteakIcon(props) {
     return props.raw ? /* @__PURE__ */ React5.createElement(AssetIcon, { className: "manga-tools-raw-icon", file: "raw.svg" }) : /* @__PURE__ */ React5.createElement(AssetIcon, { className: "manga-tools-cooked-icon", file: "cooked.svg" });
   }
+  NS.translationGroups = () => knownTranslationGroups();
+  NS.usualLanguages = () => NS.usualLanguagesOf(store);
   function knownTranslationGroups() {
     if (!store) return [];
     const seen = {};
@@ -7031,17 +7543,23 @@
     const first = selections[0];
     return !!((first == null ? void 0 : first.name) && first.name.value === "bulkGalleryUpdate");
   }
+  function bulkUnmarkKeys() {
+    const keys = [];
+    const seen = {};
+    for (const id of selectedGalleryIds) {
+      for (const key of NS.fieldsToClear(store == null ? void 0 : store.get(id))) {
+        if (seen[key]) continue;
+        seen[key] = true;
+        keys.push(key);
+      }
+    }
+    return keys.length ? keys : [MANGA_FIELD_NAME];
+  }
   function applyPendingFields(operation) {
     const partial = {};
     const remove = [];
     if (bulkManga === "unmark") {
-      remove.push(
-        FIELD_NAME,
-        CENSORSHIP_FIELD_NAME,
-        TRANSLATION_GROUP_FIELD_NAME,
-        ORIGINAL_FIELD_NAME,
-        MANGA_FIELD_NAME
-      );
+      remove.push(...bulkUnmarkKeys());
     } else {
       if (bulkManga === "mark") partial[MANGA_FIELD_NAME] = NS.MANGA_VALUE;
       if ((bulkLanguage == null ? void 0 : bulkLanguage.kind) === "set") partial[FIELD_NAME] = bulkLanguage.value;
@@ -7405,7 +7923,10 @@
       showOriginal ? originalChip : null
     ));
     return PluginApi5.ReactDOM.createPortal(
-      /* @__PURE__ */ React5.createElement(React5.Fragment, null, tri === false && aggregate !== "none" ? /* @__PURE__ */ React5.createElement("div", { className: "alert alert-warning", role: "alert" }, t(intl, "mangaTools.bulk.unmarkWarning")) : null, mangaRow, tri === true && NS.fieldShowing("language") ? languageRow : null, tri === true && NS.fieldShowing("censorship") ? censorshipRow : null, tri === true && NS.fieldShowing("translationGroup") ? groupRow : null),
+      /* @__PURE__ */ React5.createElement(React5.Fragment, null, tri === false && aggregate !== "none" ? /* @__PURE__ */ React5.createElement("div", { className: "alert alert-warning", role: "alert" }, t(
+        intl,
+        NS.deleteOnUnmark ? "mangaTools.bulk.unmarkWarning" : "mangaTools.bulk.unmarkWarningKeep"
+      )) : null, mangaRow, tri === true && NS.fieldShowing("language") ? languageRow : null, tri === true && NS.fieldShowing("censorship") ? censorshipRow : null, tri === true && NS.fieldShowing("translationGroup") ? groupRow : null),
       host
     );
   }
@@ -7674,7 +8195,7 @@
     noteFired("FilteredGalleryList.SidebarSections");
     const filter = currentSidebarFilter();
     if (!filter) return result;
-    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, NS.fieldShowing("language") ? /* @__PURE__ */ React5.createElement(SidebarLanguageFilter, { filter }) : null, NS.fieldShowing("censorship") ? /* @__PURE__ */ React5.createElement(SidebarCensorshipFilter, { filter }) : null, /* @__PURE__ */ React5.createElement(SidebarMangaFilter, { filter }), result);
+    return /* @__PURE__ */ React5.createElement(React5.Fragment, null, /* @__PURE__ */ React5.createElement(SidebarMangaFilter, { filter }), NS.fieldShowing("language") ? /* @__PURE__ */ React5.createElement(SidebarLanguageFilter, { filter }) : null, NS.fieldShowing("censorship") ? /* @__PURE__ */ React5.createElement(SidebarCensorshipFilter, { filter }) : null, NS.fieldShowing("translationGroup") ? /* @__PURE__ */ React5.createElement(SidebarTranslationGroupFilter, { filter }) : null, NS.fieldShowing("original") ? /* @__PURE__ */ React5.createElement(SidebarOriginalFilter, { filter }) : null, result);
   });
   registerPatch("after", "FilteredGalleryList", (...args) => {
     const result = resultFrom(args);

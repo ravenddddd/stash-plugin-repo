@@ -160,8 +160,12 @@ wall are all covered by one hook.
 
 #### Filtering
 
-The gallery list's sidebar gains a **language** section, built to work the way
-Stash's own studio section does:
+The gallery list's sidebar gains **five** sections — the mark, the language, the
+censorship, the translation group and raw — each built to work the way Stash's own
+studio section does, and each drawn only while its field is (the mark's is the one
+that is always there, since it is what makes a gallery this plugin's at all). They
+are one shell and one read/write model; what differs per field is the values and
+the wording. Every one of them carries the plugin's mark beside its heading.
 
 - a heading you can fold away, with whatever is selected **above** it, so the
   selection stays visible while the list of choices is folded
@@ -579,12 +583,30 @@ that it no longer does. Nothing waits on the answer: the menu opens with what is
 in hand and is redrawn when the fetch lands.
 
 
-There is deliberately **no sidebar section** for it: that would have to be a
-free-text search rather than the checkbox list the other three are, which is an
-addition with its own design questions rather than a column in an existing table.
-It is recognised as one of this plugin's fields all the same — see `NS.ownField` —
-so it never shows up as a raw custom-field row in the edit form, and unmarking
-clears it along with the rest.
+**Its sidebar section arrived in 0.9.54**, and the design question the note that
+used to stand here raised — "that would have to be a free-text search rather than
+the checkbox list the other three are" — turned out not to be one: the language
+section already *is* a search box over a list, so the group section is that shape
+with the values coming from the library instead of a table. The one thing that
+differs is where the values come from, and what follows from it: a group is offered
+while some gallery carries it (the store's answer, via `NS.translationGroups`), and
+a name the filter already asks for keeps its row even after the last gallery stops
+using it — the same rule that keeps a disabled language visible. Each row carries
+its galleries' usual language as a flag, which is the glyph the edit page's menu and
+the bulk row already draw from the same walk of the same store.
+
+**Raw got the mark's section rather than a list**, because it is the same kind of
+field: a presence, with two states and no value to type. Its rows say 生肉/熟肉 in
+the plugin's own words — the words the edit page's button and the bulk dialog's
+steak already use — and each draws its own steak where a language row draws a flag.
+Its *tag* says 原文 是 生肉, and that name is deliberate: a criterion called 生肉 with
+a value called 生肉 reads as the same word twice.
+
+**Every section carries the mark's own icon beside its heading**, dimmed. The
+sidebar is Stash's and its own sections sit in the same column with the same look,
+so without it a reader has no way to tell which of the fourteen headings came from a
+plugin — and the icon is the one the covers already wear, so the answer is a thing
+they have seen rather than a new vocabulary.
 
 **The bulk dialog got a row for it in 0.9.51**, and the row is the edit page's
 field moved into a dialog: the same select (the library's groups, create-entry and
@@ -758,6 +780,18 @@ clearing the plugin's fields with the mark are two answers about one action rath
 than a parent and its child, so they are not wrapped in the group Stash's stylesheet
 uses to indent a setting's children. The mark is never one of the four fields and is
 never gated on them: it is what makes a gallery this plugin's at all.
+
+**"Clear the plugin's fields when unmarking" is asked of `NS.fieldsToClear`, and both
+places that unmark ask it there.** That is what makes the setting true of the bulk
+dialog as well as of one gallery, which it was not until 0.9.53: the dialog carried its
+own hand-written list of canonical key names, so it cleared those fields whatever the
+setting said — the one place that destroyed values the reader had asked it to keep — and
+being canonical it could not remove a key that had drifted in case, which is the other
+half of what `fieldsToClear` is for. One mutation covers N galleries, so the dialog takes
+the **union** of that answer over everything selected; removing a key a gallery does not
+carry is a no-op on the server, which is what makes one list safe for all of them. The
+dialog's warning follows the setting too, since "it will clear them" and "it will keep
+them" are two sentences rather than one that hedges.
 
 **Two settings carry a "?" and it opens a picture, not a paragraph.** "Cover badge"
 and "the mark's icon" are both answered by *where* something is on a card, which is
