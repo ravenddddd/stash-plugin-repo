@@ -42,8 +42,22 @@
     ru: { flag: "ru" },
     th: { flag: "th" },
     vi: { flag: "vn" },
-    id: { flag: "id" }
+    id: { flag: "id" },
+    // **The one entry that is not a language of somewhere.** `zxx` is ISO 639-2's
+    // "no linguistic content" — a CG collection, an art book, anything with no text of
+    // its own to be in a language — and it is a *value* of this field like any other:
+    // a gallery carrying it is marked deliberately, which is the difference between it
+    // and an empty field. What it says is that the language question does not apply,
+    // and the plugin acts on that: see NS.isNoLanguage.
+    //
+    // No flag, because there is no country to draw one of; the mark drawn in a flag's
+    // place is in fields-ui.tsx. The name is not here either — Intl.DisplayNames knows
+    // this code, so it reads "No linguistic content" / "无语言内容" / 言語的内容なし
+    // without a string of ours.
+    zxx: { flag: null }
   };
+  NS.NO_LANGUAGE = "zxx";
+  NS.isNoLanguage = (raw) => NS.findCanonical(NS.normalize(raw)) === NS.NO_LANGUAGE;
   NS.FALLBACK_LOCALE = "en";
   var displayNamesCache = {};
   var collatorCache = {};
@@ -114,11 +128,15 @@
   NS.languageOptions = (locale) => {
     const uiLocale = locale || NS.FALLBACK_LOCALE;
     const collator = collatorFor(uiLocale);
-    return Object.keys(NS.LANGUAGES).map((code) => ({
+    const optionFor = (code) => ({
       value: code,
       label: NS.name(code, uiLocale),
       flag: NS.LANGUAGES[code].flag
-    })).sort((a, b) => collator.compare(a.label, b.label));
+    });
+    const languages = Object.keys(NS.LANGUAGES).filter(
+      (code) => code !== NS.NO_LANGUAGE
+    );
+    return languages.map(optionFor).sort((a, b) => collator.compare(a.label, b.label)).concat([optionFor(NS.NO_LANGUAGE)]);
   };
   NS.enabledLanguages = null;
   NS.parseEnabledLanguages = (raw) => {
@@ -197,6 +215,7 @@
   NS.ORIGINAL_FIELD_NAME = "plugin.mangaTools.original";
   NS.ORIGINAL_VALUE = NS.MANGA_VALUE;
   NS.isOriginal = (customFields) => NS.pickField(customFields, NS.ORIGINAL_FIELD_NAME) !== "";
+  NS.isRaw = (customFields) => NS.isOriginal(customFields) || NS.isNoLanguage(NS.pickField(customFields, NS.FIELD_NAME));
   NS.CHAPTER_FIELD_NAME = "plugin.mangaTools.chapters";
   NS.fieldShowing = (field2) => {
     if (!NS.fields) return false;
@@ -1085,6 +1104,8 @@
     "mangaTools.translationGroup.originalOn": "Mark as raw: the original text, no translation group",
     "mangaTools.translationGroup.originalOff": "No longer raw \u2014 clear the mark",
     "mangaTools.translationGroup.originalOffRestore": "No longer raw \u2014 clear the mark and put the translation group back",
+    "mangaTools.translationGroup.noLanguageDetail": "no language (no translation group)",
+    "mangaTools.translationGroup.originalNoLanguage": "No language: there is nothing to translate, so this is the original",
     "mangaTools.translationGroup.originalDetail": "raw (no translation group)",
     "mangaTools.translationGroup.originalInline": " (raw)",
     "mangaTools.translationGroup.originalMixed": "Some of these are raw \u2014 click to mark them all",
@@ -1217,6 +1238,8 @@
     "mangaTools.translationGroup.originalOn": "\u6807\u4E3A\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6CA1\u6709\u7FFB\u8BD1\u7EC4",
     "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0",
     "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6807\u8BB0\uFF0C\u5E76\u6062\u590D\u539F\u6765\u7684\u7FFB\u8BD1\u7EC4",
+    "mangaTools.translationGroup.noLanguageDetail": "\u65E0\u8BED\u8A00\uFF08\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
+    "mangaTools.translationGroup.originalNoLanguage": "\u65E0\u8BED\u8A00\uFF1A\u6CA1\u6709\u53EF\u7FFB\u8BD1\u7684\u6587\u5B57\uFF0C\u6240\u4EE5\u5C31\u662F\u539F\u6587",
     "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u65E0\u7FFB\u8BD1\u7EC4\uFF09",
     "mangaTools.translationGroup.originalInline": "\uFF08\u751F\u8089\uFF09",
     "mangaTools.translationGroup.originalMixed": "\u90E8\u5206\u5DF2\u6807\u4E3A\u751F\u8089 \u2014\u2014 \u70B9\u51FB\u5168\u90E8\u6807\u4E0A",
@@ -1349,6 +1372,8 @@
     "mangaTools.translationGroup.originalOn": "\u6A19\u70BA\u751F\u8089\uFF1A\u539F\u6587\uFF0C\u6C92\u6709\u7FFB\u8B6F\u7D44",
     "mangaTools.translationGroup.originalOff": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18",
     "mangaTools.translationGroup.originalOffRestore": "\u53D6\u6D88\u751F\u8089\u6A19\u8A18\uFF0C\u4E26\u9084\u539F\u539F\u672C\u7684\u7FFB\u8B6F\u7D44",
+    "mangaTools.translationGroup.noLanguageDetail": "\u7121\u8A9E\u8A00\uFF08\u7121\u7FFB\u8B6F\u7D44\uFF09",
+    "mangaTools.translationGroup.originalNoLanguage": "\u7121\u8A9E\u8A00\uFF1A\u6C92\u6709\u53EF\u7FFB\u8B6F\u7684\u6587\u5B57\uFF0C\u6240\u4EE5\u5C31\u662F\u539F\u6587",
     "mangaTools.translationGroup.originalDetail": "\u751F\u8089\uFF08\u7121\u7FFB\u8B6F\u7D44\uFF09",
     "mangaTools.translationGroup.originalInline": "\uFF08\u751F\u8089\uFF09",
     "mangaTools.translationGroup.originalMixed": "\u90E8\u5206\u5DF2\u6A19\u70BA\u751F\u8089 \u2014\u2014 \u9EDE\u64CA\u5168\u90E8\u6A19\u4E0A",
@@ -5145,6 +5170,19 @@
       }
     );
   }
+  function noLanguageMark(code, className) {
+    if (!NS.showFlags || !NS.isNoLanguage(code)) return null;
+    const Solid = PluginApi4.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi4.components.Icon;
+    if (!Icon) return null;
+    return /* @__PURE__ */ React4.createElement(
+      Icon,
+      {
+        icon: Solid.faCommentSlash,
+        className: "fa-fw manga-tools-language-mark" + (className ? " " + className : "")
+      }
+    );
+  }
   function languageChip(info, className) {
     const extra = className ? " " + className : "";
     if (!info.known) {
@@ -5152,6 +5190,9 @@
     }
     if (!NS.showFlags) {
       return /* @__PURE__ */ React4.createElement("div", { className: "manga-tools-badge is-name" + extra }, info.name);
+    }
+    if (!info.flag) {
+      return /* @__PURE__ */ React4.createElement("div", { className: "manga-tools-badge" + extra, "aria-label": info.name }, noLanguageMark(info.code));
     }
     return /* @__PURE__ */ React4.createElement("div", { className: "manga-tools-badge" + extra, "aria-label": info.name }, /* @__PURE__ */ React4.createElement(Flag, { flag: info.flag }));
   }
@@ -5167,7 +5208,7 @@
     return SELECT;
   }
   function formatLanguageOption(option) {
-    return /* @__PURE__ */ React4.createElement("span", { className: "manga-tools-option" }, NS.showFlags && option.flag ? /* @__PURE__ */ React4.createElement(Flag, { flag: option.flag, className: "manga-tools-flag" }) : null, /* @__PURE__ */ React4.createElement("span", null, option.label));
+    return /* @__PURE__ */ React4.createElement("span", { className: "manga-tools-option" }, NS.showFlags && option.flag ? /* @__PURE__ */ React4.createElement(Flag, { flag: option.flag, className: "manga-tools-flag" }) : noLanguageMark(option.value, "manga-tools-flag"), /* @__PURE__ */ React4.createElement("span", null, option.label));
   }
   function formatGroupOption(option, meta) {
     if ((meta == null ? void 0 : meta.context) !== "menu") return option.label;
@@ -5810,6 +5851,15 @@
       if (bulkOriginal === "raw")
         partial[ORIGINAL_FIELD_NAME] = NS.ORIGINAL_VALUE;
       else if (bulkOriginal === "notRaw") remove.push(ORIGINAL_FIELD_NAME);
+      if ((bulkLanguage == null ? void 0 : bulkLanguage.kind) === "set" && NS.isNoLanguage(bulkLanguage.value)) {
+        partial[ORIGINAL_FIELD_NAME] = NS.ORIGINAL_VALUE;
+        delete partial[TRANSLATION_GROUP_FIELD_NAME];
+        [ORIGINAL_FIELD_NAME, TRANSLATION_GROUP_FIELD_NAME].forEach((name) => {
+          const at = remove.indexOf(name);
+          if (at !== -1) remove.splice(at, 1);
+        });
+        remove.push(TRANSLATION_GROUP_FIELD_NAME);
+      }
     }
     if (!Object.keys(partial).length && !remove.length) return false;
     if (!isGalleryContext()) return false;
@@ -6050,8 +6100,10 @@
     const groupShown = (bulkGroup == null ? void 0 : bulkGroup.kind) === "set" ? bulkGroup.value : (bulkGroup == null ? void 0 : bulkGroup.kind) === "remove" ? BULK_REMOVE_VALUE : selectedGroupAggregate() || "";
     const rawState = bulkOriginal === "raw" ? "raw" : bulkOriginal === "notRaw" ? "notRaw" : selectedOriginalAggregate() === "all" ? "raw" : selectedOriginalAggregate() === "none" ? "notRaw" : "mixed";
     const rawShown = showOriginal && rawState === "raw";
+    const noLanguage = (bulkLanguage == null ? void 0 : bulkLanguage.kind) === "set" && NS.isNoLanguage(bulkLanguage.value);
     const restoresGroup = !!bulkGroupBeforeRaw && (bulkGroupBeforeRaw.pending ? bulkGroupBeforeRaw.pending.kind === "set" : !!selectedGroupAggregate());
     const cycleOriginal = () => {
+      if (noLanguage) return;
       const aggregate2 = selectedOriginalAggregate();
       const next = aggregate2 === "all" ? bulkOriginal === "notRaw" ? null : "notRaw" : aggregate2 === "none" ? bulkOriginal === "raw" ? null : "raw" : bulkOriginal === null ? "raw" : bulkOriginal === "raw" ? "notRaw" : null;
       if (next === "raw") {
@@ -6104,12 +6156,13 @@
       {
         type: "button",
         className: "btn btn-secondary manga-tools-chip manga-tools-original" + (rawState === "raw" ? " active" : "") + (rawState === "mixed" ? " mixed" : ""),
-        "aria-pressed": rawState === "mixed" ? "mixed" : rawState === "raw",
+        "aria-pressed": noLanguage ? true : rawState === "mixed" ? "mixed" : rawState === "raw",
         "aria-label": t(intl, "mangaTools.translationGroup.original"),
         title: t(
           intl,
-          rawState === "raw" ? restoresGroup ? "mangaTools.translationGroup.originalOffRestore" : "mangaTools.translationGroup.originalOff" : rawState === "mixed" ? "mangaTools.translationGroup.originalMixed" : "mangaTools.translationGroup.originalOn"
+          noLanguage ? "mangaTools.translationGroup.originalNoLanguage" : rawState === "raw" ? restoresGroup ? "mangaTools.translationGroup.originalOffRestore" : "mangaTools.translationGroup.originalOff" : rawState === "mixed" ? "mangaTools.translationGroup.originalMixed" : "mangaTools.translationGroup.originalOn"
         ),
+        disabled: noLanguage,
         onClick: cycleOriginal
       },
       steakIcon
@@ -6126,11 +6179,11 @@
           classNamePrefix: "react-select",
           inputId: "manga_tools_translation_group",
           isClearable: true,
-          isDisabled: rawShown,
+          isDisabled: rawShown || noLanguage,
           menuPortalTarget: document.body,
           placeholder: t(
             intl,
-            rawShown ? "mangaTools.translationGroup.originalDetail" : "mangaTools.translationGroup.placeholder"
+            noLanguage ? "mangaTools.translationGroup.noLanguageDetail" : rawShown ? "mangaTools.translationGroup.originalDetail" : "mangaTools.translationGroup.placeholder"
           ),
           value: groupShown === BULK_REMOVE_VALUE ? groupRemoveOption : groupValue ? { value: groupValue, label: groupValue } : null,
           options: [...groupOptions, groupRemoveOption],
@@ -6210,6 +6263,10 @@
   }
   function flagOf(option) {
     return NS.showFlags ? option.flag : null;
+  }
+  function languageMark(option) {
+    const mark = noLanguageMark(option.value);
+    return mark ? { leading: mark } : { flag: flagOf(option) };
   }
   function Flag2(props) {
     return /* @__PURE__ */ React7.createElement(
@@ -6560,7 +6617,7 @@
         variant: "dialog",
         state: "included",
         label: o.label,
-        flag: flagOf(o),
+        ...languageMark(o),
         onClick: () => {
           setChoice(toggleIncluded(choice, o.value));
         }
@@ -6571,7 +6628,7 @@
         variant: "dialog",
         state: "excluded",
         label: o.label,
-        flag: flagOf(o),
+        ...languageMark(o),
         onClick: () => {
           setChoice(toggleExcluded(choice, o.value));
         }
@@ -6607,7 +6664,7 @@
         variant: "dialog",
         state: "candidate",
         label: o.label,
-        flag: flagOf(o),
+        ...languageMark(o),
         canExclude: true,
         onClick: () => {
           setChoice(toggleIncluded(choice, o.value));
@@ -6794,7 +6851,9 @@
     }));
   }
   function decoration(field2, option) {
-    return field2.leading ? { leading: field2.leading(option) } : { flag: flagOf(option) };
+    if (!field2.leading) return { flag: flagOf(option) };
+    const leading = field2.leading(option);
+    return leading ? { leading } : { flag: flagOf(option) };
   }
   function useValuedSection(props) {
     const { intl, history, open, toggleOpen } = useSidebarSection(props.stateKey);
@@ -6985,7 +7044,13 @@
       relabel: relabelTags,
       options: visibleOptions,
       search: true,
-      adopt: adoptLanguageCriterion
+      adopt: adoptLanguageCriterion,
+      // A flag where a language has one — see decoration, which falls back to it —
+      // and this plugin's own mark for the one value that is not a place.
+      leading: (o) => {
+        var _a3;
+        return (_a3 = languageMark(o).leading) != null ? _a3 : null;
+      }
     },
     censorship: {
       fieldKey: NS.CENSORSHIP_FIELD_NAME,
@@ -7668,8 +7733,10 @@
       if (value) next = NS.setField(next, ORIGINAL_FIELD_NAME, "");
       if (props.onChange) props.onChange(next);
     };
-    const isOriginal = NS.isOriginal(props.values);
+    const noLanguage = NS.isNoLanguage(pickLanguage(props.values));
+    const isOriginal = NS.isRaw(props.values);
     const toggleOriginal = () => {
+      if (noLanguage) return;
       const galleryId2 = currentGalleryId();
       let next = props.values;
       if (isOriginal) {
@@ -7682,6 +7749,14 @@
       } else {
         const group = NS.translationGroupOf(props.values);
         originalGroupTaken = group ? { galleryId: galleryId2, group } : null;
+        next = NS.setField(next, ORIGINAL_FIELD_NAME, NS.ORIGINAL_VALUE);
+        next = NS.setField(next, TRANSLATION_GROUP_FIELD_NAME, "");
+      }
+      if (props.onChange) props.onChange(next);
+    };
+    const writeLanguage = (value) => {
+      let next = NS.setField(props.values, FIELD_NAME, value);
+      if (NS.isNoLanguage(value)) {
         next = NS.setField(next, ORIGINAL_FIELD_NAME, NS.ORIGINAL_VALUE);
         next = NS.setField(next, TRANSLATION_GROUP_FIELD_NAME, "");
       }
@@ -7746,7 +7821,7 @@
             components: { IndicatorSeparator: () => null },
             formatOptionLabel: formatLanguageOption,
             onChange: (opt) => {
-              write2(FIELD_NAME, opt ? opt.value : "");
+              writeLanguage(opt ? opt.value : "");
             }
           }
         ),
@@ -7822,8 +7897,9 @@
         "aria-label": originalLabel,
         title: t(
           intl,
-          isOriginal ? restoresGroup ? "mangaTools.translationGroup.originalOffRestore" : "mangaTools.translationGroup.originalOff" : "mangaTools.translationGroup.originalOn"
+          noLanguage ? "mangaTools.translationGroup.originalNoLanguage" : isOriginal ? restoresGroup ? "mangaTools.translationGroup.originalOffRestore" : "mangaTools.translationGroup.originalOff" : "mangaTools.translationGroup.originalOn"
         ),
+        disabled: noLanguage,
         onClick: toggleOriginal
       },
       /* @__PURE__ */ React11.createElement(SteakIcon, { raw: isOriginal })
@@ -7836,6 +7912,8 @@
         role: "switch",
         id: "manga_tools_original",
         checked: isOriginal,
+        disabled: noLanguage,
+        title: t(intl, "mangaTools.translationGroup.originalNoLanguage"),
         onChange: toggleOriginal
       }
     ))));
@@ -7851,10 +7929,10 @@
           classNamePrefix: "react-select",
           inputId: "manga_tools_translation_group",
           isClearable: true,
-          isDisabled: rawShown,
+          isDisabled: rawShown || noLanguage,
           placeholder: t(
             intl,
-            rawShown ? "mangaTools.translationGroup.originalDetail" : "mangaTools.translationGroup.placeholder"
+            noLanguage ? "mangaTools.translationGroup.noLanguageDetail" : rawShown ? "mangaTools.translationGroup.originalDetail" : "mangaTools.translationGroup.placeholder"
           ),
           value: groupRaw ? { value: groupRaw, label: groupName } : null,
           options: groupOptions,
@@ -7929,7 +8007,7 @@
     const language2 = NS.fieldShowing("language") ? NS.describe(pickLanguage(props.values), intl.locale) : null;
     const mark = NS.fieldShowing("censorship") ? censorshipOf(props.values) : "";
     const group = NS.fieldShowing("translationGroup") ? NS.translationGroupOf(props.values) : "";
-    const original = NS.fieldShowing("original") && NS.isOriginal(props.values);
+    const original = NS.fieldShowing("original") && NS.isRaw(props.values);
     const Solid = PluginApi14.libraries.FontAwesomeSolid || {};
     const Icon = PluginApi14.components.Icon;
     const Button = (_a3 = PluginApi14.libraries.Bootstrap) == null ? void 0 : _a3.Button;
@@ -7937,8 +8015,8 @@
     if (!language2 && !mark && !group && !original) return null;
     const host = ensureDetailHost();
     if (!host) return null;
-    const showFlag = NS.showFlags && !!(language2 == null ? void 0 : language2.flag);
-    const body = /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React12.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React12.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language2 ? /* @__PURE__ */ React12.createElement("h6", { className: "manga-tools-detail" }, fieldLabel(intl) + ": ", showFlag ? /* @__PURE__ */ React12.createElement(Flag, { flag: language2.flag, className: "manga-tools-flag" }) : null, showFlag ? " " : null, language2.name, original ? t(intl, "mangaTools.translationGroup.originalInline") : null) : null, group ? (
+    const showFlag = NS.showFlags && !!language2 && (!!language2.flag || NS.isNoLanguage(language2.code));
+    const body = /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React12.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React12.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language2 ? /* @__PURE__ */ React12.createElement("h6", { className: "manga-tools-detail" }, fieldLabel(intl) + ": ", showFlag && language2.flag ? /* @__PURE__ */ React12.createElement(Flag, { flag: language2.flag, className: "manga-tools-flag" }) : showFlag ? noLanguageMark(language2.code, "manga-tools-flag") : null, showFlag ? " " : null, language2.name, original ? t(intl, "mangaTools.translationGroup.originalInline") : null) : null, group ? (
       // No icon and no flag: a group's name is its own, and there is nothing
       // here to draw beside it. Drawn last, because it is the one row that is
       // the same shape on every gallery rather than picked from a list.
