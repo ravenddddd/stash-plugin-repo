@@ -1,0 +1,17 @@
+- id: external-player-launcher
+  name: External Player Launcher
+  metadata:
+    description: This plugin adds support for launching videos in external media players from scene cards and scene detail pages.
+  version: 1.4.4-fe90221
+  date: 2026-09-20 13:04:40
+  path: external-player-launcher.zip
+  sha256: c1364402c1262e368a32e9df9f125e53532a35259e1efe26d6b271eb8260a99a
+
+- id: mangaTools
+  name: Manga Tools
+  metadata:
+    description: Manages manga galleries in Stash — language, censorship and translation group — and reads them two pages at a time.
+  version: 0.9.99-27a05f0
+  date: 2026-10-05 08:35:31
+  path: mangaTools.zip
+  sha256: 021d11215eb9f89661dbac93abc274cb9dd79cb30d90ae6fbb130e09ea5405fd
