@@ -108,8 +108,13 @@
       return normalized;
     }
     const names = displayNamesFor(locale || NS.FALLBACK_LOCALE);
-    if (!names) return canonical;
-    return names.of(canonical) || canonical;
+    const named = names ? names.of(canonical) || canonical : canonical;
+    if (named !== canonical) return named;
+    if (canonical !== NS.NO_LANGUAGE) return canonical;
+    return NS.stringFor(
+      locale || NS.FALLBACK_LOCALE,
+      "mangaTools.language.noLanguage"
+    ) || "No language";
   };
   NS.describe = (raw, locale) => {
     const code = NS.normalize(raw);
@@ -1048,6 +1053,7 @@
     "mangaReader.reimportWarning": "Replace this gallery's chapters with Stash's? The plugin's own list for it is overwritten.",
     "mangaReader.reimportReplace": "Replace",
     "mangaReader.reimportCancel": "Cancel",
+    "mangaTools.language.noLanguage": "No language",
     "mangaTools.select.placeholder": "Select language\u2026",
     "mangaTools.settings.readerTakeover.heading": "Take over Stash's lightbox",
     "mangaTools.settings.readerTakeover.description": "A gallery marked as manga is read in this plugin's own lightbox, redesigned from the ground up. Nothing about Stash's own lightbox settings is changed.",
@@ -1182,6 +1188,7 @@
     "mangaReader.reimportWarning": "\u7528 Stash \u7684\u7AE0\u8282\u66FF\u6362\u8FD9\u672C\u7684\uFF1F\u63D2\u4EF6\u5DF2\u6709\u7684\u90A3\u4EFD\u4F1A\u88AB\u8986\u76D6\u3002",
     "mangaReader.reimportReplace": "\u66FF\u6362",
     "mangaReader.reimportCancel": "\u53D6\u6D88",
+    "mangaTools.language.noLanguage": "\u65E0\u8BED\u8A00",
     "mangaTools.select.placeholder": "\u9009\u62E9\u8BED\u8A00\u2026",
     "mangaTools.settings.readerTakeover.heading": "\u63A5\u7BA1 Stash \u539F\u751F\u706F\u7BB1",
     "mangaTools.settings.readerTakeover.description": "\u6807\u8BB0\u4E3A\u6F2B\u753B\u7684\u753B\u5ECA\uFF0C\u706F\u7BB1\u7531\u672C\u63D2\u4EF6\u91CD\u65B0\u8BBE\u8BA1\uFF0C\u4E0D\u4F1A\u66F4\u6539\u539F\u751F\u706F\u7BB1\u8BBE\u7F6E\u3002",
@@ -1316,6 +1323,7 @@
     "mangaReader.reimportWarning": "\u7528 Stash \u7684\u7AE0\u7BC0\u53D6\u4EE3\u9019\u672C\u7684\uFF1F\u5916\u639B\u5DF2\u6709\u7684\u90A3\u4EFD\u6703\u88AB\u8986\u84CB\u3002",
     "mangaReader.reimportReplace": "\u53D6\u4EE3",
     "mangaReader.reimportCancel": "\u53D6\u6D88",
+    "mangaTools.language.noLanguage": "\u7121\u8A9E\u8A00",
     "mangaTools.select.placeholder": "\u9078\u64C7\u8A9E\u8A00\u2026",
     "mangaTools.settings.readerTakeover.heading": "\u63A5\u7BA1 Stash \u539F\u751F\u71C8\u7BB1",
     "mangaTools.settings.readerTakeover.description": "\u6A19\u8A18\u70BA\u6F2B\u756B\u7684\u756B\u5ECA\uFF0C\u71C8\u7BB1\u7531\u672C\u5916\u639B\u91CD\u65B0\u8A2D\u8A08\uFF0C\u4E0D\u6703\u66F4\u6539\u539F\u751F\u71C8\u7BB1\u8A2D\u5B9A\u3002",
