@@ -1164,7 +1164,11 @@
       // (it keys its slides on this string); it is never sent to the server, so the
       // request — and its immutable cache entry — is still the image's own.
       paths: {
-        image: file.imageUrl ? file.imageUrl + "#" + file.fileId : file.imageUrl
+        image: file.imageUrl ? file.imageUrl + "#" + file.fileId : file.imageUrl,
+        // Stash's nav strip picks preview-else-thumbnail; a missing key reads as
+        // "not the preview" and leaves the strip asking for an undefined source.
+        thumbnail: file.thumbnail,
+        preview: file.preview
       },
       galleries: [back],
       visual_files: [
@@ -8919,28 +8923,6 @@
     const perPage = Math.max(userPerPage, Math.ceil(fileCount / imagePages));
     return { pages: Math.max(1, Math.ceil(fileCount / perPage)), perPage };
   }
-  var pageView = null;
-  var viewListeners = /* @__PURE__ */ new Set();
-  function setPageView(next) {
-    if (next === null && pageView === null || next !== null && pageView !== null && next.galleryId === pageView.galleryId && next.total === pageView.total && next.perPage === pageView.perPage) {
-      return;
-    }
-    pageView = next;
-    viewListeners.forEach((fn) => {
-      fn();
-    });
-  }
-  function usePageView() {
-    const [, bump] = React15.useState(0);
-    React15.useEffect(() => {
-      const fn = () => bump((n) => n + 1);
-      viewListeners.add(fn);
-      return () => {
-        viewListeners.delete(fn);
-      };
-    }, []);
-    return pageView;
-  }
   function withFragment(url, fileId) {
     return url ? url + "#" + fileId : url;
   }
@@ -9040,9 +9022,17 @@
       const itemsPerPage = filter == null ? void 0 : filter.itemsPerPage;
       const totalCount = props.totalCount;
       const selectedIds = props.selectedIds;
-      const onSelectChange = props.onSelectChange;
+      const selectRef = React15.useRef(void 0);
+      selectRef.current = props.onSelectChange;
+      const change = React15.useCallback(
+        (synthetic, chosen, shiftKey) => {
+          var _a3;
+          (_a3 = selectRef.current) == null ? void 0 : _a3.call(selectRef, synthetic.split("::")[0], chosen, shiftKey);
+        },
+        []
+      );
       const expanded = React15.useMemo(
-        () => NS.physicalPages && grid ? expandPhysicalPage(props, grid) : null,
+        () => NS.physicalPages && grid ? expandPhysicalPage({ ...props, onSelectChange: change }, grid) : null,
         [
           grid,
           sortBy,
@@ -9051,15 +9041,9 @@
           itemsPerPage,
           totalCount,
           selectedIds,
-          onSelectChange
+          change
         ]
       );
-      React15.useEffect(() => {
-        setPageView(
-          expanded ? { galleryId: galleryId2, total: expanded.total, perPage: expanded.perPage } : null
-        );
-        return () => setPageView(null);
-      }, [galleryId2, expanded == null ? void 0 : expanded.total, expanded == null ? void 0 : expanded.perPage]);
       if (!expanded) return next(props);
       return next({
         ...props,
@@ -9087,21 +9071,9 @@
       return [{ ...props, image: { ...image, id: image.id.split("::")[0] } }];
     });
   }
-  function registerPaginationPatch(target2) {
-    registerPatch("instead", target2, (...args) => {
-      const props = args[0];
-      const next = args[args.length - 1];
-      const view2 = usePageView();
-      return next(
-        view2 ? { ...props, totalItems: view2.total, itemsPerPage: view2.perPage } : props
-      );
-    });
-  }
   function registerPhysicalPagePatches() {
     registerListPatch();
     registerCardPatch();
-    registerPaginationPatch("Pagination");
-    registerPaginationPatch("PaginationIndex");
   }
   NS.physicalPagePlan = physicalPagePlan;
   NS.expandPhysicalPage = expandPhysicalPage;
