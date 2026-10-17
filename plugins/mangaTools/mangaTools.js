@@ -8918,9 +8918,9 @@
     inFlight2.set(galleryId2, promise);
     return promise;
   }
-  function physicalPagePlan(imageCount, userPerPage, fileCount) {
-    const imagePages = Math.max(1, Math.ceil(imageCount / userPerPage));
-    const perPage = Math.max(userPerPage, Math.ceil(fileCount / imagePages));
+  function physicalPagePlan(imagePages, userPerPage, fileCount) {
+    const pages = Math.max(1, Math.floor(imagePages) || 1);
+    const perPage = Math.max(userPerPage, Math.ceil(fileCount / pages));
     return { pages: Math.max(1, Math.ceil(fileCount / perPage)), perPage };
   }
   function withFragment(url, fileId) {
@@ -8964,12 +8964,10 @@
     if ((filter == null ? void 0 : filter.sortBy) !== "path") return null;
     if (String((filter == null ? void 0 : filter.sortDirection) || "").toUpperCase() !== "ASC") return null;
     if (!grid || grid.files.length === 0) return null;
-    const userPerPage = Number(filter == null ? void 0 : filter.itemsPerPage) || 100;
-    const plan = physicalPagePlan(
-      Number(props.totalCount) || 0,
-      userPerPage,
-      grid.total
-    );
+    const userPerPage = Math.max(1, Number(filter == null ? void 0 : filter.itemsPerPage) || 100);
+    const stashedPages = Number(props.pageCount) || 0;
+    const imagePages = stashedPages > 0 ? stashedPages : Math.max(1, Math.ceil((Number(props.totalCount) || 0) / userPerPage));
+    const plan = physicalPagePlan(imagePages, userPerPage, grid.total);
     const wanted2 = Number(filter == null ? void 0 : filter.currentPage) || 1;
     const page = Math.min(Math.max(1, wanted2), plan.pages);
     const start2 = (page - 1) * plan.perPage;
