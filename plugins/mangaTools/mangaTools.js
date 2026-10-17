@@ -8618,9 +8618,13 @@
   // src/tools/shops.tsx
   var PluginApi14 = requirePluginApi();
   var React12 = PluginApi14.React;
-  var codeIn = (pattern) => (raw) => {
+  var codeIn = (...patterns) => (raw) => {
     var _a3;
-    return ((_a3 = pattern.exec(raw)) == null ? void 0 : _a3[1]) || "";
+    for (const pattern of patterns) {
+      const code = (_a3 = pattern.exec(raw)) == null ? void 0 : _a3[1];
+      if (code) return code;
+    }
+    return "";
   };
   var SHOPS = [
     {
@@ -8635,8 +8639,9 @@
       name: "FANZA",
       // The doujin pages live on dmm.co.jp, not on a fanza host.
       domain: "dmm.co.jp",
-      // /dc/doujin/-/detail/=/cid=d_790745/
-      code: codeIn(/[?&/]cid=([A-Za-z0-9_]+)/)
+      // /dc/doujin/-/detail/=/cid=d_790745/ — and the book shape,
+      // /product/6300672/b915awnmg04612/
+      code: codeIn(/[?&/]cid=([A-Za-z0-9_]+)/, /\/product\/\d+\/([A-Za-z0-9]+)/)
     },
     {
       key: "toranoana",
