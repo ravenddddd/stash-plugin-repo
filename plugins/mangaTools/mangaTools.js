@@ -1500,10 +1500,6 @@
     "mangaTools.shops.heading": "Shops",
     "mangaTools.settings.shopLinks.heading": "Shop links",
     "mangaTools.settings.shopLinks.description": "Recognise links to DLsite, FANZA, Toranoana and Melonbooks \u2014 an icon in the link field, and a badge with the product code in the Manga info block. The links stay in Stash's own list; nothing is stored or changed.",
-    "mangaTools.settings.shopIconStyle.heading": "Badge icons",
-    "mangaTools.settings.shopIconStyle.description": "Used by the badges in the Manga info block. The link field's icon is always the shop's favicon.",
-    "mangaTools.settings.shopIconStyle.favicon": "Site favicon",
-    "mangaTools.settings.shopIconStyle.logo": "Shop logo",
     "mangaTools.settings.manageChapters.heading": "Take over the Chapters tab",
     "mangaTools.settings.manageChapters.description": "Creating and editing chapters is this plugin's job, and writing them stores this plugin's own chapter field. Stash's existing chapters are brought over quietly, and are never modified.",
     "mangaTools.settings.manageChapters.note": "From here on, editing chapters does not touch Stash's own chapter rows.",
@@ -1645,10 +1641,6 @@
     "mangaTools.shops.heading": "\u5546\u5E97",
     "mangaTools.settings.shopLinks.heading": "\u5546\u5E97\u94FE\u63A5",
     "mangaTools.settings.shopLinks.description": "\u8BC6\u522B DLsite\u3001FANZA\u3001\u864E\u7A74\u3001Melonbooks \u7684\u94FE\u63A5\uFF1A\u5728\u94FE\u63A5\u8F93\u5165\u6846\u524D\u663E\u793A\u5546\u5E97\u56FE\u6807\uFF0C\u5E76\u5728\u6F2B\u753B\u4FE1\u606F\u91CC\u663E\u793A\u56FE\u6807\u548C\u5546\u54C1\u7F16\u53F7\u3002\u94FE\u63A5\u672C\u8EAB\u4ECD\u4FDD\u5B58\u5728 Stash \u7684\u94FE\u63A5\u5217\u8868\u91CC\uFF0C\u4E0D\u53E6\u5B58\u3001\u4E0D\u4FEE\u6539\u3002",
-    "mangaTools.settings.shopIconStyle.heading": "\u5FBD\u7AE0\u56FE\u6807",
-    "mangaTools.settings.shopIconStyle.description": "\u53EA\u5F71\u54CD\u6F2B\u753B\u4FE1\u606F\u91CC\u7684\u5FBD\u7AE0\uFF1B\u7F16\u8F91\u9875\u94FE\u63A5\u8F93\u5165\u6846\u524D\u7684\u56FE\u6807\u59CB\u7EC8\u4F7F\u7528\u7F51\u7AD9 favicon\u3002",
-    "mangaTools.settings.shopIconStyle.favicon": "\u7F51\u7AD9 favicon",
-    "mangaTools.settings.shopIconStyle.logo": "\u5546\u5E97 logo",
     "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u8282\u7CFB\u7EDF",
     "mangaTools.settings.manageChapters.description": "\u6807\u7B7E\u9875\u7684\u521B\u5EFA\u548C\u7F16\u8F91\u7531\u63D2\u4EF6\u63A5\u7BA1\uFF0C\u5199\u5165\u63D2\u4EF6\u81EA\u5DF1\u7684\u7AE0\u8282\u5B57\u6BB5\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u8282\u4F1A\u88AB\u9759\u9ED8\u5BFC\u5165\uFF0C\u4F46\u4E0D\u4F1A\u88AB\u4FEE\u6539\u3002",
     "mangaTools.settings.manageChapters.note": "\u5F00\u542F\u540E\uFF0C\u5BF9\u7AE0\u8282\u7684\u4EFB\u4F55\u7F16\u8F91\u90FD\u4E0D\u4F1A\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u8282\u3002",
@@ -1790,10 +1782,6 @@
     "mangaTools.shops.heading": "\u5546\u5E97",
     "mangaTools.settings.shopLinks.heading": "\u5546\u5E97\u9023\u7D50",
     "mangaTools.settings.shopLinks.description": "\u8FA8\u8B58 DLsite\u3001FANZA\u3001\u864E\u7A74\u3001Melonbooks \u7684\u9023\u7D50\uFF1A\u5728\u9023\u7D50\u8F38\u5165\u6846\u524D\u986F\u793A\u5546\u5E97\u5716\u793A\uFF0C\u4E26\u5728\u6F2B\u756B\u8CC7\u8A0A\u88E1\u986F\u793A\u5716\u793A\u548C\u5546\u54C1\u7DE8\u865F\u3002\u9023\u7D50\u672C\u8EAB\u4ECD\u4FDD\u5B58\u5728 Stash \u7684\u9023\u7D50\u5217\u8868\u88E1\uFF0C\u4E0D\u53E6\u5B58\u3001\u4E0D\u4FEE\u6539\u3002",
-    "mangaTools.settings.shopIconStyle.heading": "\u5FBD\u7AE0\u5716\u793A",
-    "mangaTools.settings.shopIconStyle.description": "\u53EA\u5F71\u97FF\u6F2B\u756B\u8CC7\u8A0A\u88E1\u7684\u5FBD\u7AE0\uFF1B\u7DE8\u8F2F\u9801\u9023\u7D50\u8F38\u5165\u6846\u524D\u7684\u5716\u793A\u59CB\u7D42\u4F7F\u7528\u7DB2\u7AD9 favicon\u3002",
-    "mangaTools.settings.shopIconStyle.favicon": "\u7DB2\u7AD9 favicon",
-    "mangaTools.settings.shopIconStyle.logo": "\u5546\u5E97 logo",
     "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u7BC0\u7CFB\u7D71",
     "mangaTools.settings.manageChapters.description": "\u5206\u9801\u7684\u5EFA\u7ACB\u548C\u7DE8\u8F2F\u7531\u5916\u639B\u63A5\u7BA1\uFF0C\u5BEB\u5165\u5916\u639B\u81EA\u5DF1\u7684\u7AE0\u7BC0\u6B04\u4F4D\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u7BC0\u6703\u88AB\u975C\u9ED8\u532F\u5165\uFF0C\u4F46\u4E0D\u6703\u88AB\u4FEE\u6539\u3002",
     "mangaTools.settings.manageChapters.note": "\u958B\u555F\u5F8C\uFF0C\u5C0D\u7AE0\u7BC0\u7684\u4EFB\u4F55\u7DE8\u8F2F\u90FD\u4E0D\u6703\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u7BC0\u3002",
@@ -5251,6 +5239,30 @@
       return null;
     }
   }
+  var watchedClient = null;
+  function operationName(document2) {
+    var _a3, _b3;
+    const definitions = document2 == null ? void 0 : document2.definitions;
+    return ((_b3 = (_a3 = definitions == null ? void 0 : definitions[0]) == null ? void 0 : _a3.name) == null ? void 0 : _b3.value) || "";
+  }
+  function installStoreRefresh() {
+    const client = stashClient();
+    if (!client || client === watchedClient) return;
+    watchedClient = client;
+    const mutate = client.mutate.bind(client);
+    client.mutate = (options) => {
+      const result = mutate(options);
+      const name = operationName(options == null ? void 0 : options.mutation);
+      if (name === "GalleryUpdate" || name === "GalleriesUpdate") {
+        result.then(
+          () => refreshAfterWrite(),
+          () => {
+          }
+        );
+      }
+      return result;
+    };
+  }
   var QUERIES = {};
   function getQuery(field2) {
     if (QUERIES[field2]) return QUERIES[field2];
@@ -5327,7 +5339,6 @@
   NS.readerTakeover = FEATURE_ON_BY_DEFAULT;
   NS.physicalPages = PHYSICAL_PAGES_BY_DEFAULT;
   NS.shopLinks = SHOP_LINKS_BY_DEFAULT;
-  NS.shopIconStyle = "favicon";
   NS.manageChapters = FEATURE_ON_BY_DEFAULT;
   NS.fields = FEATURE_ON_BY_DEFAULT;
   NS.fieldLanguage = FEATURE_ON_BY_DEFAULT;
@@ -5358,7 +5369,7 @@
     const client = stashClient();
     if (!client) return;
     client.query({ query, fetchPolicy: "no-cache" }).then((res) => {
-      var _a3, _b3;
+      var _a3;
       const data = res == null ? void 0 : res.data;
       const plugins = (_a3 = data == null ? void 0 : data.configuration) == null ? void 0 : _a3.plugins;
       const pluginCfg = plugins == null ? void 0 : plugins[PLUGIN_ID];
@@ -5380,7 +5391,6 @@
         pluginCfg ? pluginCfg.shopLinks : null,
         SHOP_LINKS_BY_DEFAULT
       );
-      NS.shopIconStyle = pluginCfg && String((_b3 = pluginCfg.shopIconStyle) != null ? _b3 : "") === "logo" ? "logo" : "favicon";
       NS.manageChapters = NS.parseFlag(
         pluginCfg ? pluginCfg.manageChapters : null,
         FEATURE_ON_BY_DEFAULT
@@ -5496,6 +5506,7 @@
     }
     refresh2();
     refreshSettings();
+    installStoreRefresh();
     window.setInterval(() => {
       if (document.visibilityState === "visible") refresh2();
     }, REFRESH_MS);
@@ -5546,7 +5557,6 @@
       readerTakeover: NS.readerTakeover,
       physicalPages: NS.physicalPages,
       shopLinks: NS.shopLinks,
-      shopIconStyle: NS.shopIconStyle,
       manageChapters: NS.manageChapters,
       fields: NS.fields,
       fieldLanguage: NS.fieldLanguage,
@@ -8093,42 +8103,7 @@
         onChange: writeFlag((next) => {
           NS.shopLinks = next;
         })
-      },
-      /* @__PURE__ */ React10.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React10.createElement("h3", null, t(intl, "mangaTools.settings.shopIconStyle.heading")), /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.shopIconStyle.description")), /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-settings-control" }, /* @__PURE__ */ React10.createElement(
-        Select,
-        {
-          className: "manga-tools-settings-select",
-          classNamePrefix: "react-select",
-          isClearable: false,
-          isSearchable: false,
-          menuPlacement: "auto",
-          options: [
-            {
-              value: "favicon",
-              label: t(intl, "mangaTools.settings.shopIconStyle.favicon"),
-              flag: null
-            },
-            {
-              value: "logo",
-              label: t(intl, "mangaTools.settings.shopIconStyle.logo"),
-              flag: null
-            }
-          ],
-          value: {
-            value: NS.shopIconStyle,
-            label: t(
-              intl,
-              "mangaTools.settings.shopIconStyle." + NS.shopIconStyle
-            ),
-            flag: null
-          },
-          onChange: (selected) => {
-            NS.shopIconStyle = (selected == null ? void 0 : selected.value) === "logo" ? "logo" : "favicon";
-            emit();
-            persist();
-          }
-        }
-      ))))
+      }
     ), /* @__PURE__ */ React10.createElement(
       SettingSwitch,
       {
@@ -8684,18 +8659,13 @@
     });
     return out;
   }
-  function shopIconUrl(shop, style) {
+  function shopIconUrl(shop) {
     if (!assetBase) return "";
-    const file = style === "logo" ? "logo-" + shop.key + ".svg" : "favicon-" + shop.key + ".ico";
-    return assetBase + "assets/shops/" + file;
-  }
-  function shopIconStyle() {
-    return NS.shopIconStyle === "logo" ? "logo" : "favicon";
+    return assetBase + "assets/shops/favicon-" + shop.key + ".ico";
   }
   function ShopBadges(props) {
-    const style = shopIconStyle();
     return /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-shop-badges" }, props.links.map((link) => {
-      const src = shopIconUrl(link.shop, style);
+      const src = shopIconUrl(link.shop);
       const title = link.shop.name + (link.code ? " \xB7 " + link.code : "");
       return /* @__PURE__ */ React12.createElement(
         "a",
@@ -8707,14 +8677,7 @@
           target: "_blank",
           rel: "noreferrer"
         },
-        src ? /* @__PURE__ */ React12.createElement(
-          "img",
-          {
-            className: style === "logo" ? "is-logo" : "is-favicon",
-            src,
-            alt: link.shop.name
-          }
-        ) : null,
+        src ? /* @__PURE__ */ React12.createElement("img", { className: "is-favicon", src, alt: link.shop.name }) : null,
         link.code ? /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-shop-code" }, link.code) : null
       );
     }));
@@ -9308,7 +9271,7 @@
     if (!found) return null;
     return {
       key: found.shop.key,
-      src: shopIconUrl(found.shop, "favicon"),
+      src: shopIconUrl(found.shop),
       title: found.shop.name + (found.code ? " \xB7 " + found.code : "")
     };
   }
