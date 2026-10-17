@@ -328,7 +328,8 @@
 
   // src/reader/chapters.ts
   var CHAPTERS_VERSION = 1;
-  function parseChapters(raw) {
+  var CHAPTERS_VERSION_FILES = 2;
+  function parseChapters(raw, physical = false) {
     if (!raw) return null;
     let stored = null;
     try {
@@ -337,33 +338,92 @@
       return null;
     }
     if (!stored || typeof stored !== "object") return null;
-    if (stored.v !== CHAPTERS_VERSION) return null;
+    const version = stored.v;
+    if (version !== CHAPTERS_VERSION && version !== CHAPTERS_VERSION_FILES) {
+      return null;
+    }
     if (!Array.isArray(stored.chapters)) return null;
     const chapters = [];
     for (const entry of stored.chapters) {
       if (!entry || typeof entry !== "object") continue;
       const row2 = entry;
-      if (!Array.isArray(row2.images)) continue;
-      const images = [];
-      for (const id of row2.images) {
+      const source = physical && version === CHAPTERS_VERSION_FILES && Array.isArray(row2.files) ? row2.files : row2.images;
+      if (!Array.isArray(source)) continue;
+      const ids = [];
+      for (const id of source) {
         if (typeof id === "string" || typeof id === "number") {
-          images.push(String(id));
+          ids.push(String(id));
         }
       }
       chapters.push({
         title: typeof row2.title === "string" ? row2.title : "",
-        images
+        images: ids
       });
     }
     return chapters;
   }
-  function serializeChapters(chapters) {
+  function parseChapterFieldVersion(raw) {
+    if (!raw) return null;
+    try {
+      const stored = JSON.parse(raw);
+      if (!stored || typeof stored !== "object") return null;
+      if (stored.v === CHAPTERS_VERSION || stored.v === CHAPTERS_VERSION_FILES) {
+        return stored.v;
+      }
+    } catch {
+    }
+    return null;
+  }
+  function readChapters(raw, pages, physical) {
+    const parsed = parseChapters(raw, physical);
+    if (!parsed) return null;
+    if (physical && parseChapterFieldVersion(raw) === CHAPTERS_VERSION) {
+      return toFileChapters(parsed, pages);
+    }
+    return parsed;
+  }
+  function toFileChapters(chapters, pages) {
+    const first = /* @__PURE__ */ new Map();
+    for (const page of pages) {
+      const imageId = page.imageId || page.id;
+      if (!first.has(imageId)) first.set(imageId, page.id);
+    }
+    return chapters.map((chapter) => {
+      const files = [];
+      for (const imageId of chapter.images) {
+        const fileId = first.get(imageId);
+        if (fileId !== void 0) files.push(fileId);
+      }
+      return { title: chapter.title, images: files };
+    });
+  }
+  function serializeChapters(chapters, physical = false, pages = []) {
+    const list = Array.isArray(pages) ? pages : [];
+    const imageOf = /* @__PURE__ */ new Map();
+    for (const page of list) imageOf.set(page.id, page.imageId || page.id);
     return JSON.stringify({
-      v: CHAPTERS_VERSION,
-      chapters: chapters.map((chapter) => ({
-        title: typeof chapter.title === "string" ? chapter.title : "",
-        images: chapter.images.map((id) => String(id))
-      }))
+      v: physical ? CHAPTERS_VERSION_FILES : CHAPTERS_VERSION,
+      chapters: chapters.map((chapter) => {
+        const ids = chapter.images.map((id) => String(id));
+        if (!physical) {
+          return {
+            title: typeof chapter.title === "string" ? chapter.title : "",
+            images: ids
+          };
+        }
+        const images = [];
+        for (const id of ids) {
+          const imageId = imageOf.get(id);
+          if (imageId !== void 0 && !images.includes(imageId)) {
+            images.push(imageId);
+          }
+        }
+        return {
+          title: typeof chapter.title === "string" ? chapter.title : "",
+          files: ids,
+          images
+        };
+      })
     });
   }
   function chaptersFromStash(rows, pathIds) {
@@ -573,8 +633,12 @@
     return null;
   }
   NR.CHAPTERS_VERSION = CHAPTERS_VERSION;
+  NR.CHAPTERS_VERSION_FILES = CHAPTERS_VERSION_FILES;
   NR.chapterAt = chapterAt;
   NR.parseChapters = parseChapters;
+  NR.parseChapterFieldVersion = parseChapterFieldVersion;
+  NR.readChapters = readChapters;
+  NR.toFileChapters = toFileChapters;
   NR.serializeChapters = serializeChapters;
   NR.chaptersFromStash = chaptersFromStash;
   NR.placeChapters = placeChapters;
@@ -587,8 +651,8 @@
 
   // src/reader/chapters-edit.ts
   var listeners = [];
-  function writeChapters(galleryId2, next) {
-    return write(galleryId2, next).then(() => {
+  function writeChapters(galleryId2, next, pages = []) {
+    return write(galleryId2, next, pages).then(() => {
       announce(galleryId2, next);
     });
   }
@@ -599,7 +663,7 @@
       if (at >= 0) listeners.splice(at, 1);
     };
   }
-  function write(galleryId2, chapters) {
+  function write(galleryId2, chapters, pages) {
     const write2 = NS.writeChapters;
     if (typeof write2 !== "function") {
       return Promise.reject(
@@ -608,13 +672,229 @@
         )
       );
     }
-    return write2(galleryId2, serializeChapters(chapters));
+    return write2(galleryId2, serializeChapters(chapters, NS.physicalPages, pages));
   }
   function announce(galleryId2, chapters) {
     for (const fn of [...listeners]) fn(galleryId2, chapters);
   }
   NR.writeChapters = writeChapters;
   NR.watchChapters = watchChapters;
+
+  // src/gallery-files.ts
+  var GALLERY_SCOPE_QUERY_TEXT = [
+    "query MangaToolsGalleryScope($id: ID!) {",
+    "  findGallery(id: $id) {",
+    "    id",
+    "    folder {",
+    "      id",
+    "    }",
+    "    files {",
+    "      id",
+    "    }",
+    "  }",
+    "}"
+  ].join("\n");
+  var IMAGE_SLIM_FIELDS = [
+    "          id",
+    "          title",
+    "          code",
+    "          date",
+    "          urls",
+    "          details",
+    "          photographer",
+    "          rating100",
+    "          organized",
+    "          o_counter",
+    "          paths {",
+    "            thumbnail",
+    "            preview",
+    "            image",
+    "          }",
+    "          galleries {",
+    "            id",
+    "            title",
+    "            folder {",
+    "              path",
+    "            }",
+    "          }",
+    "          studio {",
+    "            id",
+    "            name",
+    "            image_path",
+    "          }",
+    "          tags {",
+    "            id",
+    "            name",
+    "          }",
+    "          performers {",
+    "            id",
+    "            name",
+    "            gender",
+    "            favorite",
+    "            image_path",
+    "          }",
+    "          visual_files {",
+    "            __typename",
+    "            ... on ImageFile {",
+    "              id",
+    "              path",
+    "              width",
+    "              height",
+    "            }",
+    "            ... on VideoFile {",
+    "              id",
+    "              path",
+    "            }",
+    "          }"
+  ];
+  var LIGHT_IMAGE_FIELDS = [
+    "          id",
+    "          title",
+    "          paths {",
+    "            image",
+    "            thumbnail",
+    "            preview",
+    "          }"
+  ];
+  function filesQueryText(withImages) {
+    return [
+      "query MangaToolsGalleryFiles($fileFilter: FileFilterType, $perPage: Int!) {",
+      "  findFiles(",
+      "    file_filter: $fileFilter",
+      '    filter: { per_page: $perPage, sort: "path", direction: ASC }',
+      "  ) {",
+      "    count",
+      "    files {",
+      "      __typename",
+      "      ... on ImageFile {",
+      "        id",
+      "        path",
+      "        basename",
+      "        width",
+      "        height",
+      "        parent_folder {",
+      "          id",
+      "        }",
+      "        zip_file {",
+      "          id",
+      "        }",
+      "        images {",
+      ...withImages ? IMAGE_SLIM_FIELDS : LIGHT_IMAGE_FIELDS,
+      "        }",
+      "      }",
+      "    }",
+      "  }",
+      "}"
+    ].join("\n");
+  }
+  var GALLERY_FILES_QUERY_TEXT = filesQueryText(false);
+  var GALLERY_FILES_WITH_IMAGES_QUERY_TEXT = filesQueryText(true);
+  var GALLERY_FILE_COUNT_QUERY_TEXT = [
+    "query MangaToolsGalleryFileCount($fileFilter: FileFilterType) {",
+    "  findFiles(file_filter: $fileFilter, filter: { per_page: 1 }) {",
+    "    count",
+    "  }",
+    "}"
+  ].join("\n");
+  var scopeQuery = null;
+  var filesQuery = null;
+  var filesWithImagesQuery = null;
+  var countQueryDoc = null;
+  async function fetchGalleryScope(galleryId2) {
+    var _a3, _b3, _c;
+    if (!scopeQuery) {
+      scopeQuery = gqlDoc(
+        GALLERY_SCOPE_QUERY_TEXT,
+        "build the gallery scope query"
+      );
+    }
+    const query = scopeQuery;
+    if (!query) return null;
+    const data = await requirePluginApi().utils.StashService.getClient().query({
+      query,
+      variables: { id: galleryId2 },
+      fetchPolicy: "no-cache"
+    }).then((res) => res == null ? void 0 : res.data);
+    const gallery = data == null ? void 0 : data.findGallery;
+    if (!gallery) return null;
+    return {
+      folderId: ((_a3 = gallery.folder) == null ? void 0 : _a3.id) ? String(gallery.folder.id) : null,
+      zipFileId: ((_c = (_b3 = gallery.files) == null ? void 0 : _b3[0]) == null ? void 0 : _c.id) ? String(gallery.files[0].id) : null
+    };
+  }
+  async function fetchGalleryFiles(scope, withImages = false) {
+    var _a3, _b3, _c, _d, _e, _f, _g, _h;
+    if (!scope.folderId && !scope.zipFileId) return { files: [], total: 0 };
+    if (withImages && !filesWithImagesQuery) {
+      filesWithImagesQuery = gqlDoc(
+        GALLERY_FILES_WITH_IMAGES_QUERY_TEXT,
+        "build the gallery files with images query"
+      );
+    }
+    if (!withImages && !filesQuery) {
+      filesQuery = gqlDoc(
+        GALLERY_FILES_QUERY_TEXT,
+        "build the gallery files query"
+      );
+    }
+    const query = withImages ? filesWithImagesQuery : filesQuery;
+    if (!query) return { files: [], total: 0 };
+    const fileFilter = scope.zipFileId ? { zip_file: { value: [scope.zipFileId], modifier: "INCLUDES" } } : { parent_folder: { value: [scope.folderId], modifier: "INCLUDES" } };
+    const data = await requirePluginApi().utils.StashService.getClient().query({
+      query,
+      variables: { fileFilter, perPage: -1 },
+      fetchPolicy: "no-cache"
+    }).then((res) => res == null ? void 0 : res.data);
+    const entries = [];
+    for (const file of ((_a3 = data == null ? void 0 : data.findFiles) == null ? void 0 : _a3.files) || []) {
+      if (file.__typename !== "ImageFile") continue;
+      const image = (_b3 = file.images) == null ? void 0 : _b3[0];
+      if (!(image == null ? void 0 : image.id)) continue;
+      const parentFolderId = ((_c = file.parent_folder) == null ? void 0 : _c.id) ? String(file.parent_folder.id) : null;
+      const zipFileId = ((_d = file.zip_file) == null ? void 0 : _d.id) ? String(file.zip_file.id) : null;
+      if (scope.zipFileId && zipFileId !== scope.zipFileId) continue;
+      if (scope.folderId && parentFolderId !== scope.folderId) continue;
+      entries.push({
+        fileId: String(file.id),
+        imageId: String(image.id),
+        path: String(file.path || ""),
+        basename: String(file.basename || ""),
+        width: typeof file.width === "number" ? file.width : 0,
+        height: typeof file.height === "number" ? file.height : 0,
+        title: String(image.title || ""),
+        imageUrl: String(((_e = image.paths) == null ? void 0 : _e.image) || ""),
+        thumbnail: String(((_f = image.paths) == null ? void 0 : _f.thumbnail) || ""),
+        preview: String(((_g = image.paths) == null ? void 0 : _g.preview) || ""),
+        parentFolderId,
+        zipFileId,
+        image: withImages ? image : void 0
+      });
+    }
+    return {
+      files: entries,
+      total: typeof ((_h = data == null ? void 0 : data.findFiles) == null ? void 0 : _h.count) === "number" ? data.findFiles.count : entries.length
+    };
+  }
+  async function fetchGalleryFileCount(scope) {
+    var _a3;
+    if (!scope.folderId && !scope.zipFileId) return 0;
+    if (!countQueryDoc) {
+      countQueryDoc = gqlDoc(
+        GALLERY_FILE_COUNT_QUERY_TEXT,
+        "build the gallery file count query"
+      );
+    }
+    const query = countQueryDoc;
+    if (!query) return null;
+    const fileFilter = scope.zipFileId ? { zip_file: { value: [scope.zipFileId], modifier: "INCLUDES" } } : { parent_folder: { value: [scope.folderId], modifier: "INCLUDES" } };
+    const data = await requirePluginApi().utils.StashService.getClient().query({
+      query,
+      variables: { fileFilter },
+      fetchPolicy: "no-cache"
+    }).then((res) => res == null ? void 0 : res.data);
+    const count = (_a3 = data == null ? void 0 : data.findFiles) == null ? void 0 : _a3.count;
+    return typeof count === "number" ? count : null;
+  }
 
   // src/reader/stash-lightbox.ts
   var SELECTOR_LIGHTBOX = ".Lightbox";
@@ -747,7 +1027,7 @@
   ].join("\n");
   var galleryQuery = null;
   function carouselImage(lightbox) {
-    var _a3, _b3;
+    var _a3, _b3, _c;
     const carousel = lightbox.querySelector(
       SELECTOR_CAROUSEL
     );
@@ -761,7 +1041,8 @@
     const src = (media == null ? void 0 : media.src) || "";
     const id = (_b3 = /\/image\/([^/]+)\//.exec(src)) == null ? void 0 : _b3[1];
     if (!id) return null;
-    return { at, id };
+    const fileId = ((_c = /#([^#\s]+)$/.exec(src)) == null ? void 0 : _c[1]) || null;
+    return { at, id, fileId };
   }
   var GALLERY_IMAGE_COUNT_QUERY_TEXT = [
     "query MangaReaderGalleryImageCount($galleryId: ID!) {",
@@ -790,8 +1071,110 @@
     const count = (_a3 = data == null ? void 0 : data.findGallery) == null ? void 0 : _a3.image_count;
     return typeof count === "number" ? count : null;
   }
+  var PHYSICAL_GALLERY_QUERY_TEXT = [
+    "query MangaReaderPhysicalGallery($galleryId: ID!, $byPath: Boolean!) {",
+    "  configuration {",
+    "    interface {",
+    "      language",
+    "    }",
+    "  }",
+    "  findGallery(id: $galleryId) {",
+    "    id",
+    "    title",
+    "    folder {",
+    "      id",
+    "      path",
+    "    }",
+    "    files {",
+    "      id",
+    "    }",
+    "    custom_fields",
+    "    chapters {",
+    "      title",
+    "      image_index",
+    "    }",
+    "  }",
+    "  byPath: findImages(",
+    "    image_filter: { galleries: { value: [$galleryId], modifier: INCLUDES } }",
+    '    filter: { per_page: -1, sort: "path", direction: ASC }',
+    "  ) @include(if: $byPath) {",
+    "    images {",
+    "      id",
+    "    }",
+    "  }",
+    "}"
+  ].join("\n");
+  var physicalGalleryQuery = null;
+  async function fetchPhysicalGallery(galleryId2) {
+    var _a3, _b3, _c, _d, _e, _f, _g, _h;
+    if (!physicalGalleryQuery) {
+      physicalGalleryQuery = gqlDoc(
+        PHYSICAL_GALLERY_QUERY_TEXT,
+        "build the physical gallery query"
+      );
+    }
+    const query = physicalGalleryQuery;
+    if (!query) throw new Error("[mangaReader] no physical gallery query");
+    const data = await requirePluginApi().utils.StashService.getClient().query({
+      query,
+      variables: { galleryId: galleryId2, byPath: true },
+      fetchPolicy: "no-cache"
+    }).then((res) => res == null ? void 0 : res.data);
+    const gallery = data == null ? void 0 : data.findGallery;
+    const scope = {
+      folderId: ((_a3 = gallery == null ? void 0 : gallery.folder) == null ? void 0 : _a3.id) ? String(gallery.folder.id) : null,
+      zipFileId: ((_c = (_b3 = gallery == null ? void 0 : gallery.files) == null ? void 0 : _b3[0]) == null ? void 0 : _c.id) ? String(gallery.files[0].id) : null
+    };
+    const list = await fetchGalleryFiles(scope);
+    const pages = list.files.map((file) => ({
+      // The file id is the page identity; the image id is what the bytes and the
+      // carousel are keyed by. See MangaReaderPage.
+      id: file.fileId,
+      imageId: file.imageId,
+      width: file.width,
+      height: file.height,
+      url: file.imageUrl
+    }));
+    const back = {
+      id: String((_d = gallery == null ? void 0 : gallery.id) != null ? _d : galleryId2),
+      title: String((gallery == null ? void 0 : gallery.title) || ""),
+      folder: ((_e = gallery == null ? void 0 : gallery.folder) == null ? void 0 : _e.path) ? { path: String(gallery.folder.path) } : null
+    };
+    const images = list.files.map((file) => ({
+      id: file.imageId,
+      title: file.title,
+      // A fragment makes each occurrence a distinct React key in Stash's lightbox
+      // (it keys its slides on this string); it is never sent to the server, so the
+      // request — and its immutable cache entry — is still the image's own.
+      paths: {
+        image: file.imageUrl ? file.imageUrl + "#" + file.fileId : file.imageUrl
+      },
+      galleries: [back],
+      visual_files: [
+        {
+          __typename: "ImageFile",
+          path: file.path,
+          width: file.width,
+          height: file.height
+        }
+      ]
+    }));
+    return {
+      language: ((_g = (_f = data == null ? void 0 : data.configuration) == null ? void 0 : _f.interface) == null ? void 0 : _g.language) || null,
+      pages,
+      images,
+      customFields: gallery == null ? void 0 : gallery.custom_fields,
+      stashChapters: (gallery == null ? void 0 : gallery.chapters) || [],
+      pathIds: (((_h = data == null ? void 0 : data.byPath) == null ? void 0 : _h.images) || []).map((image) => String(image.id)),
+      fileScope: scope,
+      fileTotal: list.total
+    };
+  }
   async function fetchGallery(galleryId2, order) {
     var _a3, _b3, _c, _d, _e, _f, _g;
+    if (NS.physicalPages && order.sort === "path" && order.direction === "ASC") {
+      return fetchPhysicalGallery(galleryId2);
+    }
     if (!galleryQuery) {
       galleryQuery = gqlDoc(GALLERY_QUERY_TEXT, "build the gallery query");
     }
@@ -941,14 +1324,15 @@
     for (const id of ids) {
       try {
         const answer = await fetchGallery(id, { sort: "path", direction: "ASC" });
-        const chapters = chaptersFromStash(
+        const translated = chaptersFromStash(
           answer.stashChapters,
-          answer.pages.map((page) => page.id)
+          answer.pathIds || answer.pages.map((page) => page.imageId || page.id)
         );
+        const chapters = NS.physicalPages ? toFileChapters(translated, answer.pages) : translated;
         if (chapters.length === 0) {
           run.skippedEmpty.push(id);
         } else {
-          await writeChapters(id, chapters);
+          await writeChapters(id, chapters, answer.pages);
           run.written.push(id);
         }
       } catch (error) {
@@ -974,9 +1358,9 @@
   }
   function LightboxBridge() {
     const api = requirePluginApi();
-    const React16 = api.React;
+    const React17 = api.React;
     const show = api.hooks.useLightbox();
-    React16.useEffect(() => {
+    React17.useEffect(() => {
       const mine = {
         takeOver(request) {
           show({
@@ -1003,19 +1387,19 @@
   }
   function installBridge() {
     const api = requirePluginApi();
-    const React16 = api.React;
+    const React17 = api.React;
     for (const target2 of ["ImageList", "HeaderImage"]) {
-      installAgainst(api, React16, target2);
+      installAgainst(api, React17, target2);
     }
   }
-  function installAgainst(api, React16, target2) {
+  function installAgainst(api, React17, target2) {
     api.patch.after(target2, (...args) => {
       const result = args[args.length - 1];
-      return React16.createElement(
-        React16.Fragment,
+      return React17.createElement(
+        React17.Fragment,
         null,
         result,
-        React16.createElement(LightboxBridge)
+        React17.createElement(LightboxBridge)
       );
     });
   }
@@ -1085,6 +1469,9 @@
     "mangaTools.settings.readerTakeover.heading": "Take over Stash's lightbox",
     "mangaTools.settings.readerTakeover.description": "A gallery marked as manga is read in this plugin's own lightbox, redesigned from the ground up. Nothing about Stash's own lightbox settings is changed.",
     "mangaTools.settings.readerTakeover.note": "The lightbox's own settings are adjusted on the lightbox page, not here.",
+    "mangaTools.settings.physicalPages.heading": "Read by physical pages",
+    "mangaTools.settings.physicalPages.description": "A gallery's pages are the files it contains, not the images Stash deduplicates. Content that appears several times is shown each time \u2014 in the gallery grid and in the reader \u2014 and chapters are stored by file. Off, everything works as before.",
+    "mangaTools.settings.physicalPages.note": "Chapters already stored by image are read at their first occurrence, and are only written by file when you next edit them.",
     "mangaTools.settings.manageChapters.heading": "Take over the Chapters tab",
     "mangaTools.settings.manageChapters.description": "Creating and editing chapters is this plugin's job, and writing them stores this plugin's own chapter field. Stash's existing chapters are brought over quietly, and are never modified.",
     "mangaTools.settings.manageChapters.note": "From here on, editing chapters does not touch Stash's own chapter rows.",
@@ -1220,6 +1607,9 @@
     "mangaTools.settings.readerTakeover.heading": "\u63A5\u7BA1 Stash \u539F\u751F\u706F\u7BB1",
     "mangaTools.settings.readerTakeover.description": "\u6807\u8BB0\u4E3A\u6F2B\u753B\u7684\u753B\u5ECA\uFF0C\u706F\u7BB1\u7531\u672C\u63D2\u4EF6\u91CD\u65B0\u8BBE\u8BA1\uFF0C\u4E0D\u4F1A\u66F4\u6539\u539F\u751F\u706F\u7BB1\u8BBE\u7F6E\u3002",
     "mangaTools.settings.readerTakeover.note": "\u63D2\u4EF6\u706F\u7BB1\u76F8\u5173\u8BBE\u7F6E\u5728\u706F\u7BB1\u9875\u9762\u8BBE\u7F6E\u4E2D\u8C03\u6574\u3002",
+    "mangaTools.settings.physicalPages.heading": "\u6309\u7269\u7406\u9875\u9605\u8BFB",
+    "mangaTools.settings.physicalPages.description": "\u753B\u5ECA\u7684\u9875\u6570\u662F\u5B83\u5B9E\u9645\u5305\u542B\u7684\u6587\u4EF6\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u540E\u7684\u56FE\u7247\u3002\u91CD\u590D\u51FA\u73B0\u7684\u5185\u5BB9\u4F1A\u5728\u753B\u5ECA\u7F51\u683C\u548C\u9605\u8BFB\u5668\u4E2D\u5404\u663E\u793A\u4E00\u6B21\uFF0C\u7AE0\u8282\u4E5F\u6309\u6587\u4EF6\u5B58\u50A8\u3002\u5173\u95ED\u65F6\u4E00\u5207\u4FDD\u6301\u539F\u6837\u3002",
+    "mangaTools.settings.physicalPages.note": "\u5DF2\u6709\u7684\u6309\u56FE\u7247\u5B58\u50A8\u7684\u7AE0\u8282\u4F1A\u5728\u8BFB\u53D6\u65F6\u843D\u5230\u7B2C\u4E00\u6B21\u51FA\u73B0\u7684\u4F4D\u7F6E\uFF1B\u53EA\u6709\u518D\u6B21\u7F16\u8F91\u4FDD\u5B58\u540E\uFF0C\u624D\u4F1A\u5199\u6210\u6587\u4EF6\u7EA7\u3002",
     "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u8282\u7CFB\u7EDF",
     "mangaTools.settings.manageChapters.description": "\u6807\u7B7E\u9875\u7684\u521B\u5EFA\u548C\u7F16\u8F91\u7531\u63D2\u4EF6\u63A5\u7BA1\uFF0C\u5199\u5165\u63D2\u4EF6\u81EA\u5DF1\u7684\u7AE0\u8282\u5B57\u6BB5\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u8282\u4F1A\u88AB\u9759\u9ED8\u5BFC\u5165\uFF0C\u4F46\u4E0D\u4F1A\u88AB\u4FEE\u6539\u3002",
     "mangaTools.settings.manageChapters.note": "\u5F00\u542F\u540E\uFF0C\u5BF9\u7AE0\u8282\u7684\u4EFB\u4F55\u7F16\u8F91\u90FD\u4E0D\u4F1A\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u8282\u3002",
@@ -1355,6 +1745,9 @@
     "mangaTools.settings.readerTakeover.heading": "\u63A5\u7BA1 Stash \u539F\u751F\u71C8\u7BB1",
     "mangaTools.settings.readerTakeover.description": "\u6A19\u8A18\u70BA\u6F2B\u756B\u7684\u756B\u5ECA\uFF0C\u71C8\u7BB1\u7531\u672C\u5916\u639B\u91CD\u65B0\u8A2D\u8A08\uFF0C\u4E0D\u6703\u66F4\u6539\u539F\u751F\u71C8\u7BB1\u8A2D\u5B9A\u3002",
     "mangaTools.settings.readerTakeover.note": "\u5916\u639B\u71C8\u7BB1\u76F8\u95DC\u8A2D\u5B9A\u5728\u71C8\u7BB1\u9801\u9762\u8A2D\u5B9A\u4E2D\u8ABF\u6574\u3002",
+    "mangaTools.settings.physicalPages.heading": "\u6309\u7269\u7406\u9801\u95B1\u8B80",
+    "mangaTools.settings.physicalPages.description": "\u756B\u5ECA\u7684\u9801\u6578\u662F\u5B83\u5BE6\u969B\u5305\u542B\u7684\u6A94\u6848\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u5F8C\u7684\u5716\u7247\u3002\u91CD\u8907\u51FA\u73FE\u7684\u5167\u5BB9\u6703\u5728\u756B\u5ECA\u7DB2\u683C\u548C\u95B1\u8B80\u5668\u4E2D\u5404\u986F\u793A\u4E00\u6B21\uFF0C\u7AE0\u7BC0\u4E5F\u6309\u6A94\u6848\u5132\u5B58\u3002\u95DC\u9589\u6642\u4E00\u5207\u4FDD\u6301\u539F\u6A23\u3002",
+    "mangaTools.settings.physicalPages.note": "\u5DF2\u6709\u7684\u6309\u5716\u7247\u5132\u5B58\u7684\u7AE0\u7BC0\u6703\u5728\u8B80\u53D6\u6642\u843D\u5230\u7B2C\u4E00\u6B21\u51FA\u73FE\u7684\u4F4D\u7F6E\uFF1B\u53EA\u6709\u518D\u6B21\u7DE8\u8F2F\u5132\u5B58\u5F8C\uFF0C\u624D\u6703\u5BEB\u6210\u6A94\u6848\u7D1A\u3002",
     "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u7BC0\u7CFB\u7D71",
     "mangaTools.settings.manageChapters.description": "\u5206\u9801\u7684\u5EFA\u7ACB\u548C\u7DE8\u8F2F\u7531\u5916\u639B\u63A5\u7BA1\uFF0C\u5BEB\u5165\u5916\u639B\u81EA\u5DF1\u7684\u7AE0\u7BC0\u6B04\u4F4D\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u7BC0\u6703\u88AB\u975C\u9ED8\u532F\u5165\uFF0C\u4F46\u4E0D\u6703\u88AB\u4FEE\u6539\u3002",
     "mangaTools.settings.manageChapters.note": "\u958B\u555F\u5F8C\uFF0C\u5C0D\u7AE0\u7BC0\u7684\u4EFB\u4F55\u7DE8\u8F2F\u90FD\u4E0D\u6703\u4FEE\u6539 Stash \u7684\u539F\u751F\u7AE0\u7BC0\u3002",
@@ -2567,7 +2960,7 @@
   // src/reader/spreads.ts
   function pageUrl(page) {
     const query = /\?.*$/.exec(page.url || "");
-    return "/image/" + page.id + "/image" + (query ? query[0] : "");
+    return "/image/" + (page.imageId || page.id) + "/image" + (query ? query[0] : "");
   }
   var DEFAULT_SPREAD_OPTIONS = {
     coverAlone: true,
@@ -2666,8 +3059,11 @@
       renderedFor = "";
       fetchGallery(id, { sort: "path", direction: "ASC" }).then((answer) => {
         if (galleryIdFromPath(window.location.pathname) !== id) return;
-        const pageIds = answer.pages.map((page) => page.id);
         const own = chaptersOf(answer);
+        const inherited = chaptersFromStash(
+          answer.stashChapters,
+          answer.pathIds || answer.pages.map((page) => page.imageId || page.id)
+        );
         inHand = {
           id,
           images: answer.images,
@@ -2678,7 +3074,7 @@
           // is showing for a gallery that has no list of this plugin's own.
           // Computed from the rows rather than from what is on screen: it is what
           // would be *written*, so it cannot depend on how the screen is ordered.
-          importable: chaptersFromStash(answer.stashChapters, pageIds),
+          importable: NS.physicalPages ? toFileChapters(inherited, answer.pages) : inherited,
           own: own.own,
           locale: answer.language
         };
@@ -2692,15 +3088,18 @@
     }
   }
   function chaptersOf(answer) {
-    const own = parseChapters(
-      NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null
+    const own = readChapters(
+      NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null,
+      answer.pages,
+      NS.physicalPages
     );
     if (own) return { chapters: own, own: true };
+    const translated = chaptersFromStash(
+      answer.stashChapters,
+      answer.pathIds || answer.pages.map((page) => page.imageId || page.id)
+    );
     return {
-      chapters: chaptersFromStash(
-        answer.stashChapters,
-        answer.pages.map((page) => page.id)
-      ),
+      chapters: NS.physicalPages ? toFileChapters(translated, answer.pages) : translated,
       own: false
     };
   }
@@ -3077,6 +3476,7 @@
     controlFor = {
       id: gallery.id,
       importable: gallery.importable,
+      pages: gallery.pages,
       own: gallery.own
     };
     if (!control) {
@@ -3148,7 +3548,10 @@
     }
     busy = true;
     redraw3();
-    NS.writeChapters(target2.id, serializeChapters(target2.importable)).then(
+    NS.writeChapters(
+      target2.id,
+      serializeChapters(target2.importable, NS.physicalPages, target2.pages)
+    ).then(
       () => {
         busy = false;
         if ((inHand == null ? void 0 : inHand.id) === target2.id) {
@@ -3342,7 +3745,7 @@
   function applyEdit(gallery, next) {
     busy = true;
     redraw3();
-    writeChapters(gallery.id, next).then(
+    writeChapters(gallery.id, next, gallery.pages).then(
       () => {
         busy = false;
         closeForm();
@@ -3847,17 +4250,29 @@
       images: answer.images,
       pairedWith: pairingKey(),
       screens: laidOut(answer.pages),
-      chapters: placeChapters(chaptersOf2(answer), answer.pages)
+      chapters: placeChapters(chaptersOf2(answer), answer.pages),
+      fileScope: answer.fileScope,
+      fileTotal: answer.fileTotal
     };
   }
   function revalidate(id) {
     if (counting === id) return;
     counting = id;
-    fetchImageCount(id).then((count) => {
+    const cached = loaded.get(id);
+    const asked = (cached == null ? void 0 : cached.fileScope) ? fetchGalleryFileCount(cached.fileScope).then(
+      (count) => {
+        var _a3;
+        return count === null ? null : { count, was: (_a3 = cached.fileTotal) != null ? _a3 : -1 };
+      }
+    ) : fetchImageCount(id).then(
+      (count) => {
+        var _a3;
+        return count === null ? null : { count, was: (_a3 = cached == null ? void 0 : cached.pages.length) != null ? _a3 : -1 };
+      }
+    );
+    asked.then((answer) => {
       if (counting === id) counting = null;
-      if (count === null) return;
-      const cached = loaded.get(id);
-      if (!cached || count === cached.pages.length) return;
+      if (!answer || answer.count === answer.was) return;
       refresh(id);
     }).catch(() => {
       if (counting === id) counting = null;
@@ -3901,7 +4316,7 @@
     const answer = await fetchGallery(id, order);
     const shown = carouselImage(lightbox);
     if (!shown) return answer;
-    if (!answer.pages.some((page) => page.id === shown.id)) {
+    if (!answer.pages.some((page) => (page.imageId || page.id) === shown.id)) {
       throw new Error(
         "[mangaReader] the lightbox is showing image " + shown.id + ", which is not among the pages this plugin read \u2014 the list behind it is filtered, so its pages cannot be paired"
       );
@@ -3911,19 +4326,28 @@
   function placeOf(gallery, lightbox) {
     const shown = carouselImage(lightbox);
     if (!shown) return -1;
+    if (shown.fileId) {
+      for (let i = 0; i < gallery.pages.length; i++) {
+        if (gallery.pages[i].id === shown.fileId) return i;
+      }
+    }
     for (let i = 0; i < gallery.pages.length; i++) {
-      if (gallery.pages[i].id === shown.id) return i;
+      if ((gallery.pages[i].imageId || gallery.pages[i].id) === shown.id)
+        return i;
     }
     return -1;
   }
   function chaptersOf2(answer) {
-    const own = parseChapters(
-      NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null
+    const own = readChapters(
+      NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null,
+      answer.pages,
+      NS.physicalPages
     );
     if (own) return own;
     if (answer.stashChapters.length === 0) return [];
-    const pathIds = answer.pathIds || answer.pages.map((page) => page.id);
-    return chaptersFromStash(answer.stashChapters, pathIds);
+    const pathIds = answer.pathIds || answer.pages.map((page) => page.imageId || page.id);
+    const translated = chaptersFromStash(answer.stashChapters, pathIds);
+    return NS.physicalPages ? toFileChapters(translated, answer.pages) : translated;
   }
   function remember(id, gallery) {
     loaded.delete(id);
@@ -4844,7 +5268,9 @@
     return inFlight;
   }
   var FEATURE_ON_BY_DEFAULT = true;
+  var PHYSICAL_PAGES_BY_DEFAULT = false;
   NS.readerTakeover = FEATURE_ON_BY_DEFAULT;
+  NS.physicalPages = PHYSICAL_PAGES_BY_DEFAULT;
   NS.manageChapters = FEATURE_ON_BY_DEFAULT;
   NS.fields = FEATURE_ON_BY_DEFAULT;
   NS.fieldLanguage = FEATURE_ON_BY_DEFAULT;
@@ -4888,6 +5314,10 @@
       NS.readerTakeover = NS.parseFlag(
         pluginCfg ? pluginCfg.readerTakeover : null,
         FEATURE_ON_BY_DEFAULT
+      );
+      NS.physicalPages = NS.parseFlag(
+        pluginCfg ? pluginCfg.physicalPages : null,
+        PHYSICAL_PAGES_BY_DEFAULT
       );
       NS.manageChapters = NS.parseFlag(
         pluginCfg ? pluginCfg.manageChapters : null,
@@ -5049,6 +5479,7 @@
         NS.sidebarFilters || NS.SIDEBAR_FILTERS
       ),
       readerTakeover: NS.readerTakeover,
+      physicalPages: NS.physicalPages,
       manageChapters: NS.manageChapters,
       fields: NS.fields,
       fieldLanguage: NS.fieldLanguage,
@@ -7565,6 +7996,17 @@
     ), /* @__PURE__ */ React10.createElement(
       SettingSwitch,
       {
+        id: "mangaTools-physicalPages",
+        heading: t(intl, "mangaTools.settings.physicalPages.heading"),
+        subHeading: /* @__PURE__ */ React10.createElement(React10.Fragment, null, t(intl, "mangaTools.settings.physicalPages.description"), /* @__PURE__ */ React10.createElement(SettingsNote, null, t(intl, "mangaTools.settings.physicalPages.note"))),
+        checked: NS.physicalPages,
+        onChange: writeFlag((next) => {
+          NS.physicalPages = next;
+        })
+      }
+    ), /* @__PURE__ */ React10.createElement(
+      SettingSwitch,
+      {
         id: "mangaTools-manageChapters",
         heading: t(intl, "mangaTools.settings.manageChapters.heading"),
         subHeading: /* @__PURE__ */ React10.createElement(React10.Fragment, null, t(intl, "mangaTools.settings.manageChapters.description"), /* @__PURE__ */ React10.createElement(SettingsNote, null, t(intl, "mangaTools.settings.manageChapters.note"))),
@@ -8427,9 +8869,204 @@
     );
   }
 
-  // src/tools/index.tsx
+  // src/tools/physical-grid.ts
   var PluginApi17 = requirePluginApi();
   var React15 = PluginApi17.React;
+  var cache = /* @__PURE__ */ new Map();
+  var inFlight2 = /* @__PURE__ */ new Map();
+  function load(galleryId2) {
+    const cached = cache.get(galleryId2);
+    if (cached) return Promise.resolve(cached);
+    const waiting = inFlight2.get(galleryId2);
+    if (waiting) return waiting;
+    const promise = fetchGalleryScope(galleryId2).then(
+      (scope) => scope ? fetchGalleryFiles(scope, true) : { files: [], total: 0 }
+    ).then((list) => {
+      const grid = { files: list.files, total: list.total };
+      cache.set(galleryId2, grid);
+      inFlight2.delete(galleryId2);
+      return grid;
+    }).catch((error) => {
+      inFlight2.delete(galleryId2);
+      console.error(
+        "[mangaTools] could not read this gallery's files, so its grid keeps the deduplicated list:",
+        error
+      );
+      return { files: [], total: 0 };
+    });
+    inFlight2.set(galleryId2, promise);
+    return promise;
+  }
+  function physicalPagePlan(imageCount, userPerPage, fileCount) {
+    const imagePages = Math.max(1, Math.ceil(imageCount / userPerPage));
+    const perPage = Math.max(userPerPage, Math.ceil(fileCount / imagePages));
+    return { pages: Math.max(1, Math.ceil(fileCount / perPage)), perPage };
+  }
+  var pageView = null;
+  var viewListeners = /* @__PURE__ */ new Set();
+  function setPageView(next) {
+    if (next === null && pageView === null || next !== null && pageView !== null && next.galleryId === pageView.galleryId && next.total === pageView.total && next.perPage === pageView.perPage) {
+      return;
+    }
+    pageView = next;
+    viewListeners.forEach((fn) => {
+      fn();
+    });
+  }
+  function usePageView() {
+    const [, bump] = React15.useState(0);
+    React15.useEffect(() => {
+      const fn = () => bump((n) => n + 1);
+      viewListeners.add(fn);
+      return () => {
+        viewListeners.delete(fn);
+      };
+    }, []);
+    return pageView;
+  }
+  function withFragment(url, fileId) {
+    return url ? url + "#" + fileId : url;
+  }
+  function occurrenceOf(file) {
+    var _a3;
+    const image = file.image || {};
+    const paths = image.paths || {};
+    return {
+      ...image,
+      // Unique across occurrences of the same image, which is what React keys and
+      // the grid's selection bookkeeping need. The ImageCard patch turns it back
+      // into the real image id for the card's link.
+      id: file.imageId + "::" + file.fileId,
+      title: (_a3 = image.title) != null ? _a3 : file.title,
+      paths: {
+        thumbnail: paths.thumbnail || file.thumbnail,
+        preview: paths.preview || file.preview,
+        image: withFragment(paths.image || file.imageUrl, file.fileId)
+      },
+      visual_files: [
+        {
+          __typename: "ImageFile",
+          id: file.fileId,
+          path: file.path,
+          width: file.width,
+          height: file.height
+        }
+      ],
+      tags: image.tags || [],
+      performers: image.performers || [],
+      galleries: image.galleries || [],
+      studio: image.studio || null,
+      organized: !!image.organized,
+      o_counter: image.o_counter || 0
+    };
+  }
+  function expandPhysicalPage(props, grid) {
+    const filter = props.filter;
+    if ((filter == null ? void 0 : filter.sortBy) !== "path") return null;
+    if (String((filter == null ? void 0 : filter.sortDirection) || "").toUpperCase() !== "ASC") return null;
+    if (!grid || grid.files.length === 0) return null;
+    const userPerPage = Number(filter == null ? void 0 : filter.itemsPerPage) || 100;
+    const plan = physicalPagePlan(
+      Number(props.totalCount) || 0,
+      userPerPage,
+      grid.total
+    );
+    const wanted2 = Number(filter == null ? void 0 : filter.currentPage) || 1;
+    const page = Math.min(Math.max(1, wanted2), plan.pages);
+    const start2 = (page - 1) * plan.perPage;
+    const files = grid.files.slice(start2, start2 + plan.perPage);
+    const images = files.map(occurrenceOf);
+    const selected = /* @__PURE__ */ new Set();
+    const selectedIds = props.selectedIds;
+    if (selectedIds) {
+      files.forEach((file, index) => {
+        if (selectedIds.has(file.imageId)) selected.add(images[index].id);
+      });
+    }
+    const onSelectChange = props.onSelectChange;
+    const change = onSelectChange ? (synthetic, chosen, shiftKey) => {
+      const real = synthetic.split("::")[0];
+      onSelectChange(real, chosen, shiftKey);
+    } : void 0;
+    return {
+      props: {
+        ...props,
+        images,
+        selectedIds: selected,
+        onSelectChange: change,
+        totalCount: grid.total,
+        pageCount: plan.pages,
+        filter: {
+          ...filter || {},
+          currentPage: page,
+          itemsPerPage: plan.perPage
+        }
+      },
+      total: grid.total,
+      perPage: plan.perPage
+    };
+  }
+  function registerListPatch() {
+    registerPatch("instead", "ImageList", (...args) => {
+      noteFired("ImageList");
+      const props = args[0];
+      const next = args[args.length - 1];
+      const galleryId2 = NS.physicalPages ? currentGalleryId() : "";
+      const [, bump] = React15.useState(0);
+      React15.useEffect(() => {
+        if (!galleryId2) return;
+        let live = true;
+        load(galleryId2).then(() => {
+          if (live) bump((n) => n + 1);
+        });
+        return () => {
+          live = false;
+        };
+      }, [galleryId2]);
+      const grid = galleryId2 ? cache.get(galleryId2) : void 0;
+      const expanded = NS.physicalPages && grid ? expandPhysicalPage(props, grid) : null;
+      React15.useEffect(() => {
+        setPageView(
+          expanded ? { galleryId: galleryId2, total: expanded.total, perPage: expanded.perPage } : null
+        );
+        return () => setPageView(null);
+      }, [galleryId2, expanded == null ? void 0 : expanded.total, expanded == null ? void 0 : expanded.perPage]);
+      return next(expanded ? expanded.props : props);
+    });
+  }
+  function registerCardPatch() {
+    registerPatch("before", "ImageCard", (...args) => {
+      const props = args[0];
+      noteFired("ImageCard");
+      const image = props.image;
+      if (!image || typeof image.id !== "string" || image.id.indexOf("::") < 0) {
+        return [props];
+      }
+      return [{ ...props, image: { ...image, id: image.id.split("::")[0] } }];
+    });
+  }
+  function registerPaginationPatch(target2) {
+    registerPatch("instead", target2, (...args) => {
+      const props = args[0];
+      const next = args[args.length - 1];
+      const view2 = usePageView();
+      return next(
+        view2 ? { ...props, totalItems: view2.total, itemsPerPage: view2.perPage } : props
+      );
+    });
+  }
+  function registerPhysicalPagePatches() {
+    registerListPatch();
+    registerCardPatch();
+    registerPaginationPatch("Pagination");
+    registerPaginationPatch("PaginationIndex");
+  }
+  NS.physicalPagePlan = physicalPagePlan;
+  NS.expandPhysicalPage = expandPhysicalPage;
+
+  // src/tools/index.tsx
+  var PluginApi18 = requirePluginApi();
+  var React16 = PluginApi18.React;
   function originalFrom(args) {
     return args[args.length - 1];
   }
@@ -8453,7 +9090,7 @@
     return findFilter(props.children);
   }
   function hasSidebarSectionsContainer() {
-    const components = PluginApi17.components;
+    const components = PluginApi18.components;
     return !!components && !!components["FilteredGalleryList.SidebarSections"];
   }
   var warnedMissingSidebarContainer = false;
@@ -8466,7 +9103,7 @@
     const value = id ? pickLanguage((_b3 = store) == null ? void 0 : _b3.get(String(id))) : "";
     if (!value || !NS.showCoverBadge || !NS.fieldShowing("language"))
       return result;
-    return /* @__PURE__ */ React15.createElement(React15.Fragment, null, result, /* @__PURE__ */ React15.createElement(LanguageBadge, { galleryId: id }));
+    return /* @__PURE__ */ React16.createElement(React16.Fragment, null, result, /* @__PURE__ */ React16.createElement(LanguageBadge, { galleryId: id }));
   });
   registerPatch("after", "GalleryCard.Popovers", (...args) => {
     var _a3;
@@ -8475,14 +9112,14 @@
     noteFired("GalleryCard.Popovers");
     const id = (_a3 = props.gallery) == null ? void 0 : _a3.id;
     if (!id || !storedIsManga(String(id))) return result;
-    return /* @__PURE__ */ React15.createElement(React15.Fragment, null, result, /* @__PURE__ */ React15.createElement(MangaPopoverMark, { galleryId: String(id) }));
+    return /* @__PURE__ */ React16.createElement(React16.Fragment, null, result, /* @__PURE__ */ React16.createElement(MangaPopoverMark, { galleryId: String(id) }));
   });
   registerPatch("instead", "CustomFieldsInput", (...args) => {
     const props = args[0];
     const Original = originalFrom(args);
     noteFired("CustomFieldsInput");
     useGlobalVersion();
-    React15.useEffect(() => {
+    React16.useEffect(() => {
       var _a3;
       const galleryId2 = currentGalleryId();
       if (props.onChange && galleryId2) {
@@ -8496,7 +9133,7 @@
         setEditForm(null);
       };
     });
-    return /* @__PURE__ */ React15.createElement(React15.Fragment, null, isMarkedNow(currentGalleryId(), props.values) ? /* @__PURE__ */ React15.createElement(MangaFieldBlock, { values: props.values, onChange: props.onChange }) : null, /* @__PURE__ */ React15.createElement(Original, { ...props }));
+    return /* @__PURE__ */ React16.createElement(React16.Fragment, null, isMarkedNow(currentGalleryId(), props.values) ? /* @__PURE__ */ React16.createElement(MangaFieldBlock, { values: props.values, onChange: props.onChange }) : null, /* @__PURE__ */ React16.createElement(Original, { ...props }));
   });
   function takesOverFieldRow(key) {
     if (!NS.ownField(key)) return false;
@@ -8511,7 +9148,7 @@
     if (!props.isNew && takesOverFieldRow(props.field)) {
       return null;
     }
-    return /* @__PURE__ */ React15.createElement(Original, { ...props });
+    return /* @__PURE__ */ React16.createElement(Original, { ...props });
   });
   registerPatch("instead", "CustomFields", (...args) => {
     const props = args[0];
@@ -8519,7 +9156,7 @@
     noteFired("CustomFields");
     useGlobalVersion();
     const values = props.values;
-    if (!values || typeof values !== "object") return /* @__PURE__ */ React15.createElement(Original, { ...props });
+    if (!values || typeof values !== "object") return /* @__PURE__ */ React16.createElement(Original, { ...props });
     const rest = Object.assign({}, values);
     let lifted = false;
     Object.keys(values).forEach((k) => {
@@ -8529,22 +9166,22 @@
     });
     const galleryId2 = currentGalleryId();
     const Guard = guardedBlock();
-    if (!lifted && !galleryId2) return /* @__PURE__ */ React15.createElement(Original, { ...props });
-    return /* @__PURE__ */ React15.createElement(React15.Fragment, null, /* @__PURE__ */ React15.createElement(
+    if (!lifted && !galleryId2) return /* @__PURE__ */ React16.createElement(Original, { ...props });
+    return /* @__PURE__ */ React16.createElement(React16.Fragment, null, /* @__PURE__ */ React16.createElement(
       Original,
       {
         ...lifted ? Object.assign({}, props, { values: rest }) : props
       }
-    ), galleryId2 && isMarkedNow(galleryId2, values) ? /* @__PURE__ */ React15.createElement(Guard, { name: "manga panel" }, /* @__PURE__ */ React15.createElement(MangaDetailsPanel, { values })) : null, galleryId2 && CAN_WRITE2 ? /* @__PURE__ */ React15.createElement(GalleryToolbar, { galleryId: galleryId2, values }) : null);
+    ), galleryId2 && isMarkedNow(galleryId2, values) ? /* @__PURE__ */ React16.createElement(Guard, { name: "manga panel" }, /* @__PURE__ */ React16.createElement(MangaDetailsPanel, { values })) : null, galleryId2 && CAN_WRITE2 ? /* @__PURE__ */ React16.createElement(GalleryToolbar, { galleryId: galleryId2, values }) : null);
   });
   registerPatch("instead", "PluginSettings", (...args) => {
     const props = args[0];
     const Original = originalFrom(args);
     noteFired("PluginSettings");
     if (props.pluginID === PLUGIN_ID) {
-      return /* @__PURE__ */ React15.createElement(MangaToolsSettings, null);
+      return /* @__PURE__ */ React16.createElement(MangaToolsSettings, null);
     }
-    return /* @__PURE__ */ React15.createElement(Original, { ...props });
+    return /* @__PURE__ */ React16.createElement(Original, { ...props });
   });
   registerPatch("before", "GalleryList", (...args) => {
     const props = args[0];
@@ -8557,7 +9194,7 @@
     noteFired("FilteredGalleryList.SidebarSections");
     const filter = currentSidebarFilter();
     if (!filter) return result;
-    return /* @__PURE__ */ React15.createElement(React15.Fragment, null, /* @__PURE__ */ React15.createElement(SidebarMangaFilter, { filter }), NS.filterShowing("language") ? /* @__PURE__ */ React15.createElement(SidebarLanguageFilter, { filter }) : null, NS.filterShowing("censorship") ? /* @__PURE__ */ React15.createElement(SidebarCensorshipFilter, { filter }) : null, NS.filterShowing("translationGroup") ? /* @__PURE__ */ React15.createElement(SidebarTranslationGroupFilter, { filter }) : null, NS.filterShowing("original") ? /* @__PURE__ */ React15.createElement(SidebarOriginalFilter, { filter }) : null, result);
+    return /* @__PURE__ */ React16.createElement(React16.Fragment, null, /* @__PURE__ */ React16.createElement(SidebarMangaFilter, { filter }), NS.filterShowing("language") ? /* @__PURE__ */ React16.createElement(SidebarLanguageFilter, { filter }) : null, NS.filterShowing("censorship") ? /* @__PURE__ */ React16.createElement(SidebarCensorshipFilter, { filter }) : null, NS.filterShowing("translationGroup") ? /* @__PURE__ */ React16.createElement(SidebarTranslationGroupFilter, { filter }) : null, NS.filterShowing("original") ? /* @__PURE__ */ React16.createElement(SidebarOriginalFilter, { filter }) : null, result);
   });
   registerPatch("after", "FilteredGalleryList", (...args) => {
     const result = resultFrom(args);
@@ -8578,14 +9215,15 @@
     if (props.filter && NS.fieldShowing("language")) {
       registerLanguageCriterionOption(props.filter);
     }
-    return /* @__PURE__ */ React15.createElement(React15.Fragment, null, NS.fieldShowing("language") ? /* @__PURE__ */ React15.createElement(DialogLanguageFilter, { filter: props.filter }) : null, /* @__PURE__ */ React15.createElement(Original, { ...props }));
+    return /* @__PURE__ */ React16.createElement(React16.Fragment, null, NS.fieldShowing("language") ? /* @__PURE__ */ React16.createElement(DialogLanguageFilter, { filter: props.filter }) : null, /* @__PURE__ */ React16.createElement(Original, { ...props }));
   });
   registerPatch("after", "RatingSystem", (...args) => {
     noteFired("RatingSystem");
     const props = args[0];
     if (props.clickToRate || props.withoutContext) return resultFrom(args);
-    return /* @__PURE__ */ React15.createElement(React15.Fragment, null, resultFrom(args), /* @__PURE__ */ React15.createElement(BulkFieldsRow, null));
+    return /* @__PURE__ */ React16.createElement(React16.Fragment, null, resultFrom(args), /* @__PURE__ */ React16.createElement(BulkFieldsRow, null));
   });
+  registerPhysicalPagePatches();
   function install2() {
     start();
   }
