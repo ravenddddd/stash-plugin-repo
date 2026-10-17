@@ -221,6 +221,7 @@
   NS.ORIGINAL_VALUE = NS.MANGA_VALUE;
   NS.isOriginal = (customFields) => NS.pickField(customFields, NS.ORIGINAL_FIELD_NAME) !== "";
   NS.isRaw = (customFields) => NS.isOriginal(customFields) || NS.isNoLanguage(NS.pickField(customFields, NS.FIELD_NAME));
+  NS.physicalPageMode = () => NS.readerTakeover === true && NS.physicalPages === true;
   NS.CHAPTER_FIELD_NAME = "plugin.mangaTools.chapters";
   NS.fieldShowing = (field2) => {
     if (!NS.fields) return false;
@@ -672,7 +673,10 @@
         )
       );
     }
-    return write2(galleryId2, serializeChapters(chapters, NS.physicalPages, pages));
+    return write2(
+      galleryId2,
+      serializeChapters(chapters, NS.physicalPageMode(), pages)
+    );
   }
   function announce(galleryId2, chapters) {
     for (const fn of [...listeners]) fn(galleryId2, chapters);
@@ -1193,7 +1197,7 @@
   }
   async function fetchGallery(galleryId2, order) {
     var _a3, _b3, _c, _d, _e, _f, _g;
-    if (NS.physicalPages && order.sort === "path" && order.direction === "ASC") {
+    if (NS.physicalPageMode() && order.sort === "path" && order.direction === "ASC") {
       return fetchPhysicalGallery(galleryId2);
     }
     if (!galleryQuery) {
@@ -1349,7 +1353,7 @@
           answer.stashChapters,
           answer.pathIds || answer.pages.map((page) => page.imageId || page.id)
         );
-        const chapters = NS.physicalPages ? toFileChapters(translated, answer.pages) : translated;
+        const chapters = NS.physicalPageMode() ? toFileChapters(translated, answer.pages) : translated;
         if (chapters.length === 0) {
           run.skippedEmpty.push(id);
         } else {
@@ -1491,7 +1495,7 @@
     "mangaTools.settings.readerTakeover.description": "A gallery marked as manga is read in this plugin's own lightbox, redesigned from the ground up. Nothing about Stash's own lightbox settings is changed.",
     "mangaTools.settings.readerTakeover.note": "The lightbox's own settings are adjusted on the lightbox page, not here.",
     "mangaTools.settings.physicalPages.heading": "Read by physical pages",
-    "mangaTools.settings.physicalPages.description": "A gallery's pages are the files it contains, not the images Stash deduplicates. Content that appears several times is shown each time \u2014 in the gallery grid and in the reader \u2014 and chapters are stored by file. Off, everything works as before.",
+    "mangaTools.settings.physicalPages.description": "A gallery's pages are the files it contains, not the images Stash deduplicates. Content that appears several times is shown each time \u2014 in the gallery grid and in the reader \u2014 and chapters are stored by file. Only applies while Stash's lightbox is taken over; off, everything works as before.",
     "mangaTools.settings.physicalPages.note": "Chapters already stored by image are read at their first occurrence, and are only written by file when you next edit them.",
     "mangaTools.settings.manageChapters.heading": "Take over the Chapters tab",
     "mangaTools.settings.manageChapters.description": "Creating and editing chapters is this plugin's job, and writing them stores this plugin's own chapter field. Stash's existing chapters are brought over quietly, and are never modified.",
@@ -1629,7 +1633,7 @@
     "mangaTools.settings.readerTakeover.description": "\u6807\u8BB0\u4E3A\u6F2B\u753B\u7684\u753B\u5ECA\uFF0C\u706F\u7BB1\u7531\u672C\u63D2\u4EF6\u91CD\u65B0\u8BBE\u8BA1\uFF0C\u4E0D\u4F1A\u66F4\u6539\u539F\u751F\u706F\u7BB1\u8BBE\u7F6E\u3002",
     "mangaTools.settings.readerTakeover.note": "\u63D2\u4EF6\u706F\u7BB1\u76F8\u5173\u8BBE\u7F6E\u5728\u706F\u7BB1\u9875\u9762\u8BBE\u7F6E\u4E2D\u8C03\u6574\u3002",
     "mangaTools.settings.physicalPages.heading": "\u6309\u7269\u7406\u9875\u9605\u8BFB",
-    "mangaTools.settings.physicalPages.description": "\u753B\u5ECA\u7684\u9875\u6570\u662F\u5B83\u5B9E\u9645\u5305\u542B\u7684\u6587\u4EF6\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u540E\u7684\u56FE\u7247\u3002\u91CD\u590D\u51FA\u73B0\u7684\u5185\u5BB9\u4F1A\u5728\u753B\u5ECA\u7F51\u683C\u548C\u9605\u8BFB\u5668\u4E2D\u5404\u663E\u793A\u4E00\u6B21\uFF0C\u7AE0\u8282\u4E5F\u6309\u6587\u4EF6\u5B58\u50A8\u3002\u5173\u95ED\u65F6\u4E00\u5207\u4FDD\u6301\u539F\u6837\u3002",
+    "mangaTools.settings.physicalPages.description": "\u753B\u5ECA\u7684\u9875\u6570\u662F\u5B83\u5B9E\u9645\u5305\u542B\u7684\u6587\u4EF6\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u540E\u7684\u56FE\u7247\u3002\u91CD\u590D\u51FA\u73B0\u7684\u5185\u5BB9\u4F1A\u5728\u753B\u5ECA\u7F51\u683C\u548C\u9605\u8BFB\u5668\u4E2D\u5404\u663E\u793A\u4E00\u6B21\uFF0C\u7AE0\u8282\u4E5F\u6309\u6587\u4EF6\u5B58\u50A8\u3002\u4EC5\u5728\u63A5\u7BA1 Stash \u539F\u751F\u706F\u7BB1\u65F6\u751F\u6548\uFF1B\u5173\u95ED\u65F6\u4E00\u5207\u4FDD\u6301\u539F\u6837\u3002",
     "mangaTools.settings.physicalPages.note": "\u5DF2\u6709\u7684\u6309\u56FE\u7247\u5B58\u50A8\u7684\u7AE0\u8282\u4F1A\u5728\u8BFB\u53D6\u65F6\u843D\u5230\u7B2C\u4E00\u6B21\u51FA\u73B0\u7684\u4F4D\u7F6E\uFF1B\u53EA\u6709\u518D\u6B21\u7F16\u8F91\u4FDD\u5B58\u540E\uFF0C\u624D\u4F1A\u5199\u6210\u6587\u4EF6\u7EA7\u3002",
     "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u8282\u7CFB\u7EDF",
     "mangaTools.settings.manageChapters.description": "\u6807\u7B7E\u9875\u7684\u521B\u5EFA\u548C\u7F16\u8F91\u7531\u63D2\u4EF6\u63A5\u7BA1\uFF0C\u5199\u5165\u63D2\u4EF6\u81EA\u5DF1\u7684\u7AE0\u8282\u5B57\u6BB5\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u8282\u4F1A\u88AB\u9759\u9ED8\u5BFC\u5165\uFF0C\u4F46\u4E0D\u4F1A\u88AB\u4FEE\u6539\u3002",
@@ -1767,7 +1771,7 @@
     "mangaTools.settings.readerTakeover.description": "\u6A19\u8A18\u70BA\u6F2B\u756B\u7684\u756B\u5ECA\uFF0C\u71C8\u7BB1\u7531\u672C\u5916\u639B\u91CD\u65B0\u8A2D\u8A08\uFF0C\u4E0D\u6703\u66F4\u6539\u539F\u751F\u71C8\u7BB1\u8A2D\u5B9A\u3002",
     "mangaTools.settings.readerTakeover.note": "\u5916\u639B\u71C8\u7BB1\u76F8\u95DC\u8A2D\u5B9A\u5728\u71C8\u7BB1\u9801\u9762\u8A2D\u5B9A\u4E2D\u8ABF\u6574\u3002",
     "mangaTools.settings.physicalPages.heading": "\u6309\u7269\u7406\u9801\u95B1\u8B80",
-    "mangaTools.settings.physicalPages.description": "\u756B\u5ECA\u7684\u9801\u6578\u662F\u5B83\u5BE6\u969B\u5305\u542B\u7684\u6A94\u6848\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u5F8C\u7684\u5716\u7247\u3002\u91CD\u8907\u51FA\u73FE\u7684\u5167\u5BB9\u6703\u5728\u756B\u5ECA\u7DB2\u683C\u548C\u95B1\u8B80\u5668\u4E2D\u5404\u986F\u793A\u4E00\u6B21\uFF0C\u7AE0\u7BC0\u4E5F\u6309\u6A94\u6848\u5132\u5B58\u3002\u95DC\u9589\u6642\u4E00\u5207\u4FDD\u6301\u539F\u6A23\u3002",
+    "mangaTools.settings.physicalPages.description": "\u756B\u5ECA\u7684\u9801\u6578\u662F\u5B83\u5BE6\u969B\u5305\u542B\u7684\u6A94\u6848\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u5F8C\u7684\u5716\u7247\u3002\u91CD\u8907\u51FA\u73FE\u7684\u5167\u5BB9\u6703\u5728\u756B\u5ECA\u7DB2\u683C\u548C\u95B1\u8B80\u5668\u4E2D\u5404\u986F\u793A\u4E00\u6B21\uFF0C\u7AE0\u7BC0\u4E5F\u6309\u6A94\u6848\u5132\u5B58\u3002\u50C5\u5728\u63A5\u7BA1 Stash \u539F\u751F\u71C8\u7BB1\u6642\u751F\u6548\uFF1B\u95DC\u9589\u6642\u4E00\u5207\u4FDD\u6301\u539F\u6A23\u3002",
     "mangaTools.settings.physicalPages.note": "\u5DF2\u6709\u7684\u6309\u5716\u7247\u5132\u5B58\u7684\u7AE0\u7BC0\u6703\u5728\u8B80\u53D6\u6642\u843D\u5230\u7B2C\u4E00\u6B21\u51FA\u73FE\u7684\u4F4D\u7F6E\uFF1B\u53EA\u6709\u518D\u6B21\u7DE8\u8F2F\u5132\u5B58\u5F8C\uFF0C\u624D\u6703\u5BEB\u6210\u6A94\u6848\u7D1A\u3002",
     "mangaTools.settings.manageChapters.heading": "\u63A5\u7BA1 Stash \u7684\u7AE0\u7BC0\u7CFB\u7D71",
     "mangaTools.settings.manageChapters.description": "\u5206\u9801\u7684\u5EFA\u7ACB\u548C\u7DE8\u8F2F\u7531\u5916\u639B\u63A5\u7BA1\uFF0C\u5BEB\u5165\u5916\u639B\u81EA\u5DF1\u7684\u7AE0\u7BC0\u6B04\u4F4D\u3002\u5DF2\u5B58\u5728\u7684 Stash \u539F\u751F\u7AE0\u7BC0\u6703\u88AB\u975C\u9ED8\u532F\u5165\uFF0C\u4F46\u4E0D\u6703\u88AB\u4FEE\u6539\u3002",
@@ -3095,7 +3099,7 @@
           // is showing for a gallery that has no list of this plugin's own.
           // Computed from the rows rather than from what is on screen: it is what
           // would be *written*, so it cannot depend on how the screen is ordered.
-          importable: NS.physicalPages ? toFileChapters(inherited, answer.pages) : inherited,
+          importable: NS.physicalPageMode() ? toFileChapters(inherited, answer.pages) : inherited,
           own: own.own,
           locale: answer.language
         };
@@ -3112,7 +3116,7 @@
     const own = readChapters(
       NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null,
       answer.pages,
-      NS.physicalPages
+      NS.physicalPageMode()
     );
     if (own) return { chapters: own, own: true };
     const translated = chaptersFromStash(
@@ -3120,7 +3124,7 @@
       answer.pathIds || answer.pages.map((page) => page.imageId || page.id)
     );
     return {
-      chapters: NS.physicalPages ? toFileChapters(translated, answer.pages) : translated,
+      chapters: NS.physicalPageMode() ? toFileChapters(translated, answer.pages) : translated,
       own: false
     };
   }
@@ -3571,7 +3575,7 @@
     redraw3();
     NS.writeChapters(
       target2.id,
-      serializeChapters(target2.importable, NS.physicalPages, target2.pages)
+      serializeChapters(target2.importable, NS.physicalPageMode(), target2.pages)
     ).then(
       () => {
         busy = false;
@@ -4362,13 +4366,13 @@
     const own = readChapters(
       NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null,
       answer.pages,
-      NS.physicalPages
+      NS.physicalPageMode()
     );
     if (own) return own;
     if (answer.stashChapters.length === 0) return [];
     const pathIds = answer.pathIds || answer.pages.map((page) => page.imageId || page.id);
     const translated = chaptersFromStash(answer.stashChapters, pathIds);
-    return NS.physicalPages ? toFileChapters(translated, answer.pages) : translated;
+    return NS.physicalPageMode() ? toFileChapters(translated, answer.pages) : translated;
   }
   function remember(id, gallery) {
     loaded.delete(id);
@@ -8013,18 +8017,19 @@
         onChange: writeFlag((next) => {
           NS.readerTakeover = next;
         })
-      }
-    ), /* @__PURE__ */ React10.createElement(
-      SettingSwitch,
-      {
-        id: "mangaTools-physicalPages",
-        heading: t(intl, "mangaTools.settings.physicalPages.heading"),
-        subHeading: /* @__PURE__ */ React10.createElement(React10.Fragment, null, t(intl, "mangaTools.settings.physicalPages.description"), /* @__PURE__ */ React10.createElement(SettingsNote, null, t(intl, "mangaTools.settings.physicalPages.note"))),
-        checked: NS.physicalPages,
-        onChange: writeFlag((next) => {
-          NS.physicalPages = next;
-        })
-      }
+      },
+      /* @__PURE__ */ React10.createElement(
+        SettingSwitch,
+        {
+          id: "mangaTools-physicalPages",
+          heading: t(intl, "mangaTools.settings.physicalPages.heading"),
+          subHeading: /* @__PURE__ */ React10.createElement(React10.Fragment, null, t(intl, "mangaTools.settings.physicalPages.description"), /* @__PURE__ */ React10.createElement(SettingsNote, null, t(intl, "mangaTools.settings.physicalPages.note"))),
+          checked: NS.physicalPages,
+          onChange: writeFlag((next) => {
+            NS.physicalPages = next;
+          })
+        }
+      )
     ), /* @__PURE__ */ React10.createElement(
       SettingSwitch,
       {
@@ -9005,7 +9010,7 @@
       noteFired("ImageList");
       const props = args[0];
       const next = args[args.length - 1];
-      const galleryId2 = NS.physicalPages ? currentGalleryId() : "";
+      const galleryId2 = NS.physicalPageMode() ? currentGalleryId() : "";
       const [, bump] = React15.useState(0);
       React15.useEffect(() => {
         if (!galleryId2) return;
@@ -9035,7 +9040,7 @@
         []
       );
       const expanded = React15.useMemo(
-        () => NS.physicalPages && grid ? expandPhysicalPage({ ...props, onSelectChange: change }, grid) : null,
+        () => NS.physicalPageMode() && grid ? expandPhysicalPage({ ...props, onSelectChange: change }, grid) : null,
         [
           grid,
           sortBy,
