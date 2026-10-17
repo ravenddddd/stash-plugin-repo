@@ -740,6 +740,12 @@
     "              path",
     "              width",
     "              height",
+    "              parent_folder {",
+    "                id",
+    "              }",
+    "              zip_file {",
+    "                id",
+    "              }",
     "            }",
     "            ... on VideoFile {",
     "              id",
@@ -754,41 +760,43 @@
     "            image",
     "            thumbnail",
     "            preview",
+    "          }",
+    "          visual_files {",
+    "            __typename",
+    "            ... on ImageFile {",
+    "              id",
+    "              path",
+    "              width",
+    "              height",
+    "              parent_folder {",
+    "                id",
+    "              }",
+    "              zip_file {",
+    "                id",
+    "              }",
+    "            }",
+    "            ... on VideoFile {",
+    "              id",
+    "              path",
+    "            }",
     "          }"
   ];
-  function filesQueryText(withImages) {
+  function imagesQueryText(withImages) {
     return [
-      "query MangaToolsGalleryFiles($fileFilter: FileFilterType, $perPage: Int!) {",
-      "  findFiles(",
-      "    file_filter: $fileFilter",
-      '    filter: { per_page: $perPage, sort: "path", direction: ASC }',
+      "query MangaToolsGalleryFiles($galleryId: ID!, $perPage: Int!) {",
+      "  findImages(",
+      "    image_filter: { galleries: { value: [$galleryId], modifier: INCLUDES } }",
+      "    filter: { per_page: $perPage }",
       "  ) {",
-      "    count",
-      "    files {",
-      "      __typename",
-      "      ... on ImageFile {",
-      "        id",
-      "        path",
-      "        basename",
-      "        width",
-      "        height",
-      "        parent_folder {",
-      "          id",
-      "        }",
-      "        zip_file {",
-      "          id",
-      "        }",
-      "        images {",
+      "    images {",
       ...withImages ? IMAGE_SLIM_FIELDS : LIGHT_IMAGE_FIELDS,
-      "        }",
-      "      }",
       "    }",
       "  }",
       "}"
     ].join("\n");
   }
-  var GALLERY_FILES_QUERY_TEXT = filesQueryText(false);
-  var GALLERY_FILES_WITH_IMAGES_QUERY_TEXT = filesQueryText(true);
+  var GALLERY_FILES_QUERY_TEXT = imagesQueryText(false);
+  var GALLERY_FILES_WITH_IMAGES_QUERY_TEXT = imagesQueryText(true);
   var GALLERY_FILE_COUNT_QUERY_TEXT = [
     "query MangaToolsGalleryFileCount($fileFilter: FileFilterType) {",
     "  findFiles(file_filter: $fileFilter, filter: { per_page: 1 }) {",
@@ -822,8 +830,8 @@
       zipFileId: ((_c = (_b3 = gallery.files) == null ? void 0 : _b3[0]) == null ? void 0 : _c.id) ? String(gallery.files[0].id) : null
     };
   }
-  async function fetchGalleryFiles(scope, withImages = false) {
-    var _a3, _b3, _c, _d, _e, _f, _g, _h;
+  async function fetchGalleryFiles(galleryId2, scope, withImages = false) {
+    var _a3, _b3, _c, _d, _e, _f;
     if (!scope.folderId && !scope.zipFileId) return { files: [], total: 0 };
     if (withImages && !filesWithImagesQuery) {
       filesWithImagesQuery = gqlDoc(
@@ -839,41 +847,50 @@
     }
     const query = withImages ? filesWithImagesQuery : filesQuery;
     if (!query) return { files: [], total: 0 };
-    const fileFilter = scope.zipFileId ? { zip_file: { value: [scope.zipFileId], modifier: "INCLUDES" } } : { parent_folder: { value: [scope.folderId], modifier: "INCLUDES" } };
     const data = await requirePluginApi().utils.StashService.getClient().query({
       query,
-      variables: { fileFilter, perPage: -1 },
+      variables: { galleryId: galleryId2, perPage: -1 },
       fetchPolicy: "no-cache"
     }).then((res) => res == null ? void 0 : res.data);
     const entries = [];
-    for (const file of ((_a3 = data == null ? void 0 : data.findFiles) == null ? void 0 : _a3.files) || []) {
-      if (file.__typename !== "ImageFile") continue;
-      const image = (_b3 = file.images) == null ? void 0 : _b3[0];
-      if (!(image == null ? void 0 : image.id)) continue;
-      const parentFolderId = ((_c = file.parent_folder) == null ? void 0 : _c.id) ? String(file.parent_folder.id) : null;
-      const zipFileId = ((_d = file.zip_file) == null ? void 0 : _d.id) ? String(file.zip_file.id) : null;
-      if (scope.zipFileId && zipFileId !== scope.zipFileId) continue;
-      if (scope.folderId && parentFolderId !== scope.folderId) continue;
-      entries.push({
-        fileId: String(file.id),
-        imageId: String(image.id),
-        path: String(file.path || ""),
-        basename: String(file.basename || ""),
-        width: typeof file.width === "number" ? file.width : 0,
-        height: typeof file.height === "number" ? file.height : 0,
-        title: String(image.title || ""),
-        imageUrl: String(((_e = image.paths) == null ? void 0 : _e.image) || ""),
-        thumbnail: String(((_f = image.paths) == null ? void 0 : _f.thumbnail) || ""),
-        preview: String(((_g = image.paths) == null ? void 0 : _g.preview) || ""),
-        parentFolderId,
-        zipFileId,
-        image: withImages ? image : void 0
-      });
+    for (const image of ((_a3 = data == null ? void 0 : data.findImages) == null ? void 0 : _a3.images) || []) {
+      const imageId = image.id ? String(image.id) : "";
+      if (!imageId) continue;
+      for (const file of image.visual_files || []) {
+        if (file.__typename !== "ImageFile") continue;
+        const parentFolderId = ((_b3 = file.parent_folder) == null ? void 0 : _b3.id) ? String(file.parent_folder.id) : null;
+        const zipFileId = ((_c = file.zip_file) == null ? void 0 : _c.id) ? String(file.zip_file.id) : null;
+        if (scope.zipFileId && zipFileId !== scope.zipFileId) continue;
+        if (scope.folderId && parentFolderId !== scope.folderId) continue;
+        const path = String(file.path || "");
+        entries.push({
+          fileId: String(file.id),
+          imageId,
+          path,
+          basename: path.slice(path.lastIndexOf("/") + 1),
+          width: typeof file.width === "number" ? file.width : 0,
+          height: typeof file.height === "number" ? file.height : 0,
+          title: String(image.title || ""),
+          imageUrl: String(((_d = image.paths) == null ? void 0 : _d.image) || ""),
+          thumbnail: String(((_e = image.paths) == null ? void 0 : _e.thumbnail) || ""),
+          preview: String(((_f = image.paths) == null ? void 0 : _f.preview) || ""),
+          parentFolderId,
+          zipFileId,
+          image: withImages ? image : void 0
+        });
+      }
     }
-    return {
-      files: entries,
-      total: typeof ((_h = data == null ? void 0 : data.findFiles) == null ? void 0 : _h.count) === "number" ? data.findFiles.count : entries.length
-    };
+    entries.sort(byPath);
+    return { files: entries, total: entries.length };
+  }
+  var basenameCollator = new Intl.Collator("en", {
+    numeric: true,
+    sensitivity: "base"
+  });
+  function byPath(a, b) {
+    const byName = basenameCollator.compare(a.basename, b.basename);
+    if (byName !== 0) return byName;
+    return a.path < b.path ? -1 : a.path > b.path ? 1 : 0;
   }
   async function fetchGalleryFileCount(scope) {
     var _a3;
@@ -1125,7 +1142,7 @@
       folderId: ((_a3 = gallery == null ? void 0 : gallery.folder) == null ? void 0 : _a3.id) ? String(gallery.folder.id) : null,
       zipFileId: ((_c = (_b3 = gallery == null ? void 0 : gallery.files) == null ? void 0 : _b3[0]) == null ? void 0 : _c.id) ? String(gallery.files[0].id) : null
     };
-    const list = await fetchGalleryFiles(scope);
+    const list = await fetchGalleryFiles(galleryId2, scope);
     const pages = list.files.map((file) => ({
       // The file id is the page identity; the image id is what the bytes and the
       // carousel are keyed by. See MangaReaderPage.
@@ -8880,7 +8897,7 @@
     const waiting = inFlight2.get(galleryId2);
     if (waiting) return waiting;
     const promise = fetchGalleryScope(galleryId2).then(
-      (scope) => scope ? fetchGalleryFiles(scope, true) : { files: [], total: 0 }
+      (scope) => scope ? fetchGalleryFiles(galleryId2, scope, true) : { files: [], total: 0 }
     ).then((list) => {
       const grid = { files: list.files, total: list.total };
       cache.set(galleryId2, grid);
