@@ -9006,21 +9006,13 @@
       onSelectChange(real, chosen, shiftKey);
     } : void 0;
     return {
-      props: {
-        ...props,
-        images,
-        selectedIds: selected,
-        onSelectChange: change,
-        totalCount: grid.total,
-        pageCount: plan.pages,
-        filter: {
-          ...filter || {},
-          currentPage: page,
-          itemsPerPage: plan.perPage
-        }
-      },
+      images,
+      selectedIds: selected,
+      onSelectChange: change,
       total: grid.total,
-      perPage: plan.perPage
+      perPage: plan.perPage,
+      pages: plan.pages,
+      page
     };
   }
   function registerListPatch() {
@@ -9041,14 +9033,47 @@
         };
       }, [galleryId2]);
       const grid = galleryId2 ? cache.get(galleryId2) : void 0;
-      const expanded = NS.physicalPages && grid ? expandPhysicalPage(props, grid) : null;
+      const filter = props.filter;
+      const sortBy = filter == null ? void 0 : filter.sortBy;
+      const sortDirection = filter == null ? void 0 : filter.sortDirection;
+      const currentPage = filter == null ? void 0 : filter.currentPage;
+      const itemsPerPage = filter == null ? void 0 : filter.itemsPerPage;
+      const totalCount = props.totalCount;
+      const selectedIds = props.selectedIds;
+      const onSelectChange = props.onSelectChange;
+      const expanded = React15.useMemo(
+        () => NS.physicalPages && grid ? expandPhysicalPage(props, grid) : null,
+        [
+          grid,
+          sortBy,
+          sortDirection,
+          currentPage,
+          itemsPerPage,
+          totalCount,
+          selectedIds,
+          onSelectChange
+        ]
+      );
       React15.useEffect(() => {
         setPageView(
           expanded ? { galleryId: galleryId2, total: expanded.total, perPage: expanded.perPage } : null
         );
         return () => setPageView(null);
       }, [galleryId2, expanded == null ? void 0 : expanded.total, expanded == null ? void 0 : expanded.perPage]);
-      return next(expanded ? expanded.props : props);
+      if (!expanded) return next(props);
+      return next({
+        ...props,
+        images: expanded.images,
+        selectedIds: expanded.selectedIds,
+        onSelectChange: expanded.onSelectChange,
+        totalCount: expanded.total,
+        pageCount: expanded.pages,
+        filter: {
+          ...props.filter || {},
+          currentPage: expanded.page,
+          itemsPerPage: expanded.perPage
+        }
+      });
     });
   }
   function registerCardPatch() {
