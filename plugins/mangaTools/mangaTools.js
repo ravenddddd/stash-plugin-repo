@@ -8744,7 +8744,7 @@
       // the text itself. A badge is a link and its code; the shop's name is the
       // title, and there is no separate "no link" state — a shop with no link is
       // simply not drawn.
-      /* @__PURE__ */ React13.createElement("h6", { className: "manga-tools-detail manga-tools-shops" }, t(intl, "mangaTools.shops.heading") + ": ", /* @__PURE__ */ React13.createElement(ShopBadges, { links: shops }))
+      /* @__PURE__ */ React13.createElement("h6", { className: "manga-tools-detail manga-tools-shops" }, /* @__PURE__ */ React13.createElement("span", { className: "manga-tools-shops-label" }, t(intl, "mangaTools.shops.heading") + ":"), /* @__PURE__ */ React13.createElement(ShopBadges, { links: shops }))
     ) : null, original && !language2 ? (
       // Raw with no language row to carry the mark, so it stands on its own —
       // and without the group's label, for the reason above. The wording carries
