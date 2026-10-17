@@ -763,6 +763,33 @@
     if (!id) return null;
     return { at, id };
   }
+  var GALLERY_IMAGE_COUNT_QUERY_TEXT = [
+    "query MangaReaderGalleryImageCount($galleryId: ID!) {",
+    "  findGallery(id: $galleryId) {",
+    "    id",
+    "    image_count",
+    "  }",
+    "}"
+  ].join("\n");
+  var galleryImageCountQuery = null;
+  async function fetchImageCount(galleryId2) {
+    var _a3;
+    if (!galleryImageCountQuery) {
+      galleryImageCountQuery = gqlDoc(
+        GALLERY_IMAGE_COUNT_QUERY_TEXT,
+        "build the gallery's image count query"
+      );
+    }
+    const query = galleryImageCountQuery;
+    if (!query) return null;
+    const data = await requirePluginApi().utils.StashService.getClient().query({
+      query,
+      variables: { galleryId: galleryId2 },
+      fetchPolicy: "no-cache"
+    }).then((res) => res == null ? void 0 : res.data);
+    const count = (_a3 = data == null ? void 0 : data.findGallery) == null ? void 0 : _a3.image_count;
+    return typeof count === "number" ? count : null;
+  }
   async function fetchGallery(galleryId2, order) {
     var _a3, _b3, _c, _d, _e, _f, _g;
     if (!galleryQuery) {
@@ -3685,6 +3712,8 @@
   var logged = false;
   var clickRoot = null;
   var pending2 = null;
+  var counting = null;
+  var refreshing = 0;
   var handedFor = null;
   var place2 = -1;
   function galleryOf(lightbox) {
@@ -3784,6 +3813,7 @@
       galleryId = id;
       shownAt = -1;
       step();
+      revalidate(id);
       return;
     }
     if (pending2 === id) return;
@@ -3794,14 +3824,7 @@
       if (pending2 !== id) return;
       pending2 = null;
       if (root !== forLightbox) return;
-      const gallery = {
-        id,
-        pages: answer.pages,
-        images: answer.images,
-        pairedWith: pairingKey(),
-        screens: laidOut(answer.pages),
-        chapters: placeChapters(chaptersOf2(answer), answer.pages)
-      };
+      const gallery = galleryFrom(id, answer);
       remember(id, gallery);
       language = answer.language;
       galleryId = id;
@@ -3816,6 +3839,63 @@
       );
       deactivate();
     });
+  }
+  function galleryFrom(id, answer) {
+    return {
+      id,
+      pages: answer.pages,
+      images: answer.images,
+      pairedWith: pairingKey(),
+      screens: laidOut(answer.pages),
+      chapters: placeChapters(chaptersOf2(answer), answer.pages)
+    };
+  }
+  function revalidate(id) {
+    if (counting === id) return;
+    counting = id;
+    fetchImageCount(id).then((count) => {
+      if (counting === id) counting = null;
+      if (count === null) return;
+      const cached = loaded.get(id);
+      if (!cached || count === cached.pages.length) return;
+      refresh(id);
+    }).catch(() => {
+      if (counting === id) counting = null;
+    });
+  }
+  function refresh(id) {
+    const forLightbox = root;
+    if (!forLightbox || galleryId !== id) return;
+    const seq = ++refreshing;
+    fetchGallery(id, lightboxOrder(window.location.search)).then((answer) => {
+      var _a3;
+      if (seq !== refreshing) return;
+      if (root !== forLightbox || galleryId !== id) return;
+      const old = loaded.get(id);
+      if (!old) return;
+      const was = place2;
+      const wasId = was >= 0 ? (_a3 = old.pages[was]) == null ? void 0 : _a3.id : void 0;
+      remember(id, galleryFrom(id, answer));
+      language = answer.language;
+      if (was >= 0) {
+        const at = nextIndex(answer.pages, wasId);
+        place2 = at >= 0 ? at : Math.min(was, answer.pages.length - 1);
+      }
+      shownAt = -1;
+      step();
+    }).catch((e) => {
+      console.error(
+        "[mangaReader] could not re-read this gallery's pages, keeping the ones in hand:",
+        e
+      );
+    });
+  }
+  function nextIndex(pages, id) {
+    if (!id) return -1;
+    for (let i = 0; i < pages.length; i++) {
+      if (pages[i].id === id) return i;
+    }
+    return -1;
   }
   async function loadPages(id, order, lightbox) {
     const answer = await fetchGallery(id, order);
@@ -4724,7 +4804,7 @@
     );
     return QUERIES[field2];
   }
-  function refresh() {
+  function refresh2() {
     if (inFlight) return inFlight;
     const fields = [MANGA_FIELD_NAME];
     const queries = fields.map(getQuery);
@@ -4913,7 +4993,7 @@
         const ev = e;
         const loc = (_b3 = (_a4 = ev == null ? void 0 : ev.detail) == null ? void 0 : _a4.data) == null ? void 0 : _b3.location;
         currentPath = (loc == null ? void 0 : loc.pathname) || window.location.pathname || "";
-        refresh();
+        refresh2();
         refreshSettings();
         emit();
       });
@@ -4922,20 +5002,20 @@
         "[mangaTools] Stash has no stash:location event, so the plugin will not hear about navigation on its own; rows it gates on the route may only appear once something else redraws. MangaTools.diag() reports this."
       );
     }
-    refresh();
+    refresh2();
     refreshSettings();
     window.setInterval(() => {
-      if (document.visibilityState === "visible") refresh();
+      if (document.visibilityState === "visible") refresh2();
     }, REFRESH_MS);
   }
   function refreshAfterWrite() {
     const pending3 = inFlight;
     if (pending3) {
       pending3.then(() => {
-        refresh();
+        refresh2();
       });
     } else {
-      refresh();
+      refresh2();
     }
   }
   function refreshForSuggestions() {
