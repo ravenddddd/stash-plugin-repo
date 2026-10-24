@@ -927,6 +927,10 @@
     const count = (_a3 = data == null ? void 0 : data.findFiles) == null ? void 0 : _a3.count;
     return typeof count === "number" ? count : null;
   }
+  NS.GALLERY_SCOPE_QUERY_TEXT = GALLERY_SCOPE_QUERY_TEXT;
+  NS.GALLERY_FILES_QUERY_TEXT = GALLERY_FILES_QUERY_TEXT;
+  NS.GALLERY_FILES_WITH_IMAGES_QUERY_TEXT = GALLERY_FILES_WITH_IMAGES_QUERY_TEXT;
+  NS.GALLERY_FILE_COUNT_QUERY_TEXT = GALLERY_FILE_COUNT_QUERY_TEXT;
 
   // src/reader/stash-lightbox.ts
   var SELECTOR_LIGHTBOX = ".Lightbox";
@@ -1291,6 +1295,7 @@
   NR.parseIndicator = parseIndicator;
   NR.galleryIdFromPath = galleryIdFromPath;
   NR.IMAGE_GALLERIES_QUERY_TEXT = IMAGE_GALLERIES_QUERY_TEXT;
+  NR.PHYSICAL_GALLERY_QUERY_TEXT = PHYSICAL_GALLERY_QUERY_TEXT;
   NR.galleryIdOfImage = galleryIdOfImage;
   NR.lightboxOrder = lightboxOrder;
   function lightboxIsLoading(lightbox) {
@@ -3072,6 +3077,7 @@
   var HIDDEN2 = "data-manga-reader-hidden";
   var IMPORT_ID = "manga-reader-chapters-import";
   var CLASS_EDIT = "manga-reader-chapter-edit";
+  var CLASS_ROW2 = "manga-reader-chapter-row";
   var TAKEN = "data-manga-reader-taken";
   var CLASS_EDITING = "manga-reader-chapters-editing";
   var renderedFor = "";
@@ -3183,8 +3189,12 @@
       bulk ? "bulk" : form ? "form:" + ((_a3 = form.startPageId) != null ? _a3 : "new") + (formError ? ":bad" : "") + (formFailure ? ":failed" : "") : "list",
       ...gallery.chapters.map((c) => c.title + "@" + c.at)
     ].join("|");
-    const wanted2 = bulk || form ? 1 : gallery.chapters.length;
-    if (key === renderedFor && panel2.children.length >= wanted2) return;
+    const formUp = panel2.querySelector("form") !== null;
+    const rowsUp = panel2.querySelector("." + CLASS_ROW2) !== null;
+    const button2 = stashButtonBefore(panel2);
+    const emptyAndOurs = panel2.children.length === 0 && isStashButton(button2) && button2.getAttribute(TAKEN) !== null;
+    const ours = bulk || form ? formUp : rowsUp || gallery.chapters.length === 0 && emptyAndOurs;
+    if (key === renderedFor && ours) return;
     renderedFor = key;
     panelInHand = panel2;
     takeOverCreate(panel2);
@@ -3600,24 +3610,11 @@
   function importChapters() {
     const target2 = controlFor;
     if (!target2 || busy) return;
-    if (typeof NS.writeChapters !== "function") {
-      console.error(
-        "[mangaReader] the tools half is not running, so this gallery's chapters cannot be written"
-      );
-      return;
-    }
     busy = true;
     redraw3();
-    NS.writeChapters(
-      target2.id,
-      serializeChapters(target2.importable, NS.physicalPageMode(), target2.pages)
-    ).then(
+    writeChapters(target2.id, target2.importable, target2.pages).then(
       () => {
         busy = false;
-        if ((inHand == null ? void 0 : inHand.id) === target2.id) {
-          inHand.own = true;
-          inHand.importable = target2.importable;
-        }
         confirming = false;
         redraw3();
       },
@@ -3850,6 +3847,7 @@
   });
   function row(gallery, chapter) {
     const wrap = document.createElement("div");
+    wrap.className = CLASS_ROW2;
     const rule = document.createElement("hr");
     wrap.appendChild(rule);
     const line = document.createElement("div");
@@ -4103,7 +4101,11 @@
     return Math.max(1, Math.min(width - 2 * reserved, height));
   }
   function zoomedBy(current2, factor) {
-    return Math.min(Math.max(current2 * factor, VIEW_MIN_ZOOM), VIEW_MAX_ZOOM);
+    const next = Math.min(
+      Math.max(current2 * factor, VIEW_MIN_ZOOM),
+      VIEW_MAX_ZOOM
+    );
+    return Math.abs(next - 1) < VIEW_SNAP ? 1 : next;
   }
   function setStyle(node, name, value) {
     if (node.style[name] !== value) node.style[name] = value;
@@ -4212,6 +4214,7 @@
       return pageGalleryId;
     }
     askAboutImage(image.id, () => {
+      if (root !== lightbox) return;
       pageGalleryId = galleriesOfImage[image.id];
       if (root) step();
     });
@@ -4297,12 +4300,14 @@
       revalidate(id);
       return;
     }
-    if (pending2 === id) return;
     const forLightbox = root;
     if (!forLightbox) return;
-    pending2 = id;
+    if ((pending2 == null ? void 0 : pending2.id) === id && pending2.lightbox === forLightbox) return;
+    pending2 = { id, lightbox: forLightbox };
     loadPages(id, lightboxOrder(window.location.search), forLightbox).then((answer) => {
-      if (pending2 !== id) return;
+      if (!pending2 || pending2.id !== id || pending2.lightbox !== forLightbox) {
+        return;
+      }
       pending2 = null;
       if (root !== forLightbox) return;
       const gallery = galleryFrom(id, answer);
@@ -4313,7 +4318,10 @@
       place2 = -1;
       step();
     }).catch((e) => {
-      if (pending2 === id) pending2 = null;
+      if (pending2 && pending2.id === id && pending2.lightbox === forLightbox) {
+        pending2 = null;
+      }
+      if (root !== forLightbox) return;
       console.error(
         "[mangaReader] could not read this gallery's pages, turning the spread view off:",
         e
@@ -4616,6 +4624,7 @@
   }
   var columnFor = null;
   var columnIn = null;
+  var columnRows = [];
   var scrollTo = null;
   function ensureColumn(lightbox, gallery) {
     ensureContainer(lightbox);
@@ -4629,6 +4638,9 @@
       buildColumn(container, gallery.pages, (page) => pageUrl(page));
       columnFor = gallery.id;
       columnIn = container;
+      columnRows = Array.from(
+        container.querySelectorAll("." + CLASS_SCROLL_PAGE)
+      );
       built = true;
       awaiting = -1;
       refitColumn(1);
@@ -4645,6 +4657,7 @@
     if (columnFor === null) return;
     columnFor = null;
     columnIn = null;
+    columnRows = [];
     scrollTo = null;
     view = fitView();
     setColumnZoom(1);
@@ -4653,13 +4666,22 @@
     root == null ? void 0 : root.classList.remove(CLASS_SCROLLING);
   }
   function columnPageAt(column2) {
-    const rows = Array.from(column2.querySelectorAll("." + CLASS_SCROLL_PAGE)).map(
-      (row2) => row2.getBoundingClientRect()
-    );
-    return NR.pageAtTop(
-      rows.map((rect) => ({ top: rect.top, bottom: rect.bottom })),
-      column2.getBoundingClientRect().top
-    );
+    if (columnRows.length === 0) return -1;
+    const edge = column2.getBoundingClientRect().top;
+    let low = 0;
+    let high = columnRows.length - 1;
+    let found = columnRows.length - 1;
+    while (low <= high) {
+      const mid = low + high >> 1;
+      const rect = columnRows[mid].getBoundingClientRect();
+      if (rect.bottom > edge) {
+        found = mid;
+        high = mid - 1;
+      } else {
+        low = mid + 1;
+      }
+    }
+    return found;
   }
   function onColumnScroll() {
     const lightbox = root;
@@ -4807,6 +4829,7 @@
   function closeLightbox() {
     handedFor = null;
     place2 = -1;
+    pending2 = null;
     forgetOpenMenu();
     if (clickRoot) {
       clickRoot.removeEventListener("click", onNavClick, true);
@@ -5291,6 +5314,9 @@
     const definitions = document2 == null ? void 0 : document2.definitions;
     return ((_b3 = (_a3 = definitions == null ? void 0 : definitions[0]) == null ? void 0 : _a3.name) == null ? void 0 : _b3.value) || "";
   }
+  function refreshesStoreAfter(name) {
+    return name === "GalleryUpdate" || name === "GalleriesUpdate";
+  }
   function installStoreRefresh() {
     const client = stashClient();
     if (!client || client === watchedClient) return;
@@ -5299,9 +5325,11 @@
     client.mutate = (options) => {
       const result = mutate(options);
       const name = operationName(options == null ? void 0 : options.mutation);
-      if (name === "GalleryUpdate" || name === "GalleriesUpdate") {
+      if (refreshesStoreAfter(name)) {
         result.then(
           () => refreshAfterWrite(),
+          // A rejected save heard nothing from the server; refreshing would ask
+          // about a state that did not change.
           () => {
           }
         );
@@ -5593,6 +5621,7 @@
   }
   NS.markedInStore = (galleryId2) => store === null || !galleryId2 ? null : storedIsManga(galleryId2);
   NS.watchStore = (fn) => subscribe(fn);
+  NS.refreshesStoreAfter = refreshesStoreAfter;
   function settingsInput() {
     var _a3;
     return {
@@ -8701,7 +8730,7 @@
       return null;
     }
     if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    const host = url.hostname.toLowerCase();
+    const host = url.hostname.toLowerCase().replace(/\.$/, "");
     const shop = SHOPS.find(
       (candidate) => host === candidate.domain || host.endsWith("." + candidate.domain)
     );
@@ -9187,6 +9216,15 @@
   var React16 = PluginApi18.React;
   var cache = /* @__PURE__ */ new Map();
   var inFlight2 = /* @__PURE__ */ new Map();
+  var GRID_CACHE_LIMIT = 8;
+  function rememberPhysicalGrid(into, galleryId2, grid, limit = GRID_CACHE_LIMIT) {
+    into.set(galleryId2, grid);
+    while (into.size > limit) {
+      const oldest = into.keys().next();
+      if (oldest.done) break;
+      into.delete(oldest.value);
+    }
+  }
   function load(galleryId2) {
     const cached = cache.get(galleryId2);
     if (cached) return Promise.resolve(cached);
@@ -9196,7 +9234,7 @@
       (scope) => scope ? fetchGalleryFiles(galleryId2, scope, true) : { files: [], total: 0 }
     ).then((list) => {
       const grid = { files: list.files, total: list.total };
-      cache.set(galleryId2, grid);
+      rememberPhysicalGrid(cache, galleryId2, grid);
       inFlight2.delete(galleryId2);
       return grid;
     }).catch((error) => {
@@ -9210,11 +9248,11 @@
     inFlight2.set(galleryId2, promise);
     return promise;
   }
-  function physicalPagePlan(imagePages, userPerPage, _fileCount) {
-    return {
-      pages: Math.max(1, Math.floor(imagePages) || 1),
-      perPage: Math.max(1, userPerPage)
-    };
+  function physicalPagePlan(imagePages, userPerPage, fileCount) {
+    const perPage = Math.max(1, userPerPage);
+    const stashed = Math.max(1, Math.floor(imagePages) || 1);
+    const fillable = Math.max(1, Math.ceil(Math.max(0, fileCount) / perPage));
+    return { pages: Math.min(stashed, fillable), perPage };
   }
   function withFragment(url, fileId) {
     return url ? url + "#" + fileId : url;
@@ -9378,6 +9416,7 @@
     registerCardPatch();
   }
   NS.physicalPagePlan = physicalPagePlan;
+  NS.rememberPhysicalGrid = rememberPhysicalGrid;
   NS.expandPhysicalPage = expandPhysicalPage;
 
   // src/tools/shop-urls.tsx
@@ -9416,14 +9455,22 @@
         continue;
       }
       if (current2) {
-        if (current2.getAttribute("data-shop") === want.key) continue;
-        const img2 = current2.querySelector("img");
-        if (img2 && img2.getAttribute("src") !== want.src) img2.src = want.src;
-        if (img2 && img2.alt !== want.title) img2.alt = want.title;
         current2.setAttribute("data-shop", want.key);
         const text3 = current2.querySelector(".input-group-text");
         if (text3 && text3.getAttribute("title") !== want.title) {
           text3.setAttribute("title", want.title);
+        }
+        let img = current2.querySelector("img");
+        if (want.src) {
+          if (!img) {
+            img = iconFor2(want.src, want.title);
+            text3 == null ? void 0 : text3.appendChild(img);
+          } else {
+            if (img.getAttribute("src") !== want.src) img.src = want.src;
+            if (img.alt !== want.title) img.alt = want.title;
+          }
+        } else if (img) {
+          img.remove();
         }
         continue;
       }
@@ -9433,13 +9480,26 @@
       const text2 = document.createElement("span");
       text2.className = "input-group-text";
       text2.setAttribute("title", want.title);
-      const img = document.createElement("img");
-      img.src = want.src;
-      img.alt = want.title;
-      text2.appendChild(img);
+      if (want.src) text2.appendChild(iconFor2(want.src, want.title));
       prepend.appendChild(text2);
       group.insertBefore(prepend, group.children[0] || null);
     }
+  }
+  function iconFor2(src, title) {
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = title;
+    return img;
+  }
+  function watchShopUrls(form2, run) {
+    const observer = typeof MutationObserver === "function" ? new MutationObserver(run) : null;
+    observer == null ? void 0 : observer.observe(form2, { childList: true, subtree: true });
+    const events = ["input", "change", "drop", "dragend"];
+    for (const name of events) form2.addEventListener(name, run, true);
+    return () => {
+      observer == null ? void 0 : observer.disconnect();
+      for (const name of events) form2.removeEventListener(name, run, true);
+    };
   }
   function ShopUrlHeads() {
     const ref = React17.useRef(null);
@@ -9449,12 +9509,9 @@
       if (!form2) return;
       const run = () => decorateShopUrls(form2);
       run();
-      const observer = typeof MutationObserver === "function" ? new MutationObserver(run) : null;
-      observer == null ? void 0 : observer.observe(form2, { childList: true, subtree: true });
-      form2.addEventListener("input", run, true);
+      const stop = watchShopUrls(form2, run);
       return () => {
-        observer == null ? void 0 : observer.disconnect();
-        form2.removeEventListener("input", run, true);
+        stop();
         const heads = form2.querySelectorAll("." + PREFIX);
         for (let i = 0; i < heads.length; i++) heads[i].remove();
       };
@@ -9462,6 +9519,7 @@
     return /* @__PURE__ */ React17.createElement("span", { ref, hidden: true });
   }
   NS.decorateShopUrls = decorateShopUrls;
+  NS.watchShopUrls = watchShopUrls;
 
   // src/tools/index.tsx
   var PluginApi20 = requirePluginApi();
