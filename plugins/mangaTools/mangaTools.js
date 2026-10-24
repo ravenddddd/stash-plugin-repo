@@ -5317,6 +5317,9 @@
   function refreshesStoreAfter(name) {
     return name === "GalleryUpdate" || name === "GalleriesUpdate";
   }
+  function forgetsGridAfter(name) {
+    return name === "ImageDestroy" || name === "ImagesDestroy";
+  }
   function installStoreRefresh() {
     const client = stashClient();
     if (!client || client === watchedClient) return;
@@ -5330,6 +5333,13 @@
           () => refreshAfterWrite(),
           // A rejected save heard nothing from the server; refreshing would ask
           // about a state that did not change.
+          () => {
+          }
+        );
+      }
+      if (forgetsGridAfter(name)) {
+        result.then(
+          () => NS.forgetPhysicalGrids(),
           () => {
           }
         );
@@ -5622,6 +5632,7 @@
   NS.markedInStore = (galleryId2) => store === null || !galleryId2 ? null : storedIsManga(galleryId2);
   NS.watchStore = (fn) => subscribe(fn);
   NS.refreshesStoreAfter = refreshesStoreAfter;
+  NS.forgetsGridAfter = forgetsGridAfter;
   function settingsInput() {
     var _a3;
     return {
@@ -9216,6 +9227,22 @@
   var React16 = PluginApi18.React;
   var cache = /* @__PURE__ */ new Map();
   var inFlight2 = /* @__PURE__ */ new Map();
+  var cacheGeneration = 0;
+  var listeners3 = /* @__PURE__ */ new Set();
+  function forgetPhysicalGrids() {
+    cacheGeneration += 1;
+    cache.clear();
+    inFlight2.clear();
+    listeners3.forEach((fn) => {
+      fn();
+    });
+  }
+  function watchPhysicalGrids(fn) {
+    listeners3.add(fn);
+    return () => {
+      listeners3.delete(fn);
+    };
+  }
   var GRID_CACHE_LIMIT = 8;
   function rememberPhysicalGrid(into, galleryId2, grid, limit = GRID_CACHE_LIMIT) {
     into.set(galleryId2, grid);
@@ -9230,15 +9257,19 @@
     if (cached) return Promise.resolve(cached);
     const waiting = inFlight2.get(galleryId2);
     if (waiting) return waiting;
-    const promise = fetchGalleryScope(galleryId2).then(
+    const generation = cacheGeneration;
+    let promise;
+    promise = fetchGalleryScope(galleryId2).then(
       (scope) => scope ? fetchGalleryFiles(galleryId2, scope, true) : { files: [], total: 0 }
     ).then((list) => {
       const grid = { files: list.files, total: list.total };
-      rememberPhysicalGrid(cache, galleryId2, grid);
-      inFlight2.delete(galleryId2);
+      if (generation === cacheGeneration) {
+        rememberPhysicalGrid(cache, galleryId2, grid);
+      }
+      if (inFlight2.get(galleryId2) === promise) inFlight2.delete(galleryId2);
       return grid;
     }).catch((error) => {
-      inFlight2.delete(galleryId2);
+      if (inFlight2.get(galleryId2) === promise) inFlight2.delete(galleryId2);
       console.error(
         "[mangaTools] could not read this gallery's files, so its grid keeps the deduplicated list:",
         error
@@ -9338,6 +9369,11 @@
       const next = args[args.length - 1];
       const galleryId2 = NS.physicalPageMode() ? currentGalleryId() : "";
       const [, bump] = React16.useState(0);
+      const [invalidated, setInvalidated] = React16.useState(0);
+      React16.useEffect(
+        () => watchPhysicalGrids(() => setInvalidated((n) => n + 1)),
+        []
+      );
       React16.useEffect(() => {
         if (!galleryId2) return;
         let live = true;
@@ -9347,7 +9383,7 @@
         return () => {
           live = false;
         };
-      }, [galleryId2]);
+      }, [galleryId2, invalidated]);
       const grid = galleryId2 ? cache.get(galleryId2) : void 0;
       const filter = props.filter;
       const sortBy = filter == null ? void 0 : filter.sortBy;
@@ -9417,6 +9453,8 @@
   }
   NS.physicalPagePlan = physicalPagePlan;
   NS.rememberPhysicalGrid = rememberPhysicalGrid;
+  NS.forgetPhysicalGrids = forgetPhysicalGrids;
+  NS.watchPhysicalGrids = watchPhysicalGrids;
   NS.expandPhysicalPage = expandPhysicalPage;
 
   // src/tools/shop-urls.tsx
