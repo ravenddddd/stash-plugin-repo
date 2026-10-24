@@ -571,6 +571,16 @@
     if (found < 0) return null;
     return chapters.filter((_, index) => index !== found);
   }
+  function removeChapterStartingAt(chapters, order, pageId) {
+    const position = positionsIn(order);
+    const at = position(pageId);
+    if (at === Number.MAX_SAFE_INTEGER) return null;
+    const found = chapters.findIndex(
+      (chapter) => startOf(chapter, position) === at
+    );
+    if (found < 0) return null;
+    return chapters.filter((_, index) => index !== found);
+  }
   var BULLETS = "\u30FB\uFF65\u2022\u2023\u2219-\u2013\u2014*+\u25A0\u25A1\u25CF\u25CB\u25CE\u203B>";
   var WRAPPERS = [
     ["\u300E", "\u300F"],
@@ -649,6 +659,7 @@
   NR.renameChapterAt = renameChapterAt;
   NR.moveChapterStart = moveChapterStart;
   NR.removeChapterAt = removeChapterAt;
+  NR.removeChapterStartingAt = removeChapterStartingAt;
 
   // src/reader/chapters-edit.ts
   var listeners = [];
@@ -1472,6 +1483,7 @@
     "mangaReader.chapterStartTaken": "A chapter already begins here",
     "mangaReader.chapterIndexRange": "That is not one of this gallery's pages",
     "mangaReader.chapterNoSuch": "No chapter begins here",
+    "mangaReader.chapterWriteFailed": "The chapter was not written \u2014 try again",
     "mangaReader.undoChapters": "Chapters changed \u2014 undo",
     "mangaReader.chaptersFromList": "Bulk create",
     "mangaReader.bulkPaste": "One title per line",
@@ -1613,6 +1625,7 @@
     "mangaReader.chapterStartTaken": "\u8FD9\u4E00\u9875\u5DF2\u7ECF\u662F\u67D0\u4E00\u7AE0\u7684\u5F00\u5934",
     "mangaReader.chapterIndexRange": "\u8FD9\u4E0D\u662F\u8FD9\u672C\u753B\u5ECA\u7684\u9875\u7801",
     "mangaReader.chapterNoSuch": "\u8FD9\u91CC\u6CA1\u6709\u7AE0\u8282\u5F00\u5934",
+    "mangaReader.chapterWriteFailed": "\u7AE0\u8282\u6CA1\u6709\u5199\u5165\u6210\u529F\uFF0C\u8BF7\u91CD\u8BD5",
     "mangaReader.undoChapters": "\u7AE0\u8282\u5DF2\u6539\u52A8 \u2014 \u64A4\u9500",
     "mangaReader.chaptersFromList": "\u6279\u91CF\u521B\u5EFA",
     "mangaReader.bulkPaste": "\u4E00\u884C\u4E00\u4E2A\u6807\u9898",
@@ -1754,6 +1767,7 @@
     "mangaReader.chapterStartTaken": "\u9019\u4E00\u9801\u5DF2\u7D93\u662F\u67D0\u4E00\u7AE0\u7684\u958B\u982D",
     "mangaReader.chapterIndexRange": "\u9019\u4E0D\u662F\u9019\u672C\u756B\u5ECA\u7684\u9801\u78BC",
     "mangaReader.chapterNoSuch": "\u9019\u88E1\u6C92\u6709\u7AE0\u7BC0\u958B\u982D",
+    "mangaReader.chapterWriteFailed": "\u7AE0\u7BC0\u6C92\u6709\u5BEB\u5165\u6210\u529F\uFF0C\u8ACB\u91CD\u8A66",
     "mangaReader.undoChapters": "\u7AE0\u7BC0\u5DF2\u6539\u52D5 \u2014 \u64A4\u92B7",
     "mangaReader.chaptersFromList": "\u6279\u6B21\u5EFA\u7ACB",
     "mangaReader.bulkPaste": "\u4E00\u884C\u4E00\u500B\u6A19\u984C",
@@ -3065,6 +3079,7 @@
   var inHand = null;
   var form = null;
   var formError = "";
+  var formFailure = "";
   var control = null;
   var controlState = null;
   var controlFor = null;
@@ -3091,6 +3106,11 @@
     if ((inHand == null ? void 0 : inHand.id) !== id) {
       inHand = null;
       renderedFor = "";
+      form = null;
+      formError = "";
+      formFailure = "";
+      bulk = false;
+      bulkPages = [];
       fetchGallery(id, { sort: "path", direction: "ASC" }).then((answer) => {
         if (galleryIdFromPath(window.location.pathname) !== id) return;
         const own = chaptersOf(answer);
@@ -3160,7 +3180,7 @@
       gallery.own ? "own" : "none",
       String(gallery.importable.length),
       busy ? "busy" : confirming ? "confirm" : "idle",
-      bulk ? "bulk" : form ? "form:" + ((_a3 = form.startPageId) != null ? _a3 : "new") + (formError ? ":bad" : "") : "list",
+      bulk ? "bulk" : form ? "form:" + ((_a3 = form.startPageId) != null ? _a3 : "new") + (formError ? ":bad" : "") + (formFailure ? ":failed" : "") : "list",
       ...gallery.chapters.map((c) => c.title + "@" + c.at)
     ].join("|");
     const wanted2 = bulk || form ? 1 : gallery.chapters.length;
@@ -3237,7 +3257,7 @@
   }
   function pageAt(input, gallery) {
     const n = Number(input.value);
-    return Number.isFinite(n) && n >= 1 && n <= gallery.pages.length ? n - 1 : -1;
+    return Number.isInteger(n) && n >= 1 && n <= gallery.pages.length ? n - 1 : -1;
   }
   function pagePreview(gallery, input, host) {
     const peek = document.createElement("button");
@@ -3254,7 +3274,8 @@
     let shown = "";
     peek.addEventListener("mouseenter", () => {
       const at = pageAt(input, gallery);
-      const src = at < 0 ? "" : pageUrl(gallery.pages[at]);
+      const page = at < 0 ? void 0 : gallery.pages[at];
+      const src = page ? pageUrl(page) : "";
       if (!src) return;
       if (!box) {
         box = document.createElement("div");
@@ -3302,6 +3323,10 @@
     const table = document.createElement("table");
     table.className = "manga-reader-bulk-table";
     container2.appendChild(table);
+    const over = document.createElement("div");
+    over.className = "manga-reader-bulk-empty";
+    over.hidden = true;
+    container2.insertBefore(over, table);
     const create = document.createElement("button");
     create.type = "button";
     create.id = BULK_CREATE_ID;
@@ -3315,7 +3340,7 @@
       if (!row3.title) return "mangaReader.bulkNoTitle";
       if (!row3.page) return "mangaReader.bulkNoPage";
       const page = Number(row3.page);
-      if (!Number.isFinite(page) || page < 1 || page > gallery.pages.length) {
+      if (!Number.isInteger(page) || page < 1 || page > gallery.pages.length) {
         return "mangaReader.bulkPageRange";
       }
       for (let i = 0; i < all.length; i++) {
@@ -3360,12 +3385,12 @@
       const titles = parseChapterList(area.value);
       table.textContent = "";
       if (titles.length > BULK_LIMIT) {
-        const over = document.createElement("div");
-        over.className = "manga-reader-bulk-empty";
+        built = [];
         over.textContent = stringFor(gallery.locale, "mangaReader.bulkTooMany");
-        container2.insertBefore(over, table);
+        over.hidden = false;
         return;
       }
+      over.hidden = true;
       const head = document.createElement("tr");
       head.setAttribute("data-head", "");
       ["", "mangaReader.bulkTitle", "mangaReader.bulkPage", ""].forEach(
@@ -3460,6 +3485,7 @@
     row2.className = "d-flex";
     create.addEventListener("click", () => {
       const all = rows();
+      if (all.length === 0) return;
       if (all.some((r, i) => wrongWith(r, all, i))) return;
       createFromList(
         gallery,
@@ -3616,7 +3642,7 @@
     render(panelInHand, inHand);
   }
   function drawForm(panel2, gallery) {
-    var _a3, _b3;
+    var _a3, _b3, _c, _d;
     const editing = !!(form == null ? void 0 : form.startPageId);
     const node = document.createElement("form");
     node.setAttribute("novalidate", "");
@@ -3629,7 +3655,7 @@
       "mangaReader.chapterTitle",
       "title",
       "text",
-      (_a3 = form == null ? void 0 : form.initialTitle) != null ? _a3 : ""
+      (_b3 = (_a3 = form == null ? void 0 : form.draftTitle) != null ? _a3 : form == null ? void 0 : form.initialTitle) != null ? _b3 : ""
     );
     const indexField = field(
       container2,
@@ -3637,7 +3663,7 @@
       "mangaReader.chapterIndex",
       "image_index",
       "number",
-      (_b3 = form == null ? void 0 : form.initialIndex) != null ? _b3 : "1"
+      (_d = (_c = form == null ? void 0 : form.draftIndex) != null ? _c : form == null ? void 0 : form.initialIndex) != null ? _d : "1"
     );
     node.appendChild(container2);
     indexField.column.classList.add("manga-reader-chapter-page");
@@ -3665,7 +3691,7 @@
     settle2();
     save.addEventListener(
       "click",
-      () => submitForm(title.value, Number(index.value))
+      () => submitForm(title.value, Number(index.value), index.value)
     );
     buttonsRow.appendChild(save);
     const cancel = document.createElement("button");
@@ -3681,6 +3707,12 @@
       remove.textContent = stringFor(gallery.locale, "mangaReader.delete");
       remove.addEventListener("click", deleteChapter);
       buttonsRow.appendChild(remove);
+    }
+    if (formFailure) {
+      const failed = document.createElement("div");
+      failed.className = "invalid-feedback d-block";
+      failed.textContent = stringFor(gallery.locale, formFailure);
+      buttons.appendChild(failed);
     }
     buttons.appendChild(buttonsRow);
     node.appendChild(buttons);
@@ -3721,7 +3753,7 @@
     input.classList.add("is-invalid");
     error.textContent = message2;
   }
-  function submitForm(title, index) {
+  function submitForm(title, index, rawIndex) {
     const gallery = inHand;
     const current2 = form;
     if (!gallery || !current2) return;
@@ -3739,7 +3771,7 @@
         redraw3();
         return;
       }
-      applyEdit(gallery, next2);
+      applyEdit(gallery, next2, { title, index: rawIndex });
       return;
     }
     let next = gallery.stored;
@@ -3758,13 +3790,13 @@
       closeForm();
       return;
     }
-    applyEdit(gallery, next);
+    applyEdit(gallery, next, { title, index: rawIndex });
   }
   function deleteChapter() {
     const gallery = inHand;
     const current2 = form;
     if (!gallery || !(current2 == null ? void 0 : current2.startPageId)) return;
-    const next = removeChapterAt(
+    const next = removeChapterStartingAt(
       gallery.stored,
       gallery.pages.map((page) => page.id),
       current2.startPageId
@@ -3776,8 +3808,12 @@
     }
     applyEdit(gallery, next);
   }
-  function applyEdit(gallery, next) {
+  function applyEdit(gallery, next, draft) {
     busy = true;
+    formFailure = "";
+    if (draft && form) {
+      form = { ...form, draftTitle: draft.title, draftIndex: draft.index };
+    }
     redraw3();
     writeChapters(gallery.id, next, gallery.pages).then(
       () => {
@@ -3786,6 +3822,7 @@
       },
       (e) => {
         busy = false;
+        formFailure = "mangaReader.chapterWriteFailed";
         console.error(
           "[mangaReader] could not write this gallery's chapters:",
           e
@@ -3797,6 +3834,7 @@
   function closeForm() {
     form = null;
     formError = "";
+    formFailure = "";
     redraw3();
   }
   function hideImport() {
@@ -3852,6 +3890,7 @@
       initialIndex: chapter ? String(chapter.at + 1) : String(indexOfReadingPage(gallery))
     };
     formError = "";
+    formFailure = "";
     redraw3();
   }
   function indexOfReadingPage(gallery) {
@@ -3871,6 +3910,9 @@
     confirming = false;
     form = null;
     formError = "";
+    formFailure = "";
+    bulk = false;
+    bulkPages = [];
   }
 
   // src/reader/footer.ts
@@ -4158,7 +4200,9 @@
     if (fromPath) return fromPath;
     if (pageGalleryId) return pageGalleryId;
     if (clickedGalleryId) {
-      pageGalleryId = clickedGalleryId;
+      const clicked = clickedGalleryId;
+      clickedGalleryId = null;
+      pageGalleryId = clicked;
       return pageGalleryId;
     }
     const image = carouselImage(lightbox);
@@ -4372,16 +4416,17 @@
     return -1;
   }
   function chaptersOf2(answer) {
+    const physicalPages = answer.fileScope !== void 0;
     const own = readChapters(
       NS.pickField(answer.customFields, NS.CHAPTER_FIELD_NAME) || null,
       answer.pages,
-      NS.physicalPageMode()
+      physicalPages
     );
     if (own) return own;
     if (answer.stashChapters.length === 0) return [];
     const pathIds = answer.pathIds || answer.pages.map((page) => page.imageId || page.id);
     const translated = chaptersFromStash(answer.stashChapters, pathIds);
-    return NS.physicalPageMode() ? toFileChapters(translated, answer.pages) : translated;
+    return physicalPages ? toFileChapters(translated, answer.pages) : translated;
   }
   function remember(id, gallery) {
     loaded.delete(id);
@@ -4828,7 +4873,7 @@
     if (!target2 || typeof target2.closest !== "function") return;
     const link = (_a3 = target2.closest(".gallery-card")) == null ? void 0 : _a3.querySelector('a[href^="/galleries/"]');
     const match = /^\/galleries\/(\d+)/.exec((link == null ? void 0 : link.getAttribute("href")) || "");
-    if (match) clickedGalleryId = match[1];
+    clickedGalleryId = match ? match[1] : null;
   }
   function askAboutImage(imageId, whenAnswered) {
     if (askedAboutImage[imageId]) {
@@ -5128,6 +5173,7 @@
     if (typeof path !== "string") return;
     const moved = seenPath !== null && path !== seenPath;
     seenPath = path;
+    if (moved) clickedGalleryId = null;
     if (moved && root) pressEscape();
   }
   function install() {
@@ -5348,6 +5394,8 @@
   NS.coverIcon = FEATURE_ON_BY_DEFAULT;
   NS.confirmUnmark = FEATURE_ON_BY_DEFAULT;
   NS.deleteOnUnmark = FEATURE_ON_BY_DEFAULT;
+  NS.settingsLoaded = false;
+  var settingsSaveRefused = false;
   var SETTINGS_QUERY = null;
   function getSettingsQuery() {
     if (SETTINGS_QUERY) return SETTINGS_QUERY;
@@ -5449,6 +5497,8 @@
         SHOW_DISABLED_FIELDS_BY_DEFAULT
       );
       NS.readerSettingsRaw = pluginCfg && typeof pluginCfg.readerSettings === "string" && pluginCfg.readerSettings ? pluginCfg.readerSettings : null;
+      NS.settingsLoaded = true;
+      settingsSaveRefused = false;
       emit();
     }).catch((e) => {
       console.error("[mangaTools] failed to fetch plugin settings:", e);
@@ -5578,6 +5628,15 @@
     };
   }
   function saveSettings() {
+    if (!NS.settingsLoaded) {
+      if (!settingsSaveRefused) {
+        settingsSaveRefused = true;
+        console.error(
+          "[mangaTools] the settings have not been read from Stash yet, so they were not saved: writing the defaults over the stored map would reset every setting."
+        );
+      }
+      return;
+    }
     const client = stashClient();
     if (!client) {
       console.error("[mangaTools] no Apollo client, the settings were not saved");
@@ -6942,7 +7001,8 @@
     const text2 = tag.firstChild;
     if ((text2 == null ? void 0 : text2.nodeType) !== 3) return false;
     const value = String(text2.nodeValue).trim();
-    if (tag.getAttribute(mark) === value) return true;
+    const stamped = tag.getAttribute(mark);
+    if (stamped && stamped.trim() === value) return true;
     const prefix = fieldName.toLowerCase() + " ";
     return value.toLowerCase().indexOf(prefix) === 0;
   }
@@ -8857,6 +8917,57 @@
   function editFormFor(galleryId2) {
     return editForm && editForm.galleryId === galleryId2 ? editForm : null;
   }
+  var pendingFields = /* @__PURE__ */ new Map();
+  function eachQuietField(fields, fn) {
+    const input = fields || {};
+    const visit = (name, value) => {
+      const key = NS.ownField(name);
+      if (key)
+        fn(key, value === null || value === void 0 ? "" : String(value));
+    };
+    if (input.partial && typeof input.partial === "object") {
+      Object.keys(input.partial).forEach((name) => {
+        var _a3;
+        visit(name, (_a3 = input.partial) == null ? void 0 : _a3[name]);
+      });
+    }
+    if (input.full && typeof input.full === "object") {
+      Object.keys(input.full).forEach((name) => {
+        var _a3;
+        visit(name, (_a3 = input.full) == null ? void 0 : _a3[name]);
+      });
+    }
+    if (Array.isArray(input.remove)) {
+      input.remove.forEach((name) => {
+        visit(String(name), "");
+      });
+    }
+  }
+  function rememberQuietly(galleryId2, fields) {
+    var _a3;
+    if (editFormFor(galleryId2)) return;
+    const next = { ...(_a3 = pendingFields.get(galleryId2)) != null ? _a3 : {} };
+    eachQuietField(fields, (name, value) => {
+      next[name] = value;
+    });
+    pendingFields.set(galleryId2, next);
+  }
+  function forgetQuietly(galleryId2, fields) {
+    const pending3 = pendingFields.get(galleryId2);
+    if (!pending3) return;
+    const next = { ...pending3 };
+    eachQuietField(fields, (name, value) => {
+      if (next[name] === value) delete next[name];
+    });
+    if (Object.keys(next).length) pendingFields.set(galleryId2, next);
+    else pendingFields.delete(galleryId2);
+  }
+  function takePendingFields(galleryId2) {
+    const pending3 = pendingFields.get(galleryId2);
+    if (!pending3) return null;
+    pendingFields.delete(galleryId2);
+    return pending3;
+  }
   function isMarkedNow(galleryId2, values) {
     if (store === null || !galleryId2) return NS.isManga(values);
     return storedIsManga(galleryId2);
@@ -8891,10 +9002,15 @@
         new Error("[mangaTools] no Apollo client, the write was not sent")
       );
     }
-    return client.mutate({
+    rememberQuietly(galleryId2, fields);
+    const result = client.mutate({
       mutation,
       variables: { input: { id: galleryId2, custom_fields: fields } }
     });
+    result.then(void 0, () => {
+      forgetQuietly(galleryId2, fields);
+    });
+    return result;
   }
   NS.writeChapters = (galleryId2, json) => {
     var _a3, _b3;
@@ -9034,7 +9150,10 @@
       );
     };
     const onConfirmUnmark = () => {
-      write2({ remove: NS.fieldsToClear(props.values) });
+      var _a3, _b3;
+      write2({
+        remove: NS.fieldsToClear((_b3 = (_a3 = store) == null ? void 0 : _a3.get(props.galleryId)) != null ? _b3 : props.values)
+      });
     };
     return PluginApi17.ReactDOM.createPortal(
       /* @__PURE__ */ React15.createElement(React15.Fragment, null, /* @__PURE__ */ React15.createElement(
@@ -9175,6 +9294,7 @@
   }
   function registerListPatch() {
     registerPatch("instead", "ImageList", (...args) => {
+      var _a3, _b3;
       noteFired("ImageList");
       const props = args[0];
       const next = args[args.length - 1];
@@ -9196,14 +9316,17 @@
       const sortDirection = filter == null ? void 0 : filter.sortDirection;
       const currentPage = filter == null ? void 0 : filter.currentPage;
       const itemsPerPage = filter == null ? void 0 : filter.itemsPerPage;
+      const searchTerm = filter == null ? void 0 : filter.searchTerm;
+      const criteriaCount = (_b3 = (_a3 = filter == null ? void 0 : filter.criteria) == null ? void 0 : _a3.length) != null ? _b3 : 0;
+      const pageCount = props.pageCount;
       const totalCount = props.totalCount;
       const selectedIds = props.selectedIds;
       const selectRef = React16.useRef(void 0);
       selectRef.current = props.onSelectChange;
       const change = React16.useCallback(
         (synthetic, chosen, shiftKey) => {
-          var _a3;
-          (_a3 = selectRef.current) == null ? void 0 : _a3.call(selectRef, synthetic.split("::")[0], chosen, shiftKey);
+          var _a4;
+          (_a4 = selectRef.current) == null ? void 0 : _a4.call(selectRef, synthetic.split("::")[0], chosen, shiftKey);
         },
         []
       );
@@ -9215,6 +9338,9 @@
           sortDirection,
           currentPage,
           itemsPerPage,
+          searchTerm,
+          criteriaCount,
+          pageCount,
           totalCount,
           selectedIds,
           change
@@ -9372,6 +9498,7 @@
     const props = args[0];
     const result = resultFrom(args);
     noteFired("GalleryCard.Overlays");
+    useGlobalVersion();
     const id = (_a3 = props.gallery) == null ? void 0 : _a3.id;
     const value = id ? pickLanguage((_b3 = store) == null ? void 0 : _b3.get(String(id))) : "";
     if (!value || !NS.showCoverBadge || !NS.fieldShowing("language"))
@@ -9383,6 +9510,7 @@
     const props = args[0];
     const result = resultFrom(args);
     noteFired("GalleryCard.Popovers");
+    useGlobalVersion();
     const id = (_a3 = props.gallery) == null ? void 0 : _a3.id;
     if (!id || !storedIsManga(String(id))) return result;
     return /* @__PURE__ */ React18.createElement(React18.Fragment, null, result, /* @__PURE__ */ React18.createElement(MangaPopoverMark, { galleryId: String(id) }));
@@ -9393,7 +9521,7 @@
     noteFired("CustomFieldsInput");
     useGlobalVersion();
     React18.useEffect(() => {
-      var _a3;
+      var _a3, _b3;
       const galleryId2 = currentGalleryId();
       if (props.onChange && galleryId2) {
         setEditForm({
@@ -9401,6 +9529,14 @@
           values: (_a3 = props.values) != null ? _a3 : {},
           onChange: props.onChange
         });
+        const pending3 = takePendingFields(galleryId2);
+        if (pending3) {
+          let next = (_b3 = props.values) != null ? _b3 : {};
+          Object.keys(pending3).forEach((name) => {
+            next = NS.setField(next, name, pending3[name]);
+          });
+          props.onChange(next);
+        }
       }
       return () => {
         setEditForm(null);

@@ -366,6 +366,13 @@ of the map at the same time, so that the map a Save sends back (the whole of it:
 `custom_fields: { full: … }`) carries the change too. The store's own query is
 `no-cache` for the same reason.
 
+When the Edit tab is **not** open there is no copy to push into, and the form
+that opens later is built from the cache this write left alone. The write is
+therefore recorded as it happens, and the form is handed what it missed once,
+when it is published — otherwise its Save would send the pre-write map back and
+silently drop the mark or the chapter list. A write that fails takes its record
+with it; the form is never handed something the server refused.
+
 That the unmark is written quietly as well is the part worth spelling out, since
 it is not obvious: what the panels draw is asked of this plugin's store rather
 than of Stash's values (see `isMarkedNow`), so the cache can go on holding fields
@@ -934,6 +941,13 @@ replaced or merged — which the plugin cannot confirm, since the resolver is no
 part of the published API. The settings page is not the only writer: the lightbox
 writes the reading half's JSON into its own key of the same map, and both go through
 one function that builds the whole of it, so neither can take the other's with it.
+
+**Nothing is written before that map has been read once.** Until the first
+successful configuration read, the values in force are the module defaults; saving
+then would replace every stored setting with them. A save in that window is
+refused, and the refusal is logged once rather than on every movement of a slider.
+A failed *re*-read is harmless by contrast: the values left in force are the last
+ones read, and they are safe to write back.
 
 It is a *custom* UI rather than Stash's stock per-setting inputs. Stash
 can only render STRING/NUMBER/BOOLEAN settings one plain input each, so "which
@@ -1926,8 +1940,11 @@ canonical spelling.
   Marking writes the mark into that form's own copy of the custom fields as well
   as to the server (see "Writing the mark" above), so formik sees a difference
   from the snapshot it mounted with and reports unsaved changes — until a Save,
-  after which it is clean again. That is the price of not resetting the form: the
-  alternative is the form being reinitialised on top of whatever was typed in it.
+  after which it is clean again. The same happens when the Edit tab is opened
+  *after* a toolbar mark: the form is handed the write it missed at publication,
+  and that is a change from its mounted snapshot. That is the price of not
+  resetting the form: the alternative is the form being reinitialised on top of
+  whatever was typed in it.
 - **The bulk edit row hooks the Apollo link chain** (see "Bulk edit" above) — the
   only place the plugin goes beyond the patch API. It is the only way to put a
   field into that dialog, since the dialog is not patchable and keeps its pending
