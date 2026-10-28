@@ -9637,6 +9637,7 @@
   }
   NS.decorateShopUrls = decorateShopUrls;
   NS.watchShopUrls = watchShopUrls;
+  NS.shopUrlHeads = ShopUrlHeads;
 
   // src/tools/index.tsx
   var PluginApi20 = requirePluginApi();
@@ -9695,9 +9696,10 @@
     const Original = originalFrom(args);
     noteFired("CustomFieldsInput");
     useGlobalVersion();
+    const galleryId2 = currentGalleryId();
+    const markedGallery = galleryId2 !== "" && isMarkedNow(galleryId2, props.values);
     React18.useEffect(() => {
       var _a3, _b3;
-      const galleryId2 = currentGalleryId();
       if (props.onChange && galleryId2) {
         setEditForm({
           galleryId: galleryId2,
@@ -9717,7 +9719,7 @@
         setEditForm(null);
       };
     });
-    return /* @__PURE__ */ React18.createElement(React18.Fragment, null, isMarkedNow(currentGalleryId(), props.values) ? /* @__PURE__ */ React18.createElement(MangaFieldBlock, { values: props.values, onChange: props.onChange }) : null, /* @__PURE__ */ React18.createElement(ShopUrlHeads, null), /* @__PURE__ */ React18.createElement(Original, { ...props }));
+    return /* @__PURE__ */ React18.createElement(React18.Fragment, null, isMarkedNow(galleryId2, props.values) ? /* @__PURE__ */ React18.createElement(MangaFieldBlock, { values: props.values, onChange: props.onChange }) : null, markedGallery ? /* @__PURE__ */ React18.createElement(ShopUrlHeads, null) : null, /* @__PURE__ */ React18.createElement(Original, { ...props }));
   });
   function takesOverFieldRow(key) {
     if (!NS.ownField(key)) return false;
