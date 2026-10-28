@@ -1538,6 +1538,10 @@
     "mangaTools.settings.showDisabledFields.heading": "Show disabled plugin fields",
     "mangaTools.settings.showDisabledFields.description": "With this on, a disabled field is no longer hidden: Stash draws its own custom-field row for it in the details tab and the edit form. The value itself is not changed.",
     "mangaTools.settings.showDisabledFields.note": "An enabled field is always this plugin's.",
+    "mangaTools.settings.groupOrder.heading": "Order the translation group list",
+    "mangaTools.settings.groupOrder.description": "Most-used groups first in the edit form's list. A group whose usual language matches the gallery still comes first.",
+    "mangaTools.settings.groupOrder.name": "By name",
+    "mangaTools.settings.groupOrder.use": "By use",
     "mangaTools.settings.mark.heading": "The manga mark",
     "mangaTools.settings.confirmUnmark.heading": "Ask before unmarking",
     "mangaTools.settings.deleteOnUnmark.heading": "Remove this plugin's fields when unmarking",
@@ -1680,6 +1684,10 @@
     "mangaTools.settings.showDisabledFields.heading": "\u663E\u793A\u7981\u7528\u7684\u63D2\u4EF6\u5B57\u6BB5",
     "mangaTools.settings.showDisabledFields.description": "\u5F00\u542F\u65F6\uFF0C\u7981\u7528\u7684\u5B57\u6BB5\u4E0D\u518D\u9690\u85CF\uFF0C\u8BE6\u60C5\u9875\u548C\u7F16\u8F91\u9875\u4E0A\u7531 Stash \u539F\u751F\u663E\u793A\u81EA\u5B9A\u4E49\u5B57\u6BB5\u3002\u8BE5\u9009\u9879\u4E0D\u4F1A\u4FEE\u6539\u5BF9\u5E94\u7684\u503C\u3002",
     "mangaTools.settings.showDisabledFields.note": "\u542F\u7528\u7684\u5B57\u6BB5\u59CB\u7EC8\u7531\u63D2\u4EF6\u63A5\u7BA1",
+    "mangaTools.settings.groupOrder.heading": "\u7FFB\u8BD1\u7EC4\u5217\u8868\u6392\u5E8F",
+    "mangaTools.settings.groupOrder.description": "\u7F16\u8F91\u8868\u5355\u91CC\u7528\u5F97\u591A\u7684\u7EC4\u6392\u5728\u524D\u9762\uFF1B\u4E0E\u8BE5\u753B\u5ECA\u5E38\u7528\u8BED\u8A00\u4E00\u81F4\u7684\u7EC4\u4ECD\u7136\u4F18\u5148\u3002",
+    "mangaTools.settings.groupOrder.name": "\u6309\u540D\u79F0",
+    "mangaTools.settings.groupOrder.use": "\u6309\u4F7F\u7528\u6B21\u6570",
     "mangaTools.settings.mark.heading": "\u6F2B\u753B\u6807\u8BB0",
     "mangaTools.settings.confirmUnmark.heading": "\u53D6\u6D88\u6F2B\u753B\u6807\u8BB0\u65F6\u786E\u8BA4",
     "mangaTools.settings.deleteOnUnmark.heading": "\u53D6\u6D88\u6F2B\u753B\u6807\u8BB0\u65F6\u6E05\u9664\u63D2\u4EF6\u5B57\u6BB5",
@@ -1822,6 +1830,10 @@
     "mangaTools.settings.showDisabledFields.heading": "\u986F\u793A\u505C\u7528\u7684\u5916\u639B\u6B04\u4F4D",
     "mangaTools.settings.showDisabledFields.description": "\u958B\u555F\u6642\uFF0C\u505C\u7528\u7684\u6B04\u4F4D\u4E0D\u518D\u96B1\u85CF\uFF0C\u8A73\u7D30\u9801\u548C\u7DE8\u8F2F\u9801\u4E0A\u7531 Stash \u539F\u751F\u986F\u793A\u81EA\u8A02\u6B04\u4F4D\u3002\u8A72\u9078\u9805\u4E0D\u6703\u4FEE\u6539\u5C0D\u61C9\u7684\u503C\u3002",
     "mangaTools.settings.showDisabledFields.note": "\u555F\u7528\u7684\u6B04\u4F4D\u59CB\u7D42\u7531\u5916\u639B\u63A5\u7BA1",
+    "mangaTools.settings.groupOrder.heading": "\u7FFB\u8B6F\u7D44\u5217\u8868\u6392\u5E8F",
+    "mangaTools.settings.groupOrder.description": "\u7DE8\u8F2F\u8868\u55AE\u88E1\u7528\u5F97\u591A\u7684\u7D44\u6392\u5728\u524D\u9762\uFF1B\u8207\u8A72\u756B\u5ECA\u5E38\u7528\u8A9E\u8A00\u4E00\u81F4\u7684\u7D44\u4ECD\u7136\u512A\u5148\u3002",
+    "mangaTools.settings.groupOrder.name": "\u6309\u540D\u7A31",
+    "mangaTools.settings.groupOrder.use": "\u6309\u4F7F\u7528\u6B21\u6578",
     "mangaTools.settings.mark.heading": "\u6F2B\u756B\u6A19\u8A18",
     "mangaTools.settings.confirmUnmark.heading": "\u53D6\u6D88\u6F2B\u756B\u6A19\u8A18\u6642\u78BA\u8A8D",
     "mangaTools.settings.deleteOnUnmark.heading": "\u53D6\u6D88\u6F2B\u756B\u6A19\u8A18\u6642\u6E05\u9664\u5916\u639B\u6B04\u4F4D",
@@ -5432,6 +5444,7 @@
   NS.coverIcon = FEATURE_ON_BY_DEFAULT;
   NS.confirmUnmark = FEATURE_ON_BY_DEFAULT;
   NS.deleteOnUnmark = FEATURE_ON_BY_DEFAULT;
+  NS.groupOrder = "name";
   NS.settingsLoaded = false;
   var settingsSaveRefused = false;
   var SETTINGS_QUERY = null;
@@ -5513,6 +5526,7 @@
         pluginCfg ? pluginCfg.deleteOnUnmark : null,
         FEATURE_ON_BY_DEFAULT
       );
+      NS.groupOrder = pluginCfg && pluginCfg.groupOrder === "use" ? "use" : "name";
       NS.showFlags = NS.parseFlag(pluginCfg ? pluginCfg.showFlags : null, true);
       NS.showCoverBadge = NS.parseFlag(
         pluginCfg ? pluginCfg.showCoverBadge : null,
@@ -5612,15 +5626,38 @@
   function refreshForSuggestions() {
     refreshAfterWrite();
   }
-  NS.translationGroups = () => knownTranslationGroups();
-  function knownTranslationGroups() {
-    if (!store) return [];
-    const seen = {};
+  NS.translationGroups = (locale) => knownTranslationGroups(locale);
+  NS.translationGroupsByUse = (locale) => knownTranslationGroupsByUse(locale);
+  NS.orderGroupNames = orderGroupNames;
+  NS.orderGroupNamesByUse = orderGroupNamesByUse;
+  function knownTranslationGroups(locale) {
+    const tally = translationGroupTally();
+    if (!tally) return [];
+    return orderGroupNames(Object.keys(tally), locale);
+  }
+  function knownTranslationGroupsByUse(locale) {
+    const tally = translationGroupTally();
+    if (!tally) return [];
+    return orderGroupNamesByUse(Object.keys(tally), tally, locale);
+  }
+  function orderGroupNames(names, locale) {
+    const collator = collatorFor(locale || NS.FALLBACK_LOCALE);
+    return names.slice().sort((a, b) => collator.compare(a, b));
+  }
+  function orderGroupNamesByUse(names, tally, locale) {
+    const collator = collatorFor(locale || NS.FALLBACK_LOCALE);
+    return names.slice().sort(
+      (a, b) => (tally[b] || 0) - (tally[a] || 0) || collator.compare(a, b)
+    );
+  }
+  function translationGroupTally() {
+    if (!store) return null;
+    const tally = {};
     store.forEach((fields) => {
       const name = NS.translationGroupOf(fields);
-      if (name) seen[name] = true;
+      if (name) tally[name] = (tally[name] || 0) + 1;
     });
-    return Object.keys(seen).sort();
+    return tally;
   }
   function storedIsManga(galleryId2) {
     var _a3;
@@ -5656,6 +5693,7 @@
       coverIcon: NS.coverIcon,
       confirmUnmark: NS.confirmUnmark,
       deleteOnUnmark: NS.deleteOnUnmark,
+      groupOrder: NS.groupOrder,
       showFlags: NS.showFlags,
       showCoverBadge: NS.showCoverBadge,
       openDetailsBlock: NS.openDetailsBlock,
@@ -6812,7 +6850,7 @@
       emit();
     };
     const groupValue = groupShown === BULK_REMOVE_VALUE ? "" : groupShown;
-    const known = knownTranslationGroups();
+    const known = knownTranslationGroups(intl.locale);
     const namesANewGroup = !!groupValue && !known.some((name) => NS.sameTranslationGroup(name, groupValue));
     const agreedLanguage = (bulkLanguage == null ? void 0 : bulkLanguage.kind) === "set" ? bulkLanguage.value : (bulkLanguage == null ? void 0 : bulkLanguage.kind) === "remove" ? "" : selectedLanguageAggregate() || "";
     const usualLanguages = NS.usualLanguagesOf(store);
@@ -7770,7 +7808,7 @@
       read: readGroupFilter,
       apply: applyGroup,
       relabel: relabelGroupTags,
-      options: (_intl, selection) => translationGroupOptions(selection),
+      options: (intl, selection) => translationGroupOptions(intl, selection),
       search: true,
       plainCandidates: true
     }
@@ -7874,12 +7912,14 @@
       filter: props.filter
     });
   }
-  function translationGroupOptions(selection) {
-    const options = NS.translationGroups().map((name) => ({
-      value: name,
-      label: name,
-      flag: null
-    }));
+  function translationGroupOptions(intl, selection) {
+    const options = NS.translationGroups(intl.locale).map(
+      (name) => ({
+        value: name,
+        label: name,
+        flag: null
+      })
+    );
     const known = {};
     options.forEach((o) => {
       known[o.value] = true;
@@ -8069,6 +8109,29 @@
       )
     );
   }
+  function SelectSetting(props) {
+    var _a3;
+    const Bootstrap = PluginApi12.libraries.Bootstrap;
+    if (!((_a3 = Bootstrap == null ? void 0 : Bootstrap.Form) == null ? void 0 : _a3.Control)) {
+      console.error(
+        "[mangaTools] react-bootstrap has no Form.Control, so the group order setting is not drawn"
+      );
+      return null;
+    }
+    return /* @__PURE__ */ React10.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement("h3", null, props.heading), props.subHeading ? /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, props.subHeading) : null), /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement(
+      Bootstrap.Form.Control,
+      {
+        id: props.id,
+        className: "input-control",
+        as: "select",
+        value: props.value,
+        onChange: (e) => {
+          props.onChange(e.currentTarget.value);
+        }
+      },
+      props.options.map((option) => /* @__PURE__ */ React10.createElement("option", { key: option.value, value: option.value }, option.label))
+    )));
+  }
   var foldedGroups = /* @__PURE__ */ new Set();
   function setGroupFolded(id, folded) {
     if (folded) foldedGroups.add(id);
@@ -8145,6 +8208,13 @@
     function writeFlag(into) {
       return (next) => {
         into(next);
+        emit();
+        persist();
+      };
+    }
+    function writeOrder(into) {
+      return (next) => {
+        into(next === "use" ? "use" : "name");
         emit();
         persist();
       };
@@ -8294,13 +8364,38 @@
           NS.fieldCensorship = next;
         }
       ),
-      field2(
-        "mangaTools-fieldTranslationGroup",
-        t(intl, "mangaTools.translationGroup.heading"),
-        () => NS.fieldTranslationGroup,
-        (next) => {
-          NS.fieldTranslationGroup = next;
-        }
+      /* @__PURE__ */ React10.createElement(
+        SettingSwitch,
+        {
+          id: "mangaTools-fieldTranslationGroup",
+          heading: t(intl, "mangaTools.translationGroup.heading"),
+          checked: NS.fieldTranslationGroup,
+          onChange: writeFlag((next) => {
+            NS.fieldTranslationGroup = next;
+          })
+        },
+        /* @__PURE__ */ React10.createElement(
+          SelectSetting,
+          {
+            id: "mangaTools-groupOrder",
+            heading: t(intl, "mangaTools.settings.groupOrder.heading"),
+            subHeading: t(intl, "mangaTools.settings.groupOrder.description"),
+            value: NS.groupOrder,
+            options: [
+              {
+                value: "name",
+                label: t(intl, "mangaTools.settings.groupOrder.name")
+              },
+              {
+                value: "use",
+                label: t(intl, "mangaTools.settings.groupOrder.use")
+              }
+            ],
+            onChange: writeOrder((next) => {
+              NS.groupOrder = next;
+            })
+          }
+        )
       ),
       field2(
         "mangaTools-fieldOriginal",
@@ -8579,7 +8674,7 @@
     )));
     const groupRaw = NS.pickField(props.values, TRANSLATION_GROUP_FIELD_NAME);
     const groupName = NS.translationGroupOf(props.values);
-    const known = knownTranslationGroups();
+    const known = NS.groupOrder === "use" ? knownTranslationGroupsByUse(intl.locale) : knownTranslationGroups(intl.locale);
     const namesANewGroup = !!groupName && !known.some((name) => NS.sameTranslationGroup(name, groupName));
     const usualOf = (name) => usualLanguages[NS.groupKey(name)];
     const matchesNow = (name) => {
