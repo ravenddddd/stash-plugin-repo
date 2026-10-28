@@ -1446,8 +1446,12 @@ what it would write. The parsing takes off the decoration and nothing else: a le
 `・` goes, and so do the brackets a line is wholly wrapped in, while `(RJ242738)` and
 `(10P)` stay, because they are content. The heading line and any prose pasted with the
 list arrive as rows like any other, have no page, and are deleted from the table with
-the red ✕ — this plugin does not try to tell a title from a sentence, and the
-measurements behind that are in `doc/mock/bulk-chapters.html`.
+the red ✕ — this plugin does not try to tell a title from a sentence. That is a
+measured choice: across 244 galleries of one library whose descriptions carry
+収録作品, the heading line takes a dozen shapes (`【収録作品】` 88 times, `＜…＞` 36,
+`〈…〉` 21, bare 15, `<…>` 9, `■…` 8, and more), the items carry only three
+prefixes (`・`, `■`, none), a block runs straight on into prose, and `(RJ242738)`
+appears on 10 of the 244 while a page count appears on 4 — rare, and still content.
 
 Nothing is written until every row has a title, a page within the gallery, and a
 position no other row or existing chapter has taken; the ✕ on a row carries the reason
@@ -1508,10 +1512,13 @@ contains, each at its own position.
   `pageCount` and no `totalCount` at all, and deriving it from the missing total
   made every file share one page. The chosen page size is kept exactly: pages
   1 … P−1 hold it, and the **last page takes the remainder** (52 files over 51
-  pages at 1/page is 1, 1, …, 2). The toolbar's "N–M of T" line still says
-  **T = the deduplicated image count**: rewriting it through a subscription in
-  Stash's `Pagination`/`PaginationIndex` was tried and removed — it produced an
-  update loop (React error #185).
+  pages at 1/page is 1, 1, …, 2). The "N–M of T" line says **the files'** numbers.
+  Stash draws that line in `ImageList`'s own render, above the list, so a
+  subscription in `Pagination`/`PaginationIndex` was tried first and removed: it
+  produced an update loop (React error #185). The list patch instead rewrites the
+  line's own text node after each commit — the `<br>` and the byline after it are
+  left alone — and puts Stash's text back when the expansion stops applying (a sort
+  with no physical order, a search, the setting turned off).
 - **The grid renders Stash's own cards.** The list patch clones each image once per
   occurrence, gives it a synthetic id for React's keys, and puts the occurrence's
   file in `visual_files` — so the cards keep their tags, popovers and date. The

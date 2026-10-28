@@ -6993,7 +6993,10 @@
     return /* @__PURE__ */ React7.createElement(
       "li",
       {
-        className: (selected ? "selected-object" : "unselected-object") + (props.modifier ? " modifier-object" : "")
+        className: (selected ? "selected-object" : "unselected-object") + (props.modifier ? " modifier-object" : "") + // This plugin's own rows, for the stylesheet: `.label-group` is a flex box
+        // Stash's own rows use too, and the one rule that goes with it here (the
+        // icon does not shrink; see mangaTools.css) must not restyle their list.
+        " manga-tools-row"
       },
       /* @__PURE__ */ React7.createElement(
         "a",
@@ -9252,6 +9255,9 @@
       into.delete(oldest.value);
     }
   }
+  function primePhysicalGrid(galleryId2, grid) {
+    rememberPhysicalGrid(cache, galleryId2, grid);
+  }
   function load(galleryId2) {
     const cached = cache.get(galleryId2);
     if (cached) return Promise.resolve(cached);
@@ -9284,6 +9290,57 @@
     const stashed = Math.max(1, Math.floor(imagePages) || 1);
     const fillable = Math.max(1, Math.ceil(Math.max(0, fileCount) / perPage));
     return { pages: Math.min(stashed, fillable), perPage };
+  }
+  function physicalIndexRange(page, perPage, total) {
+    const size = Math.max(1, Math.floor(perPage) || 1);
+    const count = Math.max(0, Math.floor(total) || 0);
+    const at = Math.max(1, Math.floor(page) || 1);
+    const first = Math.min((at - 1) * size + 1, count);
+    return { first, last: Math.min(first + size - 1, count) };
+  }
+  function physicalIndexText(intl, page, perPage, total) {
+    const range = physicalIndexRange(page, perPage, total);
+    const number = (value) => typeof intl.formatNumber === "function" ? intl.formatNumber(value) : String(value);
+    return number(range.first) + "-" + number(range.last) + " of " + number(Math.max(0, Math.floor(total) || 0));
+  }
+  var INDEX_SELECTOR = ".pagination-index-container .paginationIndex";
+  var indexOwned = null;
+  var indexStashed = "";
+  function indexTextOf(span) {
+    const first = span.firstChild;
+    if (first && first.nodeType === 3 && first.nodeValue != null) {
+      return first.nodeValue;
+    }
+    return span.textContent || "";
+  }
+  function writeIndexText(span, text2) {
+    const first = span.firstChild;
+    if (first && first.nodeType === 3) {
+      first.nodeValue = text2;
+    } else {
+      span.textContent = text2;
+    }
+  }
+  function rewritePhysicalIndex(text2) {
+    const span = document.querySelector(INDEX_SELECTOR);
+    if (!span) return false;
+    const current2 = indexTextOf(span);
+    if (indexOwned === null || current2 !== indexOwned) indexStashed = current2;
+    writeIndexText(span, text2);
+    indexOwned = text2;
+    return true;
+  }
+  function restorePhysicalIndex() {
+    const span = document.querySelector(INDEX_SELECTOR);
+    if (!span) return false;
+    const current2 = indexTextOf(span);
+    if (indexOwned === null || current2 !== indexOwned) {
+      indexOwned = null;
+      return false;
+    }
+    writeIndexText(span, indexStashed);
+    indexOwned = null;
+    return true;
   }
   function withFragment(url, fileId) {
     return url ? url + "#" + fileId : url;
@@ -9367,7 +9424,8 @@
       noteFired("ImageList");
       const props = args[0];
       const next = args[args.length - 1];
-      const galleryId2 = NS.physicalPageMode() ? currentGalleryId() : "";
+      const routeGalleryId = currentGalleryId();
+      const galleryId2 = NS.physicalPageMode() ? routeGalleryId : "";
       const [, bump] = React16.useState(0);
       const [invalidated, setInvalidated] = React16.useState(0);
       React16.useEffect(
@@ -9420,6 +9478,22 @@
           change
         ]
       );
+      const intl = PluginApi18.libraries.Intl.useIntl();
+      React16.useLayoutEffect(() => {
+        if (!routeGalleryId) return;
+        if (expanded) {
+          rewritePhysicalIndex(
+            physicalIndexText(
+              intl,
+              expanded.page,
+              expanded.perPage,
+              expanded.total
+            )
+          );
+        } else {
+          restorePhysicalIndex();
+        }
+      });
       if (!expanded) return next(props);
       return next({
         ...props,
@@ -9452,6 +9526,11 @@
     registerCardPatch();
   }
   NS.physicalPagePlan = physicalPagePlan;
+  NS.physicalIndexRange = physicalIndexRange;
+  NS.physicalIndexText = physicalIndexText;
+  NS.rewritePhysicalIndex = rewritePhysicalIndex;
+  NS.restorePhysicalIndex = restorePhysicalIndex;
+  NS.primePhysicalGrid = primePhysicalGrid;
   NS.rememberPhysicalGrid = rememberPhysicalGrid;
   NS.forgetPhysicalGrids = forgetPhysicalGrids;
   NS.watchPhysicalGrids = watchPhysicalGrids;
