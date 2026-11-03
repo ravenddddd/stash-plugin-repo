@@ -2096,6 +2096,8 @@
     track.addEventListener("mousemove", onMoveOverBar);
     track.addEventListener("mouseleave", onLeaveTrack);
     track.addEventListener("mousedown", onPress);
+    track.addEventListener("pointerdown", onPointerDown);
+    track.addEventListener("pointermove", onTouchOverBar);
   }
   var SELECTOR_DISPLAY2 = ".Lightbox-display";
   function parentFor(lightbox) {
@@ -2202,6 +2204,10 @@
     });
     redraw();
   }
+  function onTouchOverBar(event) {
+    if (event.pointerType === "mouse") return;
+    onMoveOverBar(event);
+  }
   function onLeaveTrack() {
     onTrack = false;
     if (!pressed) takeBubbleDown();
@@ -2264,9 +2270,16 @@
     return Math.min(Math.max(from / span, 0), 1);
   }
   function onPress(event) {
-    var _a3, _b3, _c;
     const press = event;
     if (press.button !== 0 || !track) return;
+    pressAt(event);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onRelease);
+  }
+  function pressAt(event) {
+    var _a3, _b3, _c;
+    const press = event;
+    if (!track) return;
     press.preventDefault();
     press.stopPropagation();
     onTrack = true;
@@ -2285,8 +2298,29 @@
       bubble = null;
       scrubTo(fractionAt(press));
     }
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onRelease);
+  }
+  function onPointerDown(event) {
+    const down = event;
+    if (down.pointerType === "mouse" || !track) return;
+    down.preventDefault();
+    down.stopPropagation();
+    pressAt(event);
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerRelease);
+    document.addEventListener("pointercancel", onPointerRelease);
+  }
+  function onPointerMove(event) {
+    const move = event;
+    if (move.pointerType === "mouse") return;
+    onMove(event);
+  }
+  function onPointerRelease(event) {
+    const up = event;
+    if (up.pointerType === "mouse") return;
+    document.removeEventListener("pointermove", onPointerMove);
+    document.removeEventListener("pointerup", onPointerRelease);
+    document.removeEventListener("pointercancel", onPointerRelease);
+    onRelease();
   }
   function onMove(event) {
     if (!pressed) return;
@@ -4120,6 +4154,10 @@
   function panned(view2, dx, dy) {
     return { zoom: view2.zoom, x: view2.x + dx, y: view2.y + dy };
   }
+  function zoomedAbout(view2, zoom2, local) {
+    const k = zoom2 - view2.zoom;
+    return { zoom: zoom2, x: view2.x - local.x * k, y: view2.y - local.y * k };
+  }
 
   // src/reader/scroll.ts
   var CLASS_SCROLL = "is-scroll";
@@ -4377,9 +4415,62 @@
   NR.pageAtTop = pageAtTop;
   NR.zoomedBy = zoomedBy;
   NR.columnFitted = columnFitted;
+  NR.columnZoom = columnZoom;
   NR.pageAtOffset = pageAtOffset;
   NR.columnPlan = columnPlan;
   NR.columnWindow = columnWindow;
+
+  // src/reader/touch.ts
+  var TOUCH_TAP_SLOP = 10;
+  var TOUCH_SWIPE = 48;
+  var TOUCH_TAP_MS = 400;
+  var TOUCH_DOUBLE_MS = 320;
+  var TOUCH_DOUBLE_SLOP = 40;
+  var TOUCH_ZOOM = 2.5;
+  function touchGesture(dx, dy, ms) {
+    const across = Math.abs(dx);
+    const down = Math.abs(dy);
+    if (across <= TOUCH_TAP_SLOP && down <= TOUCH_TAP_SLOP) {
+      return ms <= TOUCH_TAP_MS ? "tap" : "none";
+    }
+    if (across >= TOUCH_SWIPE && across > down * 1.4) {
+      return dx > 0 ? "forward" : "back";
+    }
+    return "none";
+  }
+  function tapZone(x, left, width) {
+    if (!(width > 0)) return 0;
+    const at = (x - left) / width;
+    if (at < 1 / 3) return -1;
+    if (at > 2 / 3) return 1;
+    return 0;
+  }
+  function isDoubleTap(previous, next) {
+    if (!previous) return false;
+    const gap = next.at - previous.at;
+    if (gap < 0 || gap > TOUCH_DOUBLE_MS) return false;
+    return Math.hypot(next.x - previous.x, next.y - previous.y) <= TOUCH_DOUBLE_SLOP;
+  }
+  function pinched(startZoom, startDistance, distance) {
+    if (!(startDistance > 0) || !(distance > 0)) return startZoom;
+    const wanted2 = Math.min(
+      Math.max(startZoom * (distance / startDistance), VIEW_MIN_ZOOM),
+      VIEW_MAX_ZOOM
+    );
+    return Math.abs(wanted2 - 1) < VIEW_SNAP ? 1 : wanted2;
+  }
+  function pinchPoints(a, b) {
+    return {
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2,
+      distance: Math.hypot(a.x - b.x, a.y - b.y)
+    };
+  }
+  NR.touchGesture = touchGesture;
+  NR.tapZone = tapZone;
+  NR.isDoubleTap = isDoubleTap;
+  NR.pinched = pinched;
+  NR.TOUCH_ZOOM = TOUCH_ZOOM;
 
   // src/reader/takeover.ts
   var CLASS_SINGLE = "is-single";
@@ -4824,6 +4915,7 @@
       container.addEventListener("click", onSpreadClick);
       container.addEventListener("wheel", onSpreadWheel);
       container.addEventListener("mousedown", onSpreadPress);
+      container.addEventListener("pointerdown", onTouchDown);
       container.addEventListener("scroll", onColumnScroll);
       container.addEventListener(
         "load",
@@ -5228,6 +5320,7 @@
   function onSpreadClick(event) {
     const lightbox = root;
     if (!lightbox || !container) return;
+    if (answeredByTouch(event)) return;
     if (held) {
       held = false;
       return;
@@ -5274,13 +5367,7 @@
       const was = columnZoom();
       const next = zoomedBy(was, delta < 0 ? VIEW_STEP : 1 / VIEW_STEP);
       if (next === was) return;
-      const wasAt = container ? { top: container.scrollTop || 0, left: container.scrollLeft || 0 } : null;
-      refitColumn(next);
-      if (container && wasAt) {
-        container.scrollTop = wasAt.top * (next / was);
-        container.scrollLeft = wasAt.left * (next / was);
-      }
-      sync(lightbox);
+      zoomColumnTo(next);
       return;
     }
     if (effect === "zoom") {
@@ -5369,6 +5456,172 @@
     if (from && release.timeStamp - from.at > VIEW_CLICK_MS) held = true;
     dragFrom = null;
     pressed2 = null;
+  }
+  var touches = /* @__PURE__ */ new Map();
+  var touchDown = null;
+  var touchPan = null;
+  var pinch = null;
+  var lastTap = null;
+  var touchAnsweredAt = 0;
+  var TOUCH_CLICK_GRACE_MS = 500;
+  function localPoint(x, y) {
+    if (!container) return { x: 0, y: 0 };
+    const rect = container.getBoundingClientRect();
+    const zoom2 = view.zoom || 1;
+    return {
+      x: (x - ((rect.left || 0) + (rect.width || 0) / 2) - view.x) / zoom2,
+      y: (y - ((rect.top || 0) + (rect.height || 0) / 2) - view.y) / zoom2
+    };
+  }
+  function zoomColumnTo(next) {
+    const lightbox = root;
+    if (!container || !(next > 0)) return;
+    const was = columnZoom();
+    if (Math.abs(next - was) < 1e-6) return;
+    const wasAt = {
+      top: container.scrollTop || 0,
+      left: container.scrollLeft || 0
+    };
+    refitColumn(next);
+    container.scrollTop = wasAt.top * (next / was);
+    container.scrollLeft = wasAt.left * (next / was);
+    if (lightbox) sync(lightbox);
+  }
+  function onTouchDown(event) {
+    const down = event;
+    if (down.pointerType === "mouse") return;
+    if (!wanted() || !root || !container) return;
+    touches.set(down.pointerId, {
+      x: down.clientX,
+      y: down.clientY,
+      at: down.timeStamp
+    });
+    if (touches.size === 1) {
+      touchDown = {
+        x: down.clientX,
+        y: down.clientY,
+        at: down.timeStamp,
+        multi: false
+      };
+      touchPan = { x: down.clientX, y: down.clientY };
+    } else if (touches.size === 2) {
+      if (touchDown) touchDown.multi = true;
+      const [a, b] = [...touches.values()];
+      const at = pinchPoints(a, b);
+      pinch = settings.readingMode === "scroll" ? {
+        startZoom: columnZoom(),
+        startDistance: at.distance,
+        anchor: { x: 0, y: 0 },
+        view
+      } : {
+        startZoom: view.zoom,
+        startDistance: at.distance,
+        anchor: localPoint(at.x, at.y),
+        view
+      };
+    }
+    document.addEventListener("pointermove", onTouchMove);
+    document.addEventListener("pointerup", onTouchUp);
+    document.addEventListener("pointercancel", onTouchUp);
+  }
+  function onTouchMove(event) {
+    const move = event;
+    if (!touches.has(move.pointerId)) return;
+    touches.set(move.pointerId, {
+      x: move.clientX,
+      y: move.clientY,
+      at: move.timeStamp
+    });
+    if (pinch && touches.size >= 2) {
+      const [a, b] = [...touches.values()];
+      const at = pinchPoints(a, b);
+      const zoom2 = pinched(pinch.startZoom, pinch.startDistance, at.distance);
+      if (zoom2 === pinch.startZoom) return;
+      if (settings.readingMode === "scroll") {
+        zoomColumnTo(zoom2);
+        pinch.startZoom = zoom2;
+        return;
+      }
+      view = zoomedAbout(pinch.view, zoom2, pinch.anchor);
+      pinch.view = view;
+      pinch.startZoom = zoom2;
+      pinch.startDistance = at.distance;
+      applyView();
+      return;
+    }
+    if (!touchDown || touchDown.multi) return;
+    const from = touchPan || touchDown;
+    const dx = move.clientX - from.x;
+    const dy = move.clientY - from.y;
+    touchPan = { x: move.clientX, y: move.clientY };
+    if (settings.readingMode === "scroll" || !isZoomed(view)) return;
+    view = panned(view, dx, dy);
+    applyView();
+  }
+  function onTouchUp(event) {
+    const up = event;
+    if (!touches.has(up.pointerId)) return;
+    touches.delete(up.pointerId);
+    if (touches.size > 0) {
+      touchDown = null;
+      touchPan = null;
+      pinch = null;
+      return;
+    }
+    document.removeEventListener("pointermove", onTouchMove);
+    document.removeEventListener("pointerup", onTouchUp);
+    document.removeEventListener("pointercancel", onTouchUp);
+    const wasPinch = pinch !== null;
+    const start2 = touchDown;
+    touchDown = null;
+    touchPan = null;
+    pinch = null;
+    touchAnsweredAt = up.timeStamp;
+    if (up.type === "pointercancel" || !start2 || start2.multi || wasPinch) return;
+    if (!root) return;
+    const lightbox = root;
+    const dx = up.clientX - start2.x;
+    const dy = up.clientY - start2.y;
+    const gesture = touchGesture(dx, dy, up.timeStamp - start2.at);
+    if (gesture === "tap") {
+      const tap = { x: up.clientX, y: up.clientY, at: up.timeStamp };
+      if (isDoubleTap(lastTap, tap)) {
+        lastTap = null;
+        toggleZoomAt(lightbox, tap.x, tap.y);
+        return;
+      }
+      lastTap = tap;
+      tapAt(lightbox, tap.x);
+      return;
+    }
+    lastTap = null;
+    if (gesture !== "forward" && gesture !== "back") return;
+    if (settings.readingMode !== "scroll" && isZoomed(view)) return;
+    turnBy(lightbox, gesture === "forward" ? 1 : -1);
+  }
+  function tapAt(lightbox, x) {
+    if (!container) return;
+    if (settings.readingMode === "scroll") return;
+    const rect = container.getBoundingClientRect();
+    const zone = tapZone(x, rect.left || 0, rect.width || 0);
+    if (!zone) return;
+    turnBy(lightbox, zone);
+  }
+  function toggleZoomAt(lightbox, x, y) {
+    if (settings.readingMode === "scroll") {
+      zoomColumnTo(columnZoom() === 1 ? TOUCH_ZOOM : 1);
+      return;
+    }
+    view = isZoomed(view) ? fitView() : zoomedAbout(fitView(), TOUCH_ZOOM, localPoint(x, y));
+    applyView();
+    redrawChrome();
+    void lightbox;
+  }
+  function answeredByTouch(event) {
+    if (touchAnsweredAt === 0) return false;
+    const within = event.timeStamp - touchAnsweredAt < TOUCH_CLICK_GRACE_MS;
+    if (within) touchAnsweredAt = 0;
+    return within;
   }
   function applyView() {
     if (!container) return;
