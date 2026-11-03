@@ -4124,6 +4124,7 @@
   // src/reader/scroll.ts
   var CLASS_SCROLL = "is-scroll";
   var CLASS_SCROLL_PAGE = "manga-reader-scroll-page";
+  var CLASS_SCROLL_PAD = "manga-reader-scroll-pad";
   var CLASS_SCROLLING = "manga-reader-position-scrolling";
   var zoom = 1;
   function columnZoom() {
@@ -4144,9 +4145,16 @@
     if (node.style[name] !== value) node.style[name] = value;
   }
   function setColumnZoom(next, reserved = 0) {
+    const before = virtual && column ? columnPageAt(column) : -1;
+    const zoomChanged = next !== zoom;
     zoom = next;
-    const box = column == null ? void 0 : column.getBoundingClientRect();
-    const fitted = box ? columnFitted(box.width || 0, box.height || 0, reserved) : 0;
+    const fitted = fittedWidth(reserved);
+    if (virtual) {
+      if (fitted > 0) replan(fitted);
+      const at = zoomChanged || !column ? before : columnPageAt(column);
+      renderWindow(at >= 0 ? at : 0);
+      return zoom;
+    }
     column == null ? void 0 : column.querySelectorAll("." + CLASS_SCROLL_PAGE).forEach((row2) => {
       const node = row2;
       const natural = Number(node.dataset.width || 0);
@@ -4171,33 +4179,207 @@
     }
     return rows.length > 0 ? rows.length - 1 : -1;
   }
+  var COLUMN_WINDOW = 12;
+  var COLUMN_LEAD = 3;
+  function columnPlan(pages, fitted) {
+    if (!(fitted > 0) || pages.length === 0) return null;
+    const heights = [];
+    const offsets = [0];
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+      if (!(page.width > 0) || !(page.height > 0)) return null;
+      const width = Math.min(page.width, fitted);
+      const height = width * (page.height / page.width);
+      heights.push(height);
+      offsets.push(offsets[i] + height);
+    }
+    return { heights, offsets };
+  }
+  function pageAtOffset(offsets, at) {
+    const count = offsets.length - 1;
+    if (count <= 0) return -1;
+    let low = 0;
+    let high = count - 1;
+    let found = count - 1;
+    while (low <= high) {
+      const mid = low + high >> 1;
+      if (offsets[mid + 1] > at) {
+        found = mid;
+        high = mid - 1;
+      } else {
+        low = mid + 1;
+      }
+    }
+    return found;
+  }
+  function columnWindow(count, page, size = COLUMN_WINDOW) {
+    const width = Math.max(1, Math.min(size, count));
+    const start2 = Math.min(
+      Math.max(0, page - COLUMN_LEAD),
+      Math.max(0, count - width)
+    );
+    return { start: start2, end: Math.min(count, start2 + width) };
+  }
+  var virtual = null;
+  var columnPages = [];
+  var columnUrlOf = null;
+  function fittedWidth(reserved) {
+    const box = column == null ? void 0 : column.getBoundingClientRect();
+    if (!box) return 0;
+    return columnFitted(box.width || 0, box.height || 0, reserved);
+  }
+  function makeScrollRow(page, index) {
+    const row2 = document.createElement("div");
+    row2.className = CLASS_SCROLL_PAGE;
+    row2.dataset.width = String(page.width > 0 ? page.width : 0);
+    if (page.width > 0 && page.height > 0) {
+      row2.style.aspectRatio = page.width + " / " + page.height;
+    }
+    const image = document.createElement("img");
+    image.src = columnUrlOf ? columnUrlOf(page, index) : "";
+    image.alt = String(index + 1);
+    image.decoding = "async";
+    image.loading = "lazy";
+    image.draggable = false;
+    row2.appendChild(image);
+    return row2;
+  }
+  function makePad() {
+    const pad = document.createElement("div");
+    pad.className = CLASS_SCROLL_PAD;
+    return pad;
+  }
+  function rowWidth(page, fit) {
+    return zoom * Math.min(page.width > 0 ? page.width : fit, fit);
+  }
+  function applyWindow() {
+    if (!virtual || !column) return;
+    const { plan, start: start2, end, rows, fitted, top, bottom } = virtual;
+    const total = plan.offsets[plan.offsets.length - 1];
+    setPad(top, plan.offsets[start2]);
+    setPad(bottom, total - plan.offsets[end]);
+    rows.forEach((row2, at) => {
+      const width = rowWidth(columnPages[start2 + at], fitted) + "px";
+      setStyle(row2, "width", width);
+      setStyle(row2, "maxWidth", width);
+    });
+  }
+  function drawWindow() {
+    if (!virtual || !column) return;
+    const { start: start2, end, top, bottom } = virtual;
+    virtual.rows = [];
+    column.textContent = "";
+    column.appendChild(top);
+    for (let i = start2; i < end; i++) {
+      const row2 = makeScrollRow(columnPages[i], i);
+      virtual.rows.push(row2);
+      column.appendChild(row2);
+    }
+    column.appendChild(bottom);
+    applyWindow();
+  }
+  function setPad(pad, height) {
+    const next = zoom * height + "px";
+    if (pad.style.height !== next) pad.style.height = next;
+  }
+  function renderWindow(page) {
+    if (!virtual || !column) return;
+    const next = columnWindow(columnPages.length, Math.max(0, page));
+    const same = next.start === virtual.start && next.end === virtual.end && virtual.rows.length === next.end - next.start;
+    virtual.start = next.start;
+    virtual.end = next.end;
+    if (same) applyWindow();
+    else drawWindow();
+  }
+  function replan(fitted) {
+    if (!virtual) return;
+    const plan = columnPlan(columnPages, fitted);
+    if (!plan) return;
+    virtual.plan = plan;
+    virtual.fitted = fitted;
+  }
   function buildColumn(into, pages, urlOf) {
     column = into;
+    columnPages = pages;
+    columnUrlOf = urlOf;
+    virtual = null;
     into.textContent = "";
+    const plan = columnPlan(pages, fittedWidth(0));
+    if (plan && pages.length > COLUMN_WINDOW * 2) {
+      virtual = {
+        plan,
+        fitted: fittedWidth(0),
+        start: 0,
+        end: 0,
+        top: makePad(),
+        bottom: makePad(),
+        rows: []
+      };
+      renderWindow(0);
+      return;
+    }
     pages.forEach((page, index) => {
-      const row2 = document.createElement("div");
-      row2.className = CLASS_SCROLL_PAGE;
-      row2.dataset.width = String(page.width > 0 ? page.width : 0);
-      if (page.width > 0 && page.height > 0) {
-        row2.style.aspectRatio = page.width + " / " + page.height;
-      }
-      const image = document.createElement("img");
-      image.src = urlOf(page, index);
-      image.alt = String(index + 1);
-      image.decoding = "async";
-      image.loading = "lazy";
-      image.draggable = false;
-      row2.appendChild(image);
-      into.appendChild(row2);
+      into.appendChild(makeScrollRow(page, index));
     });
   }
   function rowOffset(into, index) {
+    if (virtual && into === column) {
+      if (index < 0 || index >= columnPages.length) return null;
+      return zoom * virtual.plan.offsets[index];
+    }
     const row2 = into.querySelectorAll("." + CLASS_SCROLL_PAGE)[index];
     return row2 ? row2.offsetTop : null;
+  }
+  function columnPageAt(into) {
+    if (virtual && into === column) {
+      const total = virtual.plan.offsets[virtual.plan.offsets.length - 1];
+      if (total <= 0) return -1;
+      return pageAtOffset(
+        virtual.plan.offsets,
+        Math.max(0, into.scrollTop || 0) / zoom
+      );
+    }
+    const rows = into.querySelectorAll("." + CLASS_SCROLL_PAGE);
+    if (rows.length === 0) return -1;
+    const edge = into.getBoundingClientRect().top;
+    let low = 0;
+    let high = rows.length - 1;
+    let found = rows.length - 1;
+    while (low <= high) {
+      const mid = low + high >> 1;
+      const rect = rows[mid].getBoundingClientRect();
+      if (rect.bottom > edge) {
+        found = mid;
+        high = mid - 1;
+      } else {
+        low = mid + 1;
+      }
+    }
+    return found;
+  }
+  function scrollColumnTo(into, page) {
+    const offset = rowOffset(into, page);
+    if (offset === null) return;
+    if (virtual && into === column) renderWindow(page);
+    into.scrollTop = offset;
+  }
+  function columnScrolled(into) {
+    if (!virtual || into !== column) return;
+    const at = columnPageAt(into);
+    if (at < 0) return;
+    if (at < virtual.start + 1 || at > virtual.end - 2) renderWindow(at);
+  }
+  function forgetColumn() {
+    virtual = null;
+    columnPages = [];
+    columnUrlOf = null;
   }
   NR.pageAtTop = pageAtTop;
   NR.zoomedBy = zoomedBy;
   NR.columnFitted = columnFitted;
+  NR.pageAtOffset = pageAtOffset;
+  NR.columnPlan = columnPlan;
+  NR.columnWindow = columnWindow;
 
   // src/reader/takeover.ts
   var CLASS_SINGLE = "is-single";
@@ -4657,7 +4839,7 @@
   }
   var columnFor = null;
   var columnIn = null;
-  var columnRows = [];
+  var columnPagesOf = null;
   var scrollTo = null;
   function ensureColumn(lightbox, gallery) {
     ensureContainer(lightbox);
@@ -4667,13 +4849,11 @@
     container.style.transform = "";
     view = fitView();
     let built = false;
-    if (columnFor !== gallery.id || columnIn !== container) {
+    if (columnFor !== gallery.id || columnIn !== container || columnPagesOf !== gallery.pages) {
       buildColumn(container, gallery.pages, (page) => pageUrl(page));
       columnFor = gallery.id;
       columnIn = container;
-      columnRows = Array.from(
-        container.querySelectorAll("." + CLASS_SCROLL_PAGE)
-      );
+      columnPagesOf = gallery.pages;
       built = true;
       awaiting = -1;
       refitColumn(1);
@@ -4683,14 +4863,14 @@
     const to = built ? place2 : scrollTo;
     scrollTo = null;
     if (to === null || to < 0) return;
-    const offset = rowOffset(container, to);
-    if (offset !== null) container.scrollTop = offset;
+    scrollColumnTo(container, to);
   }
   function removeColumn() {
     if (columnFor === null) return;
     columnFor = null;
     columnIn = null;
-    columnRows = [];
+    columnPagesOf = null;
+    forgetColumn();
     scrollTo = null;
     view = fitView();
     setColumnZoom(1);
@@ -4698,30 +4878,14 @@
     container == null ? void 0 : container.classList.remove(CLASS_SCROLL);
     root == null ? void 0 : root.classList.remove(CLASS_SCROLLING);
   }
-  function columnPageAt(column2) {
-    if (columnRows.length === 0) return -1;
-    const edge = column2.getBoundingClientRect().top;
-    let low = 0;
-    let high = columnRows.length - 1;
-    let found = columnRows.length - 1;
-    while (low <= high) {
-      const mid = low + high >> 1;
-      const rect = columnRows[mid].getBoundingClientRect();
-      if (rect.bottom > edge) {
-        found = mid;
-        high = mid - 1;
-      } else {
-        low = mid + 1;
-      }
-    }
-    return found;
-  }
   function onColumnScroll() {
     const lightbox = root;
     if (!lightbox || !container) return;
     if (settings.readingMode !== "scroll" || !wanted()) return;
     const at = columnPageAt(container);
-    if (at < 0 || at === place2) return;
+    if (at < 0) return;
+    columnScrolled(container);
+    if (at === place2) return;
     place2 = at;
     sync(lightbox);
   }
