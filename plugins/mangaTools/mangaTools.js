@@ -1420,9 +1420,9 @@
   }
   function LightboxBridge() {
     const api = requirePluginApi();
-    const React19 = api.React;
+    const React20 = api.React;
     const show = api.hooks.useLightbox();
-    React19.useEffect(() => {
+    React20.useEffect(() => {
       const mine = {
         takeOver(request) {
           show({
@@ -1456,19 +1456,19 @@
   }
   function installBridge() {
     const api = requirePluginApi();
-    const React19 = api.React;
+    const React20 = api.React;
     for (const target2 of ["ImageList", "HeaderImage"]) {
-      installAgainst(api, React19, target2);
+      installAgainst(api, React20, target2);
     }
   }
-  function installAgainst(api, React19, target2) {
+  function installAgainst(api, React20, target2) {
     api.patch.after(target2, (...args) => {
       const result = args[args.length - 1];
-      return React19.createElement(
-        React19.Fragment,
+      return React20.createElement(
+        React20.Fragment,
         null,
         result,
-        React19.createElement(LightboxBridge)
+        React20.createElement(LightboxBridge)
       );
     });
   }
@@ -1540,7 +1540,7 @@
     "mangaTools.settings.readerTakeover.description": "A gallery marked as manga is read in this plugin's own lightbox, redesigned from the ground up. Nothing about Stash's own lightbox settings is changed.",
     "mangaTools.settings.readerTakeover.note": "The lightbox's own settings are adjusted on the lightbox page, not here.",
     "mangaTools.settings.physicalPages.heading": "Read by physical pages",
-    "mangaTools.settings.physicalPages.description": "A gallery's pages are the files it contains, not the images Stash deduplicates. Content that appears several times is shown each time \u2014 in the gallery grid and in the reader \u2014 and chapters are stored by file. Only applies while Stash's lightbox is taken over; off, everything works as before.",
+    "mangaTools.settings.physicalPages.description": "A gallery's pages are the files it contains, not the images Stash deduplicates. Content that appears several times is shown each time \u2014 in the gallery grid and in the reader \u2014 and chapters are stored by file. Only applies while Stash's lightbox is taken over, to an unfiltered list sorted by path, ascending; the button at the end of the Images tab's toolbar is that state, and one click puts the list in it. Off, everything works as before.",
     "mangaTools.settings.physicalPages.note": "Chapters already stored by image are read at their first occurrence, and are only written by file when you next edit them.",
     "mangaTools.shops.heading": "Shops",
     "mangaTools.settings.shopLinks.heading": "Shop links",
@@ -1616,7 +1616,11 @@
     "mangaTools.filter.original.isOriginal": "Is the original",
     "mangaTools.settings.sidebarFilters.heading": "Sidebar filters",
     "mangaTools.settings.sidebarFilters.description": "Which of this plugin's filters the gallery list's sidebar offers. A filter whose field is switched off cannot be shown, and is not remembered while it is hidden \u2014 turning the field back on brings its filter back.",
-    "mangaTools.settings.sidebarFilters.placeholder": "No filters"
+    "mangaTools.settings.sidebarFilters.placeholder": "No filters",
+    "mangaTools.physicalButton.on": "Physical pages: path order, no filter",
+    "mangaTools.physicalButton.repeats": "{n} pages repeat an image",
+    "mangaTools.physicalButton.off": "Switch to physical pages: path order, ascending, no filter. This clears the search term and the filters.",
+    "mangaTools.physicalButton.repeatsOne": "1 page repeats an image"
   };
 
   // src/messages/zh-Hans.json
@@ -1686,7 +1690,7 @@
     "mangaTools.settings.readerTakeover.description": "\u6807\u8BB0\u4E3A\u6F2B\u753B\u7684\u753B\u5ECA\uFF0C\u706F\u7BB1\u7531\u672C\u63D2\u4EF6\u91CD\u65B0\u8BBE\u8BA1\uFF0C\u4E0D\u4F1A\u66F4\u6539\u539F\u751F\u706F\u7BB1\u8BBE\u7F6E\u3002",
     "mangaTools.settings.readerTakeover.note": "\u63D2\u4EF6\u706F\u7BB1\u76F8\u5173\u8BBE\u7F6E\u5728\u706F\u7BB1\u9875\u9762\u8BBE\u7F6E\u4E2D\u8C03\u6574\u3002",
     "mangaTools.settings.physicalPages.heading": "\u6309\u7269\u7406\u9875\u9605\u8BFB",
-    "mangaTools.settings.physicalPages.description": "\u753B\u5ECA\u7684\u9875\u6570\u662F\u5B83\u5B9E\u9645\u5305\u542B\u7684\u6587\u4EF6\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u540E\u7684\u56FE\u7247\u3002\u91CD\u590D\u51FA\u73B0\u7684\u5185\u5BB9\u4F1A\u5728\u753B\u5ECA\u7F51\u683C\u548C\u9605\u8BFB\u5668\u4E2D\u5404\u663E\u793A\u4E00\u6B21\uFF0C\u7AE0\u8282\u4E5F\u6309\u6587\u4EF6\u5B58\u50A8\u3002\u4EC5\u5728\u63A5\u7BA1 Stash \u539F\u751F\u706F\u7BB1\u65F6\u751F\u6548\uFF1B\u5173\u95ED\u65F6\u4E00\u5207\u4FDD\u6301\u539F\u6837\u3002",
+    "mangaTools.settings.physicalPages.description": "\u753B\u5ECA\u7684\u9875\u6570\u662F\u5B83\u5B9E\u9645\u5305\u542B\u7684\u6587\u4EF6\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u540E\u7684\u56FE\u7247\u3002\u91CD\u590D\u51FA\u73B0\u7684\u5185\u5BB9\u4F1A\u5728\u753B\u5ECA\u7F51\u683C\u548C\u9605\u8BFB\u5668\u4E2D\u5404\u663E\u793A\u4E00\u6B21\uFF0C\u7AE0\u8282\u4E5F\u6309\u6587\u4EF6\u5B58\u50A8\u3002\u4EC5\u5728\u63A5\u7BA1 Stash \u539F\u751F\u706F\u7BB1\u65F6\u3001\u4E14\u5217\u8868\u6CA1\u6709\u7B5B\u9009\u5E76\u6309\u8DEF\u5F84\u5347\u5E8F\u65F6\u751F\u6548\uFF1BImages \u6807\u7B7E\u9875\u5DE5\u5177\u680F\u6700\u53F3\u7684\u6309\u94AE\u5C31\u662F\u8FD9\u4E00\u72B6\u6001\uFF0C\u70B9\u4E00\u4E0B\u5373\u53EF\u5207\u8FC7\u53BB\u3002\u5173\u95ED\u65F6\u4E00\u5207\u4FDD\u6301\u539F\u6837\u3002",
     "mangaTools.settings.physicalPages.note": "\u5DF2\u6709\u7684\u6309\u56FE\u7247\u5B58\u50A8\u7684\u7AE0\u8282\u4F1A\u5728\u8BFB\u53D6\u65F6\u843D\u5230\u7B2C\u4E00\u6B21\u51FA\u73B0\u7684\u4F4D\u7F6E\uFF1B\u53EA\u6709\u518D\u6B21\u7F16\u8F91\u4FDD\u5B58\u540E\uFF0C\u624D\u4F1A\u5199\u6210\u6587\u4EF6\u7EA7\u3002",
     "mangaTools.shops.heading": "\u5546\u5E97",
     "mangaTools.settings.shopLinks.heading": "\u5546\u5E97\u94FE\u63A5",
@@ -1762,7 +1766,11 @@
     "mangaTools.filter.original.isOriginal": "\u662F\u5426\u4E3A\u751F\u8089",
     "mangaTools.settings.sidebarFilters.heading": "\u4FA7\u680F\u7B5B\u9009",
     "mangaTools.settings.sidebarFilters.description": "\u753B\u5ECA\u5217\u8868\u7684\u4FA7\u680F\u91CC\u663E\u793A\u54EA\u4E9B\u7B5B\u9009\u3002\u5B57\u6BB5\u5173\u6389\u7684\u7B5B\u9009\u663E\u793A\u4E0D\u51FA\u6765\uFF0C\u9690\u85CF\u671F\u95F4\u4E5F\u4E0D\u8BB0\u72B6\u6001\u2014\u2014\u91CD\u65B0\u6253\u5F00\u5B57\u6BB5\uFF0C\u5B83\u7684\u7B5B\u9009\u5C31\u56DE\u6765\u3002",
-    "mangaTools.settings.sidebarFilters.placeholder": "\u4E0D\u663E\u793A\u4EFB\u4F55\u7B5B\u9009"
+    "mangaTools.settings.sidebarFilters.placeholder": "\u4E0D\u663E\u793A\u4EFB\u4F55\u7B5B\u9009",
+    "mangaTools.physicalButton.on": "\u7269\u7406\u9875\u89C6\u56FE\uFF1A\u8DEF\u5F84\u6392\u5E8F\u3001\u65E0\u7B5B\u9009",
+    "mangaTools.physicalButton.repeats": "\u91CD\u590D {n} \u9875",
+    "mangaTools.physicalButton.off": "\u5207\u6362\u5230\u7269\u7406\u9875\u89C6\u56FE\uFF1A\u8DEF\u5F84\u5347\u5E8F\u3001\u65E0\u7B5B\u9009\u3002\u8FD9\u4F1A\u6E05\u9664\u641C\u7D22\u8BCD\u548C\u7B5B\u9009\u6761\u4EF6\u3002",
+    "mangaTools.physicalButton.repeatsOne": "\u91CD\u590D 1 \u9875"
   };
 
   // src/messages/zh-Hant.json
@@ -1832,7 +1840,7 @@
     "mangaTools.settings.readerTakeover.description": "\u6A19\u8A18\u70BA\u6F2B\u756B\u7684\u756B\u5ECA\uFF0C\u71C8\u7BB1\u7531\u672C\u5916\u639B\u91CD\u65B0\u8A2D\u8A08\uFF0C\u4E0D\u6703\u66F4\u6539\u539F\u751F\u71C8\u7BB1\u8A2D\u5B9A\u3002",
     "mangaTools.settings.readerTakeover.note": "\u5916\u639B\u71C8\u7BB1\u76F8\u95DC\u8A2D\u5B9A\u5728\u71C8\u7BB1\u9801\u9762\u8A2D\u5B9A\u4E2D\u8ABF\u6574\u3002",
     "mangaTools.settings.physicalPages.heading": "\u6309\u7269\u7406\u9801\u95B1\u8B80",
-    "mangaTools.settings.physicalPages.description": "\u756B\u5ECA\u7684\u9801\u6578\u662F\u5B83\u5BE6\u969B\u5305\u542B\u7684\u6A94\u6848\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u5F8C\u7684\u5716\u7247\u3002\u91CD\u8907\u51FA\u73FE\u7684\u5167\u5BB9\u6703\u5728\u756B\u5ECA\u7DB2\u683C\u548C\u95B1\u8B80\u5668\u4E2D\u5404\u986F\u793A\u4E00\u6B21\uFF0C\u7AE0\u7BC0\u4E5F\u6309\u6A94\u6848\u5132\u5B58\u3002\u50C5\u5728\u63A5\u7BA1 Stash \u539F\u751F\u71C8\u7BB1\u6642\u751F\u6548\uFF1B\u95DC\u9589\u6642\u4E00\u5207\u4FDD\u6301\u539F\u6A23\u3002",
+    "mangaTools.settings.physicalPages.description": "\u756B\u5ECA\u7684\u9801\u6578\u662F\u5B83\u5BE6\u969B\u5305\u542B\u7684\u6A94\u6848\uFF0C\u800C\u4E0D\u662F Stash \u53BB\u91CD\u5F8C\u7684\u5716\u7247\u3002\u91CD\u8907\u51FA\u73FE\u7684\u5167\u5BB9\u6703\u5728\u756B\u5ECA\u7DB2\u683C\u548C\u95B1\u8B80\u5668\u4E2D\u5404\u986F\u793A\u4E00\u6B21\uFF0C\u7AE0\u7BC0\u4E5F\u6309\u6A94\u6848\u5132\u5B58\u3002\u50C5\u5728\u63A5\u7BA1 Stash \u539F\u751F\u71C8\u7BB1\u6642\u3001\u4E14\u5217\u8868\u6C92\u6709\u7BE9\u9078\u4E26\u6309\u8DEF\u5F91\u5347\u5E8F\u6642\u751F\u6548\uFF1BImages \u5206\u9801\u5DE5\u5177\u5217\u6700\u53F3\u7684\u6309\u9215\u5C31\u662F\u9019\u4E00\u72C0\u614B\uFF0C\u9EDE\u4E00\u4E0B\u5373\u53EF\u5207\u904E\u53BB\u3002\u95DC\u9589\u6642\u4E00\u5207\u4FDD\u6301\u539F\u6A23\u3002",
     "mangaTools.settings.physicalPages.note": "\u5DF2\u6709\u7684\u6309\u5716\u7247\u5132\u5B58\u7684\u7AE0\u7BC0\u6703\u5728\u8B80\u53D6\u6642\u843D\u5230\u7B2C\u4E00\u6B21\u51FA\u73FE\u7684\u4F4D\u7F6E\uFF1B\u53EA\u6709\u518D\u6B21\u7DE8\u8F2F\u5132\u5B58\u5F8C\uFF0C\u624D\u6703\u5BEB\u6210\u6A94\u6848\u7D1A\u3002",
     "mangaTools.shops.heading": "\u5546\u5E97",
     "mangaTools.settings.shopLinks.heading": "\u5546\u5E97\u9023\u7D50",
@@ -1908,7 +1916,11 @@
     "mangaTools.filter.original.isOriginal": "\u662F\u5426\u70BA\u751F\u8089",
     "mangaTools.settings.sidebarFilters.heading": "\u5074\u6B04\u7BE9\u9078",
     "mangaTools.settings.sidebarFilters.description": "\u756B\u5ECA\u5217\u8868\u7684\u5074\u6B04\u88E1\u986F\u793A\u54EA\u4E9B\u7BE9\u9078\u3002\u6B04\u4F4D\u95DC\u6389\u7684\u7BE9\u9078\u986F\u793A\u4E0D\u51FA\u4F86\uFF0C\u96B1\u85CF\u671F\u9593\u4E5F\u4E0D\u8A18\u72C0\u614B\u2014\u2014\u91CD\u65B0\u6253\u958B\u6B04\u4F4D\uFF0C\u5B83\u7684\u7BE9\u9078\u5C31\u56DE\u4F86\u3002",
-    "mangaTools.settings.sidebarFilters.placeholder": "\u4E0D\u986F\u793A\u4EFB\u4F55\u7BE9\u9078"
+    "mangaTools.settings.sidebarFilters.placeholder": "\u4E0D\u986F\u793A\u4EFB\u4F55\u7BE9\u9078",
+    "mangaTools.physicalButton.on": "\u7269\u7406\u9801\u8996\u5716\uFF1A\u8DEF\u5F91\u6392\u5E8F\u3001\u7121\u7BE9\u9078",
+    "mangaTools.physicalButton.repeats": "\u91CD\u8907 {n} \u9801",
+    "mangaTools.physicalButton.off": "\u5207\u63DB\u5230\u7269\u7406\u9801\u8996\u5716\uFF1A\u8DEF\u5F91\u5347\u5E8F\u3001\u7121\u7BE9\u9078\u3002\u9019\u6703\u6E05\u9664\u641C\u5C0B\u5B57\u4E32\u548C\u7BE9\u9078\u689D\u4EF6\u3002",
+    "mangaTools.physicalButton.repeatsOne": "\u91CD\u8907 1 \u9801"
   };
 
   // src/i18n.ts
@@ -9810,9 +9822,109 @@
     );
   }
 
-  // src/tools/physical-grid.ts
+  // src/tools/physical-button.tsx
   var PluginApi18 = requirePluginApi();
   var React16 = PluginApi18.React;
+  var SLIDER_SELECTOR = ".zoom-slider-container";
+  var HOST_CLASS = "manga-tools-physical-host";
+  function isPhysicalView(filter) {
+    var _a3, _b3;
+    if (!filter) return false;
+    if (String(filter.sortBy || "") !== "path") return false;
+    if (String(filter.sortDirection || "").toUpperCase() !== "ASC") return false;
+    if (filter.searchTerm) return false;
+    return ((_b3 = (_a3 = filter.criteria) == null ? void 0 : _a3.length) != null ? _b3 : 0) === 0;
+  }
+  function physicalQuery(search) {
+    const params = new URLSearchParams(search || "");
+    params.delete("q");
+    params.delete("c");
+    params.delete("p");
+    params.delete("sortdir");
+    params.set("sortby", "path");
+    return "?" + params.toString();
+  }
+  function repeatingPages(files) {
+    if (!files || files.length === 0) return 0;
+    const seen = /* @__PURE__ */ new Set();
+    for (const file of files) seen.add(file.imageId);
+    return files.length - seen.size;
+  }
+  function ensureHost() {
+    const slider = document.querySelector(SLIDER_SELECTOR);
+    const parent = slider == null ? void 0 : slider.parentNode;
+    if (!slider || !parent) return null;
+    let host = document.querySelector("." + HOST_CLASS);
+    if (!host) {
+      host = document.createElement("span");
+      host.className = HOST_CLASS;
+    }
+    if (slider.nextElementSibling !== host) {
+      parent.insertBefore(host, slider.nextElementSibling);
+    }
+    return host;
+  }
+  function titleFor(intl, pressed3, repeats) {
+    if (!pressed3) return t(intl, "mangaTools.physicalButton.off");
+    let text2 = t(intl, "mangaTools.physicalButton.on");
+    if (repeats > 0) {
+      text2 += " \xB7 " + numbered(
+        intl.locale,
+        repeats === 1 ? "mangaTools.physicalButton.repeatsOne" : "mangaTools.physicalButton.repeats",
+        repeats
+      );
+    }
+    return text2;
+  }
+  function PhysicalPagesButton(props) {
+    var _a3;
+    const intl = PluginApi18.libraries.Intl.useIntl();
+    const history = PluginApi18.libraries.ReactRouterDOM.useHistory();
+    const bumped = React16.useState(0);
+    const bump = bumped[1];
+    const shown = NS.physicalPageMode() && currentGalleryId() !== "";
+    const host = shown ? ensureHost() : null;
+    React16.useLayoutEffect(() => {
+      if (!shown || host) return;
+      if (!ensureHost()) return;
+      bump((n) => n + 1);
+    });
+    if (!shown || !host) return null;
+    const Bootstrap = PluginApi18.libraries.Bootstrap;
+    if (!Bootstrap) return null;
+    const pressed3 = isPhysicalView(props.filter);
+    const repeats = pressed3 ? repeatingPages(props.files) : 0;
+    return PluginApi18.ReactDOM.createPortal(
+      /* @__PURE__ */ React16.createElement(
+        Bootstrap.Button,
+        {
+          variant: "secondary",
+          active: pressed3,
+          title: titleFor(intl, pressed3, repeats),
+          "aria-pressed": pressed3,
+          className: "manga-tools-physical-button",
+          onClick: () => {
+            const search = physicalQuery(history.location.search);
+            history.replace(Object.assign({}, history.location, { search }));
+          }
+        },
+        /* @__PURE__ */ React16.createElement(
+          PluginApi18.components.Icon,
+          {
+            icon: (_a3 = PluginApi18.libraries.FontAwesomeSolid) == null ? void 0 : _a3.faLayerGroup
+          }
+        )
+      ),
+      host
+    );
+  }
+  NS.isPhysicalView = isPhysicalView;
+  NS.physicalQuery = physicalQuery;
+  NS.repeatingPages = repeatingPages;
+
+  // src/tools/physical-grid.ts
+  var PluginApi19 = requirePluginApi();
+  var React17 = PluginApi19.React;
   var cache = /* @__PURE__ */ new Map();
   var inFlight2 = /* @__PURE__ */ new Map();
   var cacheGeneration = 0;
@@ -10011,13 +10123,13 @@
       const next = args[args.length - 1];
       const routeGalleryId = currentGalleryId();
       const galleryId2 = NS.physicalPageMode() ? routeGalleryId : "";
-      const [, bump] = React16.useState(0);
-      const [invalidated, setInvalidated] = React16.useState(0);
-      React16.useEffect(
+      const [, bump] = React17.useState(0);
+      const [invalidated, setInvalidated] = React17.useState(0);
+      React17.useEffect(
         () => watchPhysicalGrids(() => setInvalidated((n) => n + 1)),
         []
       );
-      React16.useEffect(() => {
+      React17.useEffect(() => {
         if (!galleryId2) return;
         let live = true;
         load(galleryId2).then(() => {
@@ -10038,16 +10150,16 @@
       const pageCount = props.pageCount;
       const totalCount = props.totalCount;
       const selectedIds = props.selectedIds;
-      const selectRef = React16.useRef(void 0);
+      const selectRef = React17.useRef(void 0);
       selectRef.current = props.onSelectChange;
-      const change = React16.useCallback(
+      const change = React17.useCallback(
         (synthetic, chosen, shiftKey) => {
           var _a4;
           (_a4 = selectRef.current) == null ? void 0 : _a4.call(selectRef, synthetic.split("::")[0], chosen, shiftKey);
         },
         []
       );
-      const expanded = React16.useMemo(
+      const expanded = React17.useMemo(
         () => NS.physicalPageMode() && grid ? expandPhysicalPage({ ...props, onSelectChange: change }, grid) : null,
         [
           grid,
@@ -10063,8 +10175,8 @@
           change
         ]
       );
-      const intl = PluginApi18.libraries.Intl.useIntl();
-      React16.useLayoutEffect(() => {
+      const intl = PluginApi19.libraries.Intl.useIntl();
+      React17.useLayoutEffect(() => {
         if (!routeGalleryId) return;
         if (expanded) {
           rewritePhysicalIndex(
@@ -10079,8 +10191,7 @@
           restorePhysicalIndex();
         }
       });
-      if (!expanded) return next(props);
-      return next({
+      const rendered = expanded ? next({
         ...props,
         images: expanded.images,
         selectedIds: expanded.selectedIds,
@@ -10092,7 +10203,16 @@
           currentPage: expanded.page,
           itemsPerPage: expanded.perPage
         }
-      });
+      }) : next(props);
+      return React17.createElement(
+        React17.Fragment,
+        null,
+        rendered,
+        React17.createElement(PhysicalPagesButton, {
+          filter: props.filter,
+          files: grid == null ? void 0 : grid.files
+        })
+      );
     });
   }
   function registerCardPatch() {
@@ -10122,8 +10242,8 @@
   NS.expandPhysicalPage = expandPhysicalPage;
 
   // src/tools/shop-urls.tsx
-  var PluginApi19 = requirePluginApi();
-  var React17 = PluginApi19.React;
+  var PluginApi20 = requirePluginApi();
+  var React18 = PluginApi20.React;
   var PREFIX = "manga-tools-shop-prefix";
   function ownPrefix(group) {
     var _a3;
@@ -10204,8 +10324,8 @@
     };
   }
   function ShopUrlHeads() {
-    const ref = React17.useRef(null);
-    React17.useEffect(() => {
+    const ref = React18.useRef(null);
+    React18.useEffect(() => {
       if (!NS.shopLinks || !ref.current) return;
       const form2 = ref.current.closest("form");
       if (!form2) return;
@@ -10218,15 +10338,15 @@
         for (let i = 0; i < heads.length; i++) heads[i].remove();
       };
     }, []);
-    return /* @__PURE__ */ React17.createElement("span", { ref, hidden: true });
+    return /* @__PURE__ */ React18.createElement("span", { ref, hidden: true });
   }
   NS.decorateShopUrls = decorateShopUrls;
   NS.watchShopUrls = watchShopUrls;
   NS.shopUrlHeads = ShopUrlHeads;
 
   // src/tools/index.tsx
-  var PluginApi20 = requirePluginApi();
-  var React18 = PluginApi20.React;
+  var PluginApi21 = requirePluginApi();
+  var React19 = PluginApi21.React;
   function originalFrom(args) {
     return args[args.length - 1];
   }
@@ -10250,7 +10370,7 @@
     return findFilter(props.children);
   }
   function hasSidebarSectionsContainer() {
-    const components = PluginApi20.components;
+    const components = PluginApi21.components;
     return !!components && !!components["FilteredGalleryList.SidebarSections"];
   }
   var warnedMissingSidebarContainer = false;
@@ -10264,7 +10384,7 @@
     const value = id ? pickLanguage((_b3 = store) == null ? void 0 : _b3.get(String(id))) : "";
     if (!value || !NS.showCoverBadge || !NS.fieldShowing("language"))
       return result;
-    return /* @__PURE__ */ React18.createElement(React18.Fragment, null, result, /* @__PURE__ */ React18.createElement(LanguageBadge, { galleryId: id }));
+    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, result, /* @__PURE__ */ React19.createElement(LanguageBadge, { galleryId: id }));
   });
   registerPatch("after", "GalleryCard.Popovers", (...args) => {
     var _a3;
@@ -10274,7 +10394,7 @@
     useGlobalVersion();
     const id = (_a3 = props.gallery) == null ? void 0 : _a3.id;
     if (!id || !storedIsManga(String(id))) return result;
-    return /* @__PURE__ */ React18.createElement(React18.Fragment, null, result, /* @__PURE__ */ React18.createElement(MangaPopoverMark, { galleryId: String(id) }));
+    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, result, /* @__PURE__ */ React19.createElement(MangaPopoverMark, { galleryId: String(id) }));
   });
   registerPatch("instead", "CustomFieldsInput", (...args) => {
     const props = args[0];
@@ -10283,7 +10403,7 @@
     useGlobalVersion();
     const galleryId2 = currentGalleryId();
     const markedGallery = galleryId2 !== "" && isMarkedNow(galleryId2, props.values);
-    React18.useEffect(() => {
+    React19.useEffect(() => {
       var _a3, _b3;
       if (props.onChange && galleryId2) {
         setEditForm({
@@ -10304,7 +10424,7 @@
         setEditForm(null);
       };
     });
-    return /* @__PURE__ */ React18.createElement(React18.Fragment, null, isMarkedNow(galleryId2, props.values) ? /* @__PURE__ */ React18.createElement(MangaFieldBlock, { values: props.values, onChange: props.onChange }) : null, markedGallery ? /* @__PURE__ */ React18.createElement(ShopUrlHeads, null) : null, /* @__PURE__ */ React18.createElement(Original, { ...props }));
+    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, isMarkedNow(galleryId2, props.values) ? /* @__PURE__ */ React19.createElement(MangaFieldBlock, { values: props.values, onChange: props.onChange }) : null, markedGallery ? /* @__PURE__ */ React19.createElement(ShopUrlHeads, null) : null, /* @__PURE__ */ React19.createElement(Original, { ...props }));
   });
   function takesOverFieldRow(key) {
     if (!NS.ownField(key)) return false;
@@ -10319,7 +10439,7 @@
     if (!props.isNew && takesOverFieldRow(props.field)) {
       return null;
     }
-    return /* @__PURE__ */ React18.createElement(Original, { ...props });
+    return /* @__PURE__ */ React19.createElement(Original, { ...props });
   });
   registerPatch("instead", "CustomFields", (...args) => {
     const props = args[0];
@@ -10327,7 +10447,7 @@
     noteFired("CustomFields");
     useGlobalVersion();
     const values = props.values;
-    if (!values || typeof values !== "object") return /* @__PURE__ */ React18.createElement(Original, { ...props });
+    if (!values || typeof values !== "object") return /* @__PURE__ */ React19.createElement(Original, { ...props });
     const rest = Object.assign({}, values);
     let lifted = false;
     Object.keys(values).forEach((k) => {
@@ -10337,22 +10457,22 @@
     });
     const galleryId2 = currentGalleryId();
     const Guard = guardedBlock();
-    if (!lifted && !galleryId2) return /* @__PURE__ */ React18.createElement(Original, { ...props });
-    return /* @__PURE__ */ React18.createElement(React18.Fragment, null, /* @__PURE__ */ React18.createElement(
+    if (!lifted && !galleryId2) return /* @__PURE__ */ React19.createElement(Original, { ...props });
+    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, /* @__PURE__ */ React19.createElement(
       Original,
       {
         ...lifted ? Object.assign({}, props, { values: rest }) : props
       }
-    ), galleryId2 && isMarkedNow(galleryId2, values) ? /* @__PURE__ */ React18.createElement(Guard, { name: "manga panel" }, /* @__PURE__ */ React18.createElement(MangaDetailsPanel, { values, galleryId: galleryId2 })) : null, galleryId2 && CAN_WRITE2 ? /* @__PURE__ */ React18.createElement(GalleryToolbar, { galleryId: galleryId2, values }) : null);
+    ), galleryId2 && isMarkedNow(galleryId2, values) ? /* @__PURE__ */ React19.createElement(Guard, { name: "manga panel" }, /* @__PURE__ */ React19.createElement(MangaDetailsPanel, { values, galleryId: galleryId2 })) : null, galleryId2 && CAN_WRITE2 ? /* @__PURE__ */ React19.createElement(GalleryToolbar, { galleryId: galleryId2, values }) : null);
   });
   registerPatch("instead", "PluginSettings", (...args) => {
     const props = args[0];
     const Original = originalFrom(args);
     noteFired("PluginSettings");
     if (props.pluginID === PLUGIN_ID) {
-      return /* @__PURE__ */ React18.createElement(MangaToolsSettings, null);
+      return /* @__PURE__ */ React19.createElement(MangaToolsSettings, null);
     }
-    return /* @__PURE__ */ React18.createElement(Original, { ...props });
+    return /* @__PURE__ */ React19.createElement(Original, { ...props });
   });
   registerPatch("before", "GalleryList", (...args) => {
     const props = args[0];
@@ -10365,7 +10485,7 @@
     noteFired("FilteredGalleryList.SidebarSections");
     const filter = currentSidebarFilter();
     if (!filter) return result;
-    return /* @__PURE__ */ React18.createElement(React18.Fragment, null, /* @__PURE__ */ React18.createElement(SidebarMangaFilter, { filter }), NS.filterShowing("language") ? /* @__PURE__ */ React18.createElement(SidebarLanguageFilter, { filter }) : null, NS.filterShowing("censorship") ? /* @__PURE__ */ React18.createElement(SidebarCensorshipFilter, { filter }) : null, NS.filterShowing("translationGroup") ? /* @__PURE__ */ React18.createElement(SidebarTranslationGroupFilter, { filter }) : null, NS.filterShowing("original") ? /* @__PURE__ */ React18.createElement(SidebarOriginalFilter, { filter }) : null, result);
+    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, /* @__PURE__ */ React19.createElement(SidebarMangaFilter, { filter }), NS.filterShowing("language") ? /* @__PURE__ */ React19.createElement(SidebarLanguageFilter, { filter }) : null, NS.filterShowing("censorship") ? /* @__PURE__ */ React19.createElement(SidebarCensorshipFilter, { filter }) : null, NS.filterShowing("translationGroup") ? /* @__PURE__ */ React19.createElement(SidebarTranslationGroupFilter, { filter }) : null, NS.filterShowing("original") ? /* @__PURE__ */ React19.createElement(SidebarOriginalFilter, { filter }) : null, result);
   });
   registerPatch("after", "FilteredGalleryList", (...args) => {
     const result = resultFrom(args);
@@ -10386,13 +10506,13 @@
     if (props.filter && NS.fieldShowing("language")) {
       registerLanguageCriterionOption(props.filter);
     }
-    return /* @__PURE__ */ React18.createElement(React18.Fragment, null, NS.fieldShowing("language") ? /* @__PURE__ */ React18.createElement(DialogLanguageFilter, { filter: props.filter }) : null, /* @__PURE__ */ React18.createElement(Original, { ...props }));
+    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, NS.fieldShowing("language") ? /* @__PURE__ */ React19.createElement(DialogLanguageFilter, { filter: props.filter }) : null, /* @__PURE__ */ React19.createElement(Original, { ...props }));
   });
   registerPatch("after", "RatingSystem", (...args) => {
     noteFired("RatingSystem");
     const props = args[0];
     if (props.clickToRate || props.withoutContext) return resultFrom(args);
-    return /* @__PURE__ */ React18.createElement(React18.Fragment, null, resultFrom(args), /* @__PURE__ */ React18.createElement(BulkFieldsRow, null));
+    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, resultFrom(args), /* @__PURE__ */ React19.createElement(BulkFieldsRow, null));
   });
   registerPhysicalPagePatches();
   function install2() {
