@@ -4434,7 +4434,7 @@
       return ms <= TOUCH_TAP_MS ? "tap" : "none";
     }
     if (across >= TOUCH_SWIPE && across > down * 1.4) {
-      return dx > 0 ? "forward" : "back";
+      return dx < 0 ? "forward" : "back";
     }
     return "none";
   }
