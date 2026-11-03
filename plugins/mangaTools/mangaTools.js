@@ -1063,22 +1063,42 @@
   ].join("\n");
   var galleryQuery = null;
   function carouselImage(lightbox) {
-    var _a3, _b3, _c;
-    const carousel = lightbox.querySelector(
+    var _a3, _b3;
+    const carousel = carouselOf(lightbox);
+    if (!carousel) return null;
+    const slide = carousel.element.children[carousel.at];
+    const media = (slide == null ? void 0 : slide.querySelector("img")) || (slide == null ? void 0 : slide.querySelector("video"));
+    const src = (media == null ? void 0 : media.src) || "";
+    const id = (_a3 = /\/image\/([^/]+)\//.exec(src)) == null ? void 0 : _a3[1];
+    if (!id) return null;
+    const fileId = ((_b3 = /#([^#\s]+)$/.exec(src)) == null ? void 0 : _b3[1]) || null;
+    return { at: carousel.at, id, fileId };
+  }
+  function carouselOf(lightbox) {
+    var _a3;
+    const element = lightbox.querySelector(
       SELECTOR_CAROUSEL
     );
-    if (!carousel) return null;
-    const offset = /^(-?\d+(?:\.\d+)?)vw$/.exec(((_a3 = carousel.style) == null ? void 0 : _a3.left) || "");
+    if (!element) return null;
+    const offset = /^(-?\d+(?:\.\d+)?)vw$/.exec(((_a3 = element.style) == null ? void 0 : _a3.left) || "");
     if (!offset) return null;
     const at = Math.round(-Number(offset[1]) / 100);
     if (!Number.isFinite(at) || at < 0) return null;
-    const slide = carousel.children[at];
-    const media = (slide == null ? void 0 : slide.querySelector("img")) || (slide == null ? void 0 : slide.querySelector("video"));
-    const src = (media == null ? void 0 : media.src) || "";
-    const id = (_b3 = /\/image\/([^/]+)\//.exec(src)) == null ? void 0 : _b3[1];
-    if (!id) return null;
-    const fileId = ((_c = /#([^#\s]+)$/.exec(src)) == null ? void 0 : _c[1]) || null;
-    return { at, id, fileId };
+    return { element, at };
+  }
+  function carouselSlides(lightbox) {
+    var _a3;
+    const carousel = carouselOf(lightbox);
+    if (!carousel) return null;
+    const slides = [];
+    for (let at = carousel.at - 1; at <= carousel.at + 1; at++) {
+      const slide = carousel.element.children[at];
+      const media = (slide == null ? void 0 : slide.querySelector("img")) || (slide == null ? void 0 : slide.querySelector("video"));
+      const src = (media == null ? void 0 : media.src) || "";
+      const id = (_a3 = /\/image\/([^/]+)\//.exec(src)) == null ? void 0 : _a3[1];
+      if (id) slides.push({ at, id });
+    }
+    return slides.length > 0 ? slides : null;
   }
   var GALLERY_IMAGE_COUNT_QUERY_TEXT = [
     "query MangaReaderGalleryImageCount($galleryId: ID!) {",
@@ -1302,6 +1322,7 @@
     return lightbox.querySelector("." + CLASS_LOADING) !== null;
   }
   NR.carouselImage = carouselImage;
+  NR.carouselSlides = carouselSlides;
   NR.lightboxIsLoading = lightboxIsLoading;
 
   // src/reader/chapters-import.ts
@@ -4598,25 +4619,26 @@
     ].join("|");
   }
   function loadGallery(id) {
+    const forLightbox = root;
     const already = loaded.get(id);
-    if (already) {
+    if (already && (!forLightbox || orderAgrees(already, forLightbox))) {
       galleryId = id;
       shownAt = -1;
       step();
       revalidate(id);
       return;
     }
-    const forLightbox = root;
+    if (already) loaded.delete(id);
     if (!forLightbox) return;
     if ((pending2 == null ? void 0 : pending2.id) === id && pending2.lightbox === forLightbox) return;
     pending2 = { id, lightbox: forLightbox };
-    loadPages(id, lightboxOrder(window.location.search), forLightbox).then((answer) => {
+    loadPages(id, lightboxOrder(window.location.search), forLightbox).then(({ answer, order }) => {
       if (!pending2 || pending2.id !== id || pending2.lightbox !== forLightbox) {
         return;
       }
       pending2 = null;
       if (root !== forLightbox) return;
-      const gallery = galleryFrom(id, answer);
+      const gallery = galleryFrom(id, answer, order);
       remember(id, gallery);
       language = answer.language;
       galleryId = id;
@@ -4635,11 +4657,15 @@
       deactivate();
     });
   }
-  function galleryFrom(id, answer) {
+  function galleryFrom(id, answer, order) {
     return {
       id,
       pages: answer.pages,
       images: answer.images,
+      // The order these pages were read in, kept because a re-read has to be in the
+      // same one: `refresh` corrects membership, and asking again in whatever the
+      // address bar says at that moment would be a different list.
+      order,
       pairedWith: pairingKey(),
       screens: laidOut(answer.pages),
       chapters: placeChapters(chaptersOf2(answer), answer.pages),
@@ -4674,15 +4700,16 @@
     const forLightbox = root;
     if (!forLightbox || galleryId !== id) return;
     const seq = ++refreshing;
-    fetchGallery(id, lightboxOrder(window.location.search)).then((answer) => {
+    const old = loaded.get(id);
+    if (!old) return;
+    const order = old.order;
+    fetchGallery(id, order).then((answer) => {
       var _a3;
       if (seq !== refreshing) return;
       if (root !== forLightbox || galleryId !== id) return;
-      const old = loaded.get(id);
-      if (!old) return;
       const was = place2;
       const wasId = was >= 0 ? (_a3 = old.pages[was]) == null ? void 0 : _a3.id : void 0;
-      remember(id, galleryFrom(id, answer));
+      remember(id, galleryFrom(id, answer, order));
       language = answer.language;
       if (was >= 0) {
         const at = nextIndex(answer.pages, wasId);
@@ -4707,13 +4734,33 @@
   async function loadPages(id, order, lightbox) {
     const answer = await fetchGallery(id, order);
     const shown = carouselImage(lightbox);
-    if (!shown) return answer;
+    if (!shown) return { answer, order };
     if (!answer.pages.some((page) => (page.imageId || page.id) === shown.id)) {
       throw new Error(
         "[mangaReader] the lightbox is showing image " + shown.id + ", which is not among the pages this plugin read \u2014 the list behind it is filtered, so its pages cannot be paired"
       );
     }
-    return answer;
+    if (orderAgrees(answer, lightbox)) return { answer, order };
+    const byPath2 = { sort: "path", direction: "ASC" };
+    if (order.sort === byPath2.sort && order.direction === byPath2.direction) {
+      throw new Error(
+        "[mangaReader] the lightbox is showing this gallery's images in an order that is not path order, so they cannot be paired \u2014 the list behind it is filtered or sorted some other way"
+      );
+    }
+    const again = await fetchGallery(id, byPath2);
+    if (orderAgrees(again, lightbox)) return { answer: again, order: byPath2 };
+    throw new Error(
+      "[mangaReader] the lightbox is showing this gallery's images in an order that neither the address bar's sort nor path order reproduces, so they cannot be paired"
+    );
+  }
+  function orderAgrees(list, lightbox) {
+    if (list.fileScope) return true;
+    const slides = carouselSlides(lightbox);
+    if (!slides) return true;
+    return slides.every((slide) => {
+      const page = list.pages[slide.at];
+      return page !== void 0 && (page.imageId || page.id) === slide.id;
+    });
   }
   function placeOf(gallery, lightbox) {
     const shown = carouselImage(lightbox);
