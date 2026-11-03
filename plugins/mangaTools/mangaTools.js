@@ -1414,7 +1414,14 @@
             totalCount: request.totalCount,
             // Only read when the lightbox mounts, which is how a chapter clicked on the
             // gallery's own page opens one — see the chapters tab.
-            initialIndex: request.at
+            initialIndex: request.at,
+            // **A still carousel.** 0.32 can open the lightbox with its slideshow
+            // already running (a gallery card's preview, #7035), and that timer moves
+            // Stash's own carousel — which the reader has replaced — underneath the
+            // reader's screens. Sent false on every handover; 0.31.1 has the same
+            // `slideshowEnabled` state and its own timer, and no autostart at all.
+            slideshowEnabled: false,
+            slideshowAutostart: false
           });
         }
       };
@@ -2969,15 +2976,28 @@
     node.dataset.menu = opens;
     return node;
   }
+  var iconRoots = /* @__PURE__ */ new WeakMap();
   function drawIcon(host, name) {
     var _a3;
     const api = requirePluginApi();
     const Solid = api.libraries.FontAwesomeSolid || {};
     const Icon = api.components.Icon;
     const icon = Solid[name];
+    if (!Icon || !icon) return;
+    const element = api.React.createElement(Icon, { icon });
+    const client = api.ReactDOMClient;
+    if (client && typeof client.createRoot === "function") {
+      let root2 = iconRoots.get(host);
+      if (!root2) {
+        root2 = client.createRoot(host);
+        iconRoots.set(host, root2);
+      }
+      root2.render(element);
+      return;
+    }
     const render2 = (_a3 = api.ReactDOM) == null ? void 0 : _a3.render;
-    if (!Icon || !icon || !render2) return;
-    render2(api.React.createElement(Icon, { icon }), host);
+    if (!render2) return;
+    render2(element, host);
   }
   function zoomButton() {
     const button2 = document.createElement("button");
@@ -3021,6 +3041,7 @@
     openMenu = null;
   }
   NR.fitShift = fitShift;
+  NR.drawIcon = drawIcon;
 
   // src/reader/spreads.ts
   function pageUrl(page) {
@@ -4879,7 +4900,7 @@
       totalCount: gallery.images.length
     });
   }
-  function arrowsBelongTo(target2) {
+  function keysBelongTo(target2) {
     if (!target2) return false;
     if (target2.isContentEditable) return true;
     const tag = target2.tagName;
@@ -4951,9 +4972,14 @@
       event.stopPropagation();
       return;
     }
+    if ((event.key === "d" || event.key === "D") && !keysBelongTo(event.target)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
     if (event.repeat) return;
-    if (arrowsBelongTo(event.target)) return;
+    if (keysBelongTo(event.target)) return;
     if (!turnBy(lightbox, event.key === "ArrowRight" ? 1 : -1)) return;
     event.preventDefault();
     event.stopPropagation();
