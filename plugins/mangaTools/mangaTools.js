@@ -8985,9 +8985,23 @@
     if (!assetBase) return "";
     return assetBase + "assets/shops/favicon-" + key + ".ico";
   }
+  function shopLetter(shop) {
+    if (shopIconUrl(shop)) return null;
+    const name = shop.name.trim();
+    if (!name) return null;
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = hash * 31 + name.charCodeAt(i) >>> 0;
+    }
+    return {
+      letter: Array.from(name)[0].toUpperCase(),
+      color: "hsl(" + hash % 360 + ", 45%, 38%)"
+    };
+  }
   function ShopBadges(props) {
     return /* @__PURE__ */ React11.createElement("span", { className: "manga-tools-shop-badges" }, props.links.map((link) => {
       const src = shopIconUrl(link.shop);
+      const letter = src ? null : shopLetter(link.shop);
       const title = link.shop.name + (link.code ? " \xB7 " + link.code : "");
       return /* @__PURE__ */ React11.createElement(
         "a",
@@ -8999,7 +9013,15 @@
           target: "_blank",
           rel: "noreferrer"
         },
-        src ? /* @__PURE__ */ React11.createElement("img", { className: "is-favicon", src, alt: link.shop.name }) : null,
+        src ? /* @__PURE__ */ React11.createElement("img", { className: "is-favicon", src, alt: link.shop.name }) : letter ? /* @__PURE__ */ React11.createElement(
+          "span",
+          {
+            className: "manga-tools-shop-letter",
+            "aria-hidden": "true",
+            style: { backgroundColor: letter.color }
+          },
+          letter.letter
+        ) : null,
         link.code ? /* @__PURE__ */ React11.createElement("span", { className: "manga-tools-shop-code" }, link.code) : null
       );
     }));
@@ -9014,6 +9036,7 @@
   NS.compilePattern = compilePattern;
   NS.nameTaken = nameTaken;
   NS.domainOwner = domainOwner;
+  NS.shopLetter = shopLetter;
 
   // src/tools/shop-editor.tsx
   var PluginApi14 = requirePluginApi();
@@ -9261,15 +9284,7 @@
               }
             )
           ),
-          shopIconUrl(shop) ? /* @__PURE__ */ React12.createElement(
-            "img",
-            {
-              className: "manga-tools-shop-icon",
-              src: shopIconUrl(shop),
-              alt: "",
-              draggable: false
-            }
-          ) : null,
+          /* @__PURE__ */ React12.createElement(ShopIcon, { shop }),
           /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-shop-name" }, shop.name.trim() || t(intl, "mangaTools.shops.unnamed")),
           (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(
             Bootstrap.Button,
@@ -9361,47 +9376,81 @@
     };
     input.click();
   }
+  function ShopIcon(props) {
+    const src = shopIconUrl(props.shop);
+    if (src) {
+      return /* @__PURE__ */ React12.createElement(
+        "img",
+        {
+          className: "manga-tools-shop-icon",
+          src,
+          alt: "",
+          draggable: false
+        }
+      );
+    }
+    const letter = shopLetter(props.shop);
+    if (!letter) return null;
+    return /* @__PURE__ */ React12.createElement(
+      "span",
+      {
+        className: "manga-tools-shop-letter",
+        "aria-hidden": "true",
+        style: { backgroundColor: letter.color }
+      },
+      letter.letter
+    );
+  }
   function AddShopMenu(props) {
     var _a3;
     const intl = PluginApi14.libraries.Intl.useIntl();
     const Bootstrap = PluginApi14.libraries.Bootstrap;
-    const Overlay = Bootstrap ? Bootstrap.OverlayTrigger : null;
+    const Overlay = Bootstrap ? Bootstrap.Overlay : null;
     const Popover = Bootstrap ? Bootstrap.Popover : null;
     const Content = Popover ? Popover.Content : null;
+    const button2 = React12.useRef(null);
+    const openState = React12.useState(false);
+    const open = openState[0];
+    const setOpen = openState[1];
     if (!(Bootstrap == null ? void 0 : Bootstrap.Button) || !Overlay || !Popover || !Content) return null;
     const icon = (glyph) => glyph ? /* @__PURE__ */ React12.createElement(PluginApi14.components.Icon, { icon: glyph }) : null;
+    const choose = (shop) => {
+      setOpen(false);
+      props.onAdd(shop);
+    };
     const content = /* @__PURE__ */ React12.createElement(Popover, { id: "manga-tools-shop-add", className: "manga-tools-shop-popover" }, /* @__PURE__ */ React12.createElement(Content, null, /* @__PURE__ */ React12.createElement(
       Bootstrap.Button,
       {
         className: "minimal",
-        onClick: () => props.onAdd({ name: "", icon: "", domains: [], regexes: [] })
+        onClick: () => choose({ name: "", icon: "", domains: [], regexes: [] })
       },
       icon((_a3 = PluginApi14.libraries.FontAwesomeSolid) == null ? void 0 : _a3.faPlus),
       /* @__PURE__ */ React12.createElement("span", null, t(intl, "mangaTools.shops.new"))
     ), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-menu-divider" }), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-menu-title" }, t(intl, "mangaTools.shops.builtin")), BUILTIN_SHOPS.map((preset) => {
       const allowed = props.canAdd(preset);
-      const src = shopIconUrl(preset);
       return /* @__PURE__ */ React12.createElement(
         Bootstrap.Button,
         {
           key: preset.name,
           className: "minimal",
           disabled: !allowed,
-          onClick: allowed ? () => props.onAdd(preset) : void 0
+          onClick: allowed ? () => choose(preset) : void 0
         },
-        src ? /* @__PURE__ */ React12.createElement(
-          "img",
-          {
-            className: "manga-tools-shop-icon",
-            src,
-            alt: "",
-            draggable: false
-          }
-        ) : null,
+        /* @__PURE__ */ React12.createElement(ShopIcon, { shop: preset }),
         /* @__PURE__ */ React12.createElement("span", null, preset.name)
       );
     })));
-    return /* @__PURE__ */ React12.createElement(Overlay, { trigger: "click", rootClose: true, placement: "top", overlay: content }, /* @__PURE__ */ React12.createElement(Bootstrap.Button, { variant: "secondary" }, t(intl, "mangaTools.shops.add")));
+    return /* @__PURE__ */ React12.createElement(React12.Fragment, null, /* @__PURE__ */ React12.createElement("span", { ref: button2 }, /* @__PURE__ */ React12.createElement(Bootstrap.Button, { variant: "secondary", onClick: () => setOpen(!open) }, t(intl, "mangaTools.shops.add"))), open && button2.current ? /* @__PURE__ */ React12.createElement(
+      Overlay,
+      {
+        target: button2.current,
+        show: true,
+        onHide: () => setOpen(false),
+        rootClose: true,
+        placement: "top"
+      },
+      content
+    ) : null);
   }
   function ShopForm(props) {
     var _a3;
@@ -9470,15 +9519,7 @@
     ), field2(
       "manga-tools-shop-icon",
       t(intl, "mangaTools.shops.icon"),
-      /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-icon-row" }, src ? /* @__PURE__ */ React12.createElement(
-        "img",
-        {
-          className: "manga-tools-shop-icon",
-          src,
-          alt: "",
-          draggable: false
-        }
-      ) : null, (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(Bootstrap.Button, { variant: "secondary", onClick: props.onOpenIcon }, t(intl, "mangaTools.shops.pickIcon")) : null, src && (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(
+      /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-icon-row" }, /* @__PURE__ */ React12.createElement(ShopIcon, { shop: props.shop }), (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(Bootstrap.Button, { variant: "secondary", onClick: props.onOpenIcon }, t(intl, "mangaTools.shops.pickIcon")) : null, src && (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(
         Bootstrap.Button,
         {
           variant: "secondary",
@@ -11244,6 +11285,7 @@
       // rewrites the attribute on the next pass.
       key: found.shop.name,
       src: shopIconUrl(found.shop),
+      letter: shopLetter(found.shop),
       title: found.shop.name + (found.code ? " \xB7 " + found.code : "")
     };
   }
@@ -11268,7 +11310,14 @@
           text3.setAttribute("title", want.title);
         }
         let img = current2.querySelector("img");
+        let mark = current2.querySelector(
+          ".manga-tools-shop-letter"
+        );
         if (want.src) {
+          if (mark) {
+            mark.remove();
+            mark = null;
+          }
           if (!img) {
             img = iconFor2(want.src, want.title);
             text3 == null ? void 0 : text3.appendChild(img);
@@ -11276,8 +11325,25 @@
             if (img.getAttribute("src") !== want.src) img.src = want.src;
             if (img.alt !== want.title) img.alt = want.title;
           }
-        } else if (img) {
-          img.remove();
+        } else if (want.letter) {
+          if (img) {
+            img.remove();
+            img = null;
+          }
+          if (!mark) {
+            mark = letterFor(want.letter);
+            text3 == null ? void 0 : text3.appendChild(mark);
+          } else {
+            if (mark.textContent !== want.letter.letter) {
+              mark.textContent = want.letter.letter;
+            }
+            if (mark.style.backgroundColor !== want.letter.color) {
+              mark.style.backgroundColor = want.letter.color;
+            }
+          }
+        } else {
+          if (img) img.remove();
+          if (mark) mark.remove();
         }
         continue;
       }
@@ -11288,9 +11354,18 @@
       text2.className = "input-group-text";
       text2.setAttribute("title", want.title);
       if (want.src) text2.appendChild(iconFor2(want.src, want.title));
+      else if (want.letter) text2.appendChild(letterFor(want.letter));
       prepend.appendChild(text2);
       group.insertBefore(prepend, group.children[0] || null);
     }
+  }
+  function letterFor(letter) {
+    const mark = document.createElement("span");
+    mark.className = "manga-tools-shop-letter";
+    mark.setAttribute("aria-hidden", "true");
+    mark.style.backgroundColor = letter.color;
+    mark.textContent = letter.letter;
+    return mark;
   }
   function iconFor2(src, title) {
     const img = document.createElement("img");
