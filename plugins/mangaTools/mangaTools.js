@@ -9251,6 +9251,9 @@
     const dragState = React12.useState("");
     const dragRow = dragState[0];
     const setDragRow = dragState[1];
+    const dropState = React12.useState(null);
+    const drop = dropState[0];
+    const setDrop = dropState[1];
     const afterDrag = React12.useRef(false);
     const entries = React12.useRef({});
     const shops = rows.map((row2) => row2.shop);
@@ -9293,7 +9296,7 @@
       return /* @__PURE__ */ React12.createElement(
         "div",
         {
-          className: "manga-tools-shop-entry",
+          className: "manga-tools-shop-entry" + (drop && drop.id === row2.id ? drop.after ? " drop-after" : " drop-before" : ""),
           key: row2.id,
           ref: (element) => {
             entries.current[row2.id] = element;
@@ -9301,14 +9304,36 @@
           onDragOver: (e) => {
             if (!dragRow || dragRow === row2.id) return;
             e.preventDefault();
+            const box = e.currentTarget.getBoundingClientRect();
+            const after = e.clientY > box.top + box.height / 2;
+            if (!drop || drop.id !== row2.id || drop.after !== after) {
+              setDrop({ id: row2.id, after });
+            }
+          },
+          onDrop: (e) => {
+            e.preventDefault();
+            if (!dragRow || !drop || dragRow === drop.id) {
+              setDragRow("");
+              setDrop(null);
+              return;
+            }
             const from = rows.findIndex(
               (candidate) => candidate.id === dragRow
             );
-            if (from < 0) return;
-            const next = rows.slice();
-            next.splice(index, 0, next.splice(from, 1)[0]);
-            setRows(next);
-            setDragRow(row2.id);
+            const target2 = rows.findIndex(
+              (candidate) => candidate.id === drop.id
+            );
+            if (from >= 0 && target2 >= 0) {
+              const next = rows.slice();
+              next.splice(
+                target2 + (drop.after ? 1 : 0),
+                0,
+                next.splice(from, 1)[0]
+              );
+              setRows(next);
+            }
+            setDragRow("");
+            setDrop(null);
           }
         },
         /* @__PURE__ */ React12.createElement(
@@ -9342,7 +9367,10 @@
                 setOpen("");
                 setDragRow(row2.id);
               },
-              onDragEnd: () => setDragRow("")
+              onDragEnd: () => {
+                setDragRow("");
+                setDrop(null);
+              }
             },
             /* @__PURE__ */ React12.createElement(
               PluginApi14.components.Icon,
