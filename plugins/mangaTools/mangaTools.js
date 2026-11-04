@@ -5915,9 +5915,16 @@
       icon: "builtin:fanza",
       // The doujin pages live on dmm.co.jp, not on a fanza host.
       domains: ["dmm.co.jp"],
-      // /dc/doujin/-/detail/=/cid=d_790745/ — and the book shape,
-      // /product/6300672/b915awnmg04612/
-      regexes: ["[?&/]cid=([A-Za-z0-9_]+)", "/product/\\d+/([A-Za-z0-9]+)"]
+      // /dc/doujin/-/detail/=/cid=d_790745/ — the book shape,
+      // /product/6300672/b915awnmg04612/ — and the software and game pages,
+      // dlsoft.dmm.co.jp/detail/hobe_0407/. The third pattern is written to
+      // skip the `=/` spelling: after `/detail/` a `=` is not part of an id,
+      // so the older `cid=` shapes still go through the first.
+      regexes: [
+        "[?&/]cid=([A-Za-z0-9_]+)",
+        "/product/\\d+/([A-Za-z0-9]+)",
+        "/detail/([A-Za-z0-9_]+)"
+      ]
     },
     {
       name: "Toranoana",
@@ -10536,7 +10543,7 @@
     const host = ensureDetailHost();
     if (!host) return null;
     const showFlag = NS.showFlags && !!language2 && (!!language2.flag || NS.isNoLanguage(language2.code));
-    const body = /* @__PURE__ */ React15.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React15.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React15.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language2 ? /* @__PURE__ */ React15.createElement("h6", { className: "manga-tools-detail" }, fieldLabel(intl) + ": ", showFlag && language2.flag ? /* @__PURE__ */ React15.createElement(Flag, { flag: language2.flag, className: "manga-tools-flag" }) : showFlag ? noLanguageMark(language2.code, "manga-tools-flag") : null, showFlag ? " " : null, language2.name, original ? t(intl, "mangaTools.translationGroup.originalInline") : null) : null, group ? (
+    const body = /* @__PURE__ */ React15.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React15.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React15.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language2 ? /* @__PURE__ */ React15.createElement("h6", { className: "manga-tools-detail" }, fieldLabel(intl) + ": ", showFlag && language2.flag ? /* @__PURE__ */ React15.createElement(Flag, { flag: language2.flag, className: "manga-tools-flag" }) : showFlag ? noLanguageMark(language2.code, "manga-tools-flag") : null, showFlag ? " " : null, language2.name, original && !NS.isNoLanguage(language2.code) ? t(intl, "mangaTools.translationGroup.originalInline") : null) : null, group ? (
       // No icon and no flag: a group's name is its own, and there is nothing
       // here to draw beside it. Drawn last, because it is the one row that is
       // the same shape on every gallery rather than picked from a list.
