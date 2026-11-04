@@ -1628,7 +1628,7 @@
     "mangaTools.physicalButton.repeatsOne": "1 page repeats an image",
     "mangaTools.settings.maintenance.heading": "Maintenance",
     "mangaTools.settings.clearFields.heading": "Remove this plugin's fields",
-    "mangaTools.settings.clearFields.description": "Deletes the custom fields this plugin wrote to galleries \u2014 for when it is going away. Stash's own data is not touched. It runs as a Stash task, so it carries on if this page is closed.",
+    "mangaTools.settings.clearFields.description": "Deletes the custom fields this plugin wrote to galleries.",
     "mangaTools.clearFields.button": "Remove fields\u2026",
     "mangaTools.clearFields.title": "Remove this plugin's fields",
     "mangaTools.clearFields.intro": "Choose which fields to remove. Only galleries carrying one of them are touched.",
@@ -1642,7 +1642,8 @@
     "mangaTools.clearFields.cancel": "Cancel",
     "mangaTools.clearFields.confirm": "Remove fields",
     "mangaTools.clearFields.queued": "Added to Stash's task queue \u2014 progress and the log are on the Tasks page.",
-    "mangaTools.clearFields.failed": "The task could not be queued. See the browser console."
+    "mangaTools.clearFields.failed": "The task could not be queued. See the browser console.",
+    "mangaTools.clearFields.total": "This would affect {n} gallery(ies)"
   };
 
   // src/messages/zh-Hans.json
@@ -1795,7 +1796,7 @@
     "mangaTools.physicalButton.repeatsOne": "\u91CD\u590D 1 \u9875",
     "mangaTools.settings.maintenance.heading": "\u7EF4\u62A4",
     "mangaTools.settings.clearFields.heading": "\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u5B57\u6BB5",
-    "mangaTools.settings.clearFields.description": "\u5220\u9664\u672C\u63D2\u4EF6\u5199\u5728\u753B\u5ECA\u4E0A\u7684\u81EA\u5B9A\u4E49\u5B57\u6BB5\u2014\u2014\u7528\u4E8E\u5378\u8F7D\u524D\u6536\u5C3E\u3002\u4E0D\u4F1A\u52A8 Stash \u81EA\u5DF1\u7684\u6570\u636E\u3002\u4EFB\u52A1\u5728 Stash \u7684\u4EFB\u52A1\u961F\u5217\u91CC\u8FD0\u884C\uFF0C\u5173\u6389\u8FD9\u4E2A\u9875\u9762\u4E5F\u4F1A\u7EE7\u7EED\u3002",
+    "mangaTools.settings.clearFields.description": "\u5220\u9664\u672C\u63D2\u4EF6\u5199\u5728\u753B\u5ECA\u4E0A\u7684\u81EA\u5B9A\u4E49\u5B57\u6BB5",
     "mangaTools.clearFields.button": "\u79FB\u9664\u5B57\u6BB5\u2026",
     "mangaTools.clearFields.title": "\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u5B57\u6BB5",
     "mangaTools.clearFields.intro": "\u9009\u62E9\u8981\u79FB\u9664\u7684\u5B57\u6BB5\u3002\u53EA\u6709\u5E26\u6709\u5176\u4E2D\u4EFB\u610F\u4E00\u4E2A\u5B57\u6BB5\u7684\u753B\u5ECA\u4F1A\u88AB\u5904\u7406\u3002",
@@ -1809,7 +1810,8 @@
     "mangaTools.clearFields.cancel": "\u53D6\u6D88",
     "mangaTools.clearFields.confirm": "\u79FB\u9664\u5B57\u6BB5",
     "mangaTools.clearFields.queued": "\u5DF2\u52A0\u5165 Stash \u4EFB\u52A1\u961F\u5217\u2014\u2014\u8FDB\u5EA6\u548C\u65E5\u5FD7\u89C1\u300C\u8BBE\u7F6E \u2192 \u4EFB\u52A1\u300D\u3002",
-    "mangaTools.clearFields.failed": "\u65E0\u6CD5\u628A\u4EFB\u52A1\u52A0\u5165\u961F\u5217\uFF0C\u8BE6\u89C1\u6D4F\u89C8\u5668\u63A7\u5236\u53F0\u3002"
+    "mangaTools.clearFields.failed": "\u65E0\u6CD5\u628A\u4EFB\u52A1\u52A0\u5165\u961F\u5217\uFF0C\u8BE6\u89C1\u6D4F\u89C8\u5668\u63A7\u5236\u53F0\u3002",
+    "mangaTools.clearFields.total": "\u5C06\u4F1A\u5F71\u54CD {n} \u4E2A\u753B\u5ECA"
   };
 
   // src/messages/zh-Hant.json
@@ -1962,7 +1964,7 @@
     "mangaTools.physicalButton.repeatsOne": "\u91CD\u8907 1 \u9801",
     "mangaTools.settings.maintenance.heading": "\u7DAD\u8B77",
     "mangaTools.settings.clearFields.heading": "\u79FB\u9664\u672C\u5916\u639B\u7684\u6B04\u4F4D",
-    "mangaTools.settings.clearFields.description": "\u522A\u9664\u672C\u5916\u639B\u5BEB\u5728\u756B\u5ECA\u4E0A\u7684\u81EA\u8A02\u6B04\u4F4D\u2014\u2014\u7528\u65BC\u89E3\u9664\u5B89\u88DD\u524D\u6536\u5C3E\u3002\u4E0D\u6703\u52D5 Stash \u81EA\u5DF1\u7684\u8CC7\u6599\u3002\u4EFB\u52D9\u5728 Stash \u7684\u4EFB\u52D9\u4F47\u5217\u88E1\u57F7\u884C\uFF0C\u95DC\u6389\u9019\u500B\u9801\u9762\u4E5F\u6703\u7E7C\u7E8C\u3002",
+    "mangaTools.settings.clearFields.description": "\u522A\u9664\u672C\u5916\u639B\u5BEB\u5728\u756B\u5ECA\u4E0A\u7684\u81EA\u8A02\u6B04\u4F4D",
     "mangaTools.clearFields.button": "\u79FB\u9664\u6B04\u4F4D\u2026",
     "mangaTools.clearFields.title": "\u79FB\u9664\u672C\u5916\u639B\u7684\u6B04\u4F4D",
     "mangaTools.clearFields.intro": "\u9078\u64C7\u8981\u79FB\u9664\u7684\u6B04\u4F4D\u3002\u53EA\u6709\u5E36\u6709\u5176\u4E2D\u4EFB\u4E00\u500B\u6B04\u4F4D\u7684\u756B\u5ECA\u6703\u88AB\u8655\u7406\u3002",
@@ -1976,7 +1978,8 @@
     "mangaTools.clearFields.cancel": "\u53D6\u6D88",
     "mangaTools.clearFields.confirm": "\u79FB\u9664\u6B04\u4F4D",
     "mangaTools.clearFields.queued": "\u5DF2\u52A0\u5165 Stash \u4EFB\u52D9\u4F47\u5217\u2014\u2014\u9032\u5EA6\u548C\u65E5\u8A8C\u898B\u300C\u8A2D\u5B9A \u2192 \u4EFB\u52D9\u300D\u3002",
-    "mangaTools.clearFields.failed": "\u7121\u6CD5\u628A\u4EFB\u52D9\u52A0\u5165\u4F47\u5217\uFF0C\u8A73\u898B\u700F\u89BD\u5668\u4E3B\u63A7\u53F0\u3002"
+    "mangaTools.clearFields.failed": "\u7121\u6CD5\u628A\u4EFB\u52D9\u52A0\u5165\u4F47\u5217\uFF0C\u8A73\u898B\u700F\u89BD\u5668\u4E3B\u63A7\u53F0\u3002",
+    "mangaTools.clearFields.total": "\u5C07\u6703\u5F71\u97FF {n} \u500B\u756B\u5ECA"
   };
 
   // src/i18n.ts
@@ -8551,6 +8554,33 @@
       }
     }).then(() => true);
   }
+  function scanQuery() {
+    const parts2 = CLEARABLE_FIELDS.map(
+      (field2, index) => `f${index}: findGalleries(gallery_filter: { custom_fields: [{ field: "${field2}", modifier: NOT_NULL }] }, filter: { per_page: -1 }) { galleries { id } }`
+    );
+    return "query { " + parts2.join(" ") + " }";
+  }
+  function scanFrom(data) {
+    const answer = data || {};
+    const counts = {};
+    const union = /* @__PURE__ */ new Set();
+    CLEARABLE_FIELDS.forEach((field2, index) => {
+      var _a3;
+      const found = ((_a3 = answer["f" + index]) == null ? void 0 : _a3.galleries) || [];
+      counts[field2] = found.length;
+      for (const gallery of found) {
+        if ((gallery == null ? void 0 : gallery.id) !== void 0) union.add(String(gallery.id));
+      }
+    });
+    return { counts, total: union.size };
+  }
+  function loadTotals() {
+    const client = PluginApi12.utils.StashService.getClient();
+    if (!client) return Promise.resolve(null);
+    const query = gqlDoc(scanQuery(), "build the clear-fields scan query");
+    if (!query) return Promise.resolve(null);
+    return client.query({ query, fetchPolicy: "no-cache" }).then((res) => scanFrom(res == null ? void 0 : res.data)).catch(() => null);
+  }
   function SwitchRow(props) {
     const Bootstrap = PluginApi12.libraries.Bootstrap;
     if (!Bootstrap) return null;
@@ -8581,6 +8611,14 @@
     const noticeState = React10.useState("");
     const notice = noticeState[0];
     const setNotice = noticeState[1];
+    const totalsState = React10.useState(null);
+    const totals = totalsState[0];
+    const setTotals = totalsState[1];
+    const openDialog = () => {
+      setTotals(null);
+      setOpen(true);
+      loadTotals().then(setTotals);
+    };
     const toggle = (key, on) => {
       setChosen((current2) => {
         const has = current2.indexOf(key) !== -1;
@@ -8610,25 +8648,28 @@
         }
       );
     };
-    const row2 = /* @__PURE__ */ React10.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement("h3", null, t(intl, "mangaTools.settings.clearFields.heading")), /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.clearFields.description")), notice ? /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, notice) : null), /* @__PURE__ */ React10.createElement("div", null, Bootstrap ? /* @__PURE__ */ React10.createElement(Bootstrap.Button, { variant: "danger", onClick: () => setOpen(true) }, t(intl, "mangaTools.clearFields.button")) : null));
+    const row2 = /* @__PURE__ */ React10.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement("h3", null, t(intl, "mangaTools.settings.clearFields.heading")), /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.clearFields.description")), notice ? /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, notice) : null), /* @__PURE__ */ React10.createElement("div", null, Bootstrap ? /* @__PURE__ */ React10.createElement(Bootstrap.Button, { variant: "danger", onClick: openDialog }, t(intl, "mangaTools.clearFields.button")) : null));
     const Modal = Bootstrap ? Bootstrap.Modal : null;
     if (!Bootstrap || !open || !(Modal == null ? void 0 : Modal.Body)) return row2;
     return /* @__PURE__ */ React10.createElement(React10.Fragment, null, row2, /* @__PURE__ */ React10.createElement(
       Modal,
       {
         show: true,
-        size: "lg",
         onHide: () => {
           if (!busy2) setOpen(false);
         }
       },
       /* @__PURE__ */ React10.createElement("div", { className: "modal-header" }, /* @__PURE__ */ React10.createElement("span", null, t(intl, "mangaTools.clearFields.title"))),
-      /* @__PURE__ */ React10.createElement("div", { className: "modal-body" }, /* @__PURE__ */ React10.createElement("p", null, t(intl, "mangaTools.clearFields.intro")), /* @__PURE__ */ React10.createElement("div", { className: "setting-section" }, /* @__PURE__ */ React10.createElement("div", { className: "card" }, CLEARABLE_FIELDS.map((field2) => /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React10.createElement("div", { className: "modal-body" }, /* @__PURE__ */ React10.createElement("p", null, t(intl, "mangaTools.clearFields.intro")), totals ? /* @__PURE__ */ React10.createElement("p", null, /* @__PURE__ */ React10.createElement("b", null, numbered(
+        intl.locale,
+        "mangaTools.clearFields.total",
+        totals.total
+      ))) : null, /* @__PURE__ */ React10.createElement("div", { className: "setting-section" }, /* @__PURE__ */ React10.createElement("div", { className: "card" }, CLEARABLE_FIELDS.map((field2) => /* @__PURE__ */ React10.createElement(
         SwitchRow,
         {
           key: field2,
           id: "mangaTools-clear-" + field2.split(".").pop(),
-          label: t(intl, LABEL_OF[field2]),
+          label: t(intl, LABEL_OF[field2]) + (totals ? " (" + totals.counts[field2] + ")" : ""),
           checked: chosen.indexOf(field2) !== -1,
           onChange: (next) => toggle(field2, next)
         }
@@ -8665,6 +8706,8 @@
   NS.clearTaskArgs = clearTaskArgs;
   NS.CLEAR_FIELDS_TASK = CLEAR_FIELDS_TASK;
   NS.CLEARABLE_FIELDS = CLEARABLE_FIELDS;
+  NS.clearFieldsScanQuery = scanQuery;
+  NS.clearFieldsScanFrom = scanFrom;
 
   // src/tools/settings-page.tsx
   var PluginApi13 = requirePluginApi();
