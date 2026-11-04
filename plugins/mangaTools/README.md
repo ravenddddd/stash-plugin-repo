@@ -708,12 +708,18 @@ before any of this was editable.
   being that preset: rename it *and* move it to another domain and the preset comes
   back to the add menu, rename it alone and it does not (the domain is still taken).
 - **Domains** are compared the way the matcher compares them: lower case, no `www.`,
-  no path, port or user. A link on a subdomain belongs to the same shop.
+  no path, port or user; an internationalised name is kept as the punycode the
+  browser would report. A link on a subdomain belongs to the same shop — which is
+  why no two shops may hold domains that overlap: `dmm.co.jp` and
+  `book.dmm.co.jp` are one site to the matcher, and the broader entry would shadow
+  the narrower one. A domain with no dot, or with a wildcard, is refused: it could
+  never be met.
 - **Patterns** are tried in order and **the first one that captures wins**; capture
   group 1 is the product code. A bare source (`product_id[=/](…)`) and a JavaScript
   literal (`/g/(\d+)/`) are both accepted; an empty list is fine — the shop keeps its
   icon and shows no code. The drag handle reorders them, because the order is the
-  precedence.
+  precedence — the domain list has a handle too, for the same shape of control, and
+  its order means nothing: every domain of a shop is tried against the link.
 - **Icons**: a preset keeps the favicon bundled in `assets/shops/`; a shop of the
   user's own may have an image uploaded, which is resized to a 32×32 PNG and kept in
   the settings as a data URI. The plugin has no files of its own it can write, and
@@ -724,7 +730,9 @@ The editor is drawn like Stash's own forms: the domain and pattern lists are
 `StringListInput`'s shape (one input per row, a grip, a danger minus, and an empty
 row at the end to type into), errors are `is-invalid` with the message under the
 field, and Save is disabled while anything is wrong. Nothing is written until Save:
-the dialog edits a draft, so Cancel really cancels.
+the dialog edits a draft, so Cancel really cancels. Each row is a button to the
+keyboard as well as the mouse, an uploaded icon is centre-cropped to 32×32 rather
+than stretched, and the form that opens is scrolled into view.
 
 The shop-link feature is a switch of its own (off by default). **One icon per shop**
 — the bundled favicon or the uploaded image — is used both at the input head and in

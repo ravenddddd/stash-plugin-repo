@@ -5953,8 +5953,19 @@
     const colon = host.indexOf(":");
     if (colon !== -1) host = host.slice(0, colon);
     host = host.replace(/\.+$/, "");
+    try {
+      host = new URL("http://" + host).hostname.toLowerCase();
+    } catch {
+    }
     if (host.startsWith("www.")) host = host.slice(4);
     return host;
+  }
+  function isValidDomain(raw) {
+    const host = normalizeDomain(raw);
+    if (!host || host.indexOf(".") === -1) return false;
+    return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(
+      host
+    );
   }
   function compilePattern(source) {
     const text2 = String(source || "").trim();
@@ -6028,7 +6039,11 @@
     if (!wanted2) return null;
     for (let index = 0; index < shops.length; index++) {
       if (index === except) continue;
-      if (shops[index].domains.indexOf(wanted2) !== -1) return shops[index];
+      for (const owned of shops[index].domains) {
+        if (wanted2 === owned || wanted2.endsWith("." + owned) || owned.endsWith("." + wanted2)) {
+          return shops[index];
+        }
+      }
     }
     return null;
   }
@@ -8942,6 +8957,14 @@
   // src/tools/shops.tsx
   var PluginApi13 = requirePluginApi();
   var React11 = PluginApi13.React;
+  var COMPILED = /* @__PURE__ */ new WeakMap();
+  function patternsFor(shop) {
+    const cached = COMPILED.get(shop);
+    if (cached) return cached;
+    const patterns = patternsOf(shop);
+    COMPILED.set(shop, patterns);
+    return patterns;
+  }
   function shopOf(raw) {
     let url;
     try {
@@ -8958,7 +8981,7 @@
       if (!matched) continue;
       return {
         shop,
-        code: codeOf(patternsOf(shop), String(raw)),
+        code: codeOf(patternsFor(shop), String(raw)),
         url: String(raw)
       };
     }
@@ -9033,6 +9056,7 @@
   NS.shopsToJson = shopsToJson;
   NS.builtinShops = builtinShops;
   NS.normalizeDomain = normalizeDomain;
+  NS.isValidDomain = isValidDomain;
   NS.compilePattern = compilePattern;
   NS.nameTaken = nameTaken;
   NS.domainOwner = domainOwner;
@@ -9060,7 +9084,7 @@
     };
     if (shop) {
       issues.domainAt = shop.domains.map((domain) => {
-        if (normalizeDomain(domain) === "") {
+        if (!isValidDomain(domain)) {
           return stringFor(locale, "mangaTools.shops.domainInvalid");
         }
         const owner = domainOwner(shops, domain, index);
@@ -9146,6 +9170,8 @@
         /* @__PURE__ */ React12.createElement(WithTip, { text: message2 }, Control ? /* @__PURE__ */ React12.createElement(
           Control,
           {
+            id: props.idPrefix + "-" + index,
+            "aria-label": props.label,
             className: "text-input" + (message2 ? " is-invalid" : ""),
             value,
             placeholder: last ? props.placeholder : void 0,
@@ -9190,13 +9216,23 @@
       );
     }));
   }
+  var rowSeq = 0;
+  function nextRowId() {
+    rowSeq += 1;
+    return "shop-" + rowSeq;
+  }
+  function rowOf(shop) {
+    return { id: nextRowId(), shop: draftOf([shop])[0] };
+  }
   function ShopDialog(props) {
     const intl = PluginApi14.libraries.Intl.useIntl();
     const Bootstrap = PluginApi14.libraries.Bootstrap;
-    const shopsState = React12.useState(() => draftOf(NS.shops));
-    const shops = shopsState[0];
-    const setShops = shopsState[1];
-    const openState = React12.useState(-1);
+    const rowsState = React12.useState(
+      () => draftOf(NS.shops).map(rowOf)
+    );
+    const rows = rowsState[0];
+    const setRows = rowsState[1];
+    const openState = React12.useState("");
     const open = openState[0];
     const setOpen = openState[1];
     const touchState = React12.useState({});
@@ -9205,30 +9241,37 @@
     const attemptState = React12.useState(false);
     const attempted = attemptState[0];
     const setAttempted = attemptState[1];
-    const dragState = React12.useState(-1);
-    const dragShop = dragState[0];
-    const setDragShop = dragState[1];
+    const dragState = React12.useState("");
+    const dragRow = dragState[0];
+    const setDragRow = dragState[1];
     const afterDrag = React12.useRef(false);
+    const entries = React12.useRef({});
+    const shops = rows.map((row2) => row2.shop);
     const issues = shops.map(
       (_shop, index) => issuesOf(shops, index, intl.locale)
     );
     const invalid = issues.some(rowHasIssues);
-    const edit = (index, change) => {
-      const next = shops.slice();
-      next[index] = change(shops[index]);
-      setShops(next);
-      setTouch({ ...touch, [index]: true });
+    React12.useEffect(() => {
+      var _a3, _b3;
+      if (!open) return;
+      (_b3 = (_a3 = entries.current[open]) == null ? void 0 : _a3.scrollIntoView) == null ? void 0 : _b3.call(_a3, { block: "nearest" });
+    }, [open]);
+    const edit = (id, change) => {
+      setRows(
+        rows.map(
+          (row2) => row2.id === id ? { ...row2, shop: change(row2.shop) } : row2
+        )
+      );
+      setTouch({ ...touch, [id]: true });
     };
     const addShop = (preset) => {
-      const next = shops.concat([draftOf([preset])[0]]);
-      setShops(next);
-      setOpen(next.length - 1);
+      const row2 = rowOf(preset);
+      setRows(rows.concat([row2]));
+      setOpen(row2.id);
     };
-    const removeShop = (index) => {
-      const next = shops.slice();
-      next.splice(index, 1);
-      setShops(next);
-      setOpen(-1);
+    const removeShop = (id) => {
+      setRows(rows.filter((row2) => row2.id !== id));
+      setOpen("");
     };
     const canAdd = (preset) => {
       if (nameTaken(shops, preset.name, -1)) return false;
@@ -9236,32 +9279,49 @@
     };
     const Modal = Bootstrap ? Bootstrap.Modal : null;
     if (!Bootstrap || !Modal) return null;
-    return /* @__PURE__ */ React12.createElement(Modal, { show: true, onHide: props.onClose }, /* @__PURE__ */ React12.createElement("div", { className: "modal-header" }, /* @__PURE__ */ React12.createElement("span", null, t(intl, "mangaTools.shops.title"))), /* @__PURE__ */ React12.createElement("div", { className: "modal-body" }, shops.length === 0 ? /* @__PURE__ */ React12.createElement("p", { className: "manga-tools-shop-empty" }, t(intl, "mangaTools.shops.empty")) : null, shops.map((shop, index) => {
-      const shown = attempted || touch[index] ? issues[index] : { name: "", domains: "", domainAt: [], regexAt: [] };
+    return /* @__PURE__ */ React12.createElement(Modal, { show: true, onHide: props.onClose }, /* @__PURE__ */ React12.createElement("div", { className: "modal-header" }, /* @__PURE__ */ React12.createElement("span", null, t(intl, "mangaTools.shops.title"))), /* @__PURE__ */ React12.createElement("div", { className: "modal-body" }, rows.length === 0 ? /* @__PURE__ */ React12.createElement("p", { className: "manga-tools-shop-empty" }, t(intl, "mangaTools.shops.empty")) : null, rows.map((row2, index) => {
+      const shop = row2.shop;
+      const isOpen = open === row2.id;
+      const shown = attempted || touch[row2.id] ? issues[index] : { name: "", domains: "", domainAt: [], regexAt: [] };
       return /* @__PURE__ */ React12.createElement(
         "div",
         {
           className: "manga-tools-shop-entry",
-          key: index,
+          key: row2.id,
+          ref: (element) => {
+            entries.current[row2.id] = element;
+          },
           onDragOver: (e) => {
-            if (dragShop < 0 || dragShop === index) return;
+            if (!dragRow || dragRow === row2.id) return;
             e.preventDefault();
-            const next = shops.slice();
-            next.splice(index, 0, next.splice(dragShop, 1)[0]);
-            setShops(next);
-            setDragShop(index);
+            const from = rows.findIndex(
+              (candidate) => candidate.id === dragRow
+            );
+            if (from < 0) return;
+            const next = rows.slice();
+            next.splice(index, 0, next.splice(from, 1)[0]);
+            setRows(next);
+            setDragRow(row2.id);
           }
         },
         /* @__PURE__ */ React12.createElement(
           "div",
           {
-            className: "manga-tools-shop-row" + (open === index ? " is-open" : ""),
+            className: "manga-tools-shop-row" + (isOpen ? " is-open" : ""),
+            role: "button",
+            tabIndex: 0,
             onMouseDown: () => {
               afterDrag.current = false;
             },
             onClick: () => {
               if (afterDrag.current) return;
-              setOpen(open === index ? -1 : index);
+              setOpen(isOpen ? "" : row2.id);
+            },
+            onKeyDown: (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setOpen(isOpen ? "" : row2.id);
+              }
             }
           },
           /* @__PURE__ */ React12.createElement(
@@ -9272,10 +9332,10 @@
               title: t(intl, "mangaTools.shops.reorder"),
               onDragStart: () => {
                 afterDrag.current = true;
-                setOpen(-1);
-                setDragShop(index);
+                setOpen("");
+                setDragRow(row2.id);
               },
-              onDragEnd: () => setDragShop(-1)
+              onDragEnd: () => setDragRow("")
             },
             /* @__PURE__ */ React12.createElement(
               PluginApi14.components.Icon,
@@ -9294,20 +9354,20 @@
               className: "manga-tools-shop-delete",
               onClick: (e) => {
                 e.stopPropagation();
-                removeShop(index);
+                removeShop(row2.id);
               }
             },
             t(intl, "mangaTools.shops.remove")
           ) : null
         ),
-        open === index ? /* @__PURE__ */ React12.createElement(
+        isOpen ? /* @__PURE__ */ React12.createElement(
           ShopForm,
           {
             shop,
             issues: shown,
-            onChange: (change) => edit(index, change),
+            onChange: (change) => edit(row2.id, change),
             onOpenIcon: () => pickIcon(
-              (icon) => edit(index, (current2) => ({ ...current2, icon }))
+              (icon) => edit(row2.id, (current2) => ({ ...current2, icon }))
             )
           }
         ) : null
@@ -9355,7 +9415,14 @@
           done("");
           return;
         }
-        context.drawImage(image, 0, 0, 32, 32);
+        const source = Math.min(image.naturalWidth, image.naturalHeight);
+        if (source <= 0) {
+          done("");
+          return;
+        }
+        const x = (image.naturalWidth - source) / 2;
+        const y = (image.naturalHeight - source) / 2;
+        context.drawImage(image, x, y, source, source, 0, 0, 32, 32);
         done(canvas.toDataURL("image/png"));
       };
       image.onerror = () => done("");
@@ -9462,7 +9529,15 @@
     const Label = Form ? Form.Label : null;
     const Col = Bootstrap ? Bootstrap.Col : null;
     const src = shopIconUrl(props.shop);
-    const field2 = (id, label2, control2) => Group && Label && Col ? /* @__PURE__ */ React12.createElement(Group, { as: Bootstrap ? Bootstrap.Row : void 0, controlId: id }, /* @__PURE__ */ React12.createElement(Label, { column: true, sm: 3 }, label2), /* @__PURE__ */ React12.createElement(Col, { sm: 9 }, control2)) : control2;
+    const field2 = (controlId, label2, control2) => Group && Label && Col ? /* @__PURE__ */ React12.createElement(
+      Group,
+      {
+        as: Bootstrap ? Bootstrap.Row : void 0,
+        controlId: controlId || void 0
+      },
+      /* @__PURE__ */ React12.createElement(Label, { column: true, sm: 3 }, label2),
+      /* @__PURE__ */ React12.createElement(Col, { sm: 9 }, control2)
+    ) : control2;
     return /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-form" }, field2(
       "manga-tools-shop-name",
       t(intl, "mangaTools.shops.name"),
@@ -9478,11 +9553,13 @@
         }
       ) : null, props.issues.name ? /* @__PURE__ */ React12.createElement("div", { className: "invalid-feedback d-block" }, props.issues.name) : null)
     ), field2(
-      "manga-tools-shop-domains",
+      "",
       t(intl, "mangaTools.shops.domains"),
       /* @__PURE__ */ React12.createElement(React12.Fragment, null, /* @__PURE__ */ React12.createElement(
         ListInput,
         {
+          idPrefix: "manga-tools-shop-domain",
+          label: t(intl, "mangaTools.shops.domains"),
           values: props.shop.domains,
           placeholder: t(intl, "mangaTools.shops.domainPlaceholder"),
           orderable: true,
@@ -9491,7 +9568,7 @@
         }
       ), props.issues.domains ? /* @__PURE__ */ React12.createElement("div", { className: "invalid-feedback d-block" }, props.issues.domains) : null)
     ), field2(
-      "manga-tools-shop-regexes",
+      "",
       /* @__PURE__ */ React12.createElement(React12.Fragment, null, t(intl, "mangaTools.shops.regexes"), /* @__PURE__ */ React12.createElement(WithTip, { text: t(intl, "mangaTools.shops.regexHelp") }, /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-help" }, /* @__PURE__ */ React12.createElement(
         "button",
         {
@@ -9509,6 +9586,8 @@
       /* @__PURE__ */ React12.createElement(
         ListInput,
         {
+          idPrefix: "manga-tools-shop-regex",
+          label: t(intl, "mangaTools.shops.regexes"),
           values: props.shop.regexes,
           placeholder: t(intl, "mangaTools.shops.regexPlaceholder"),
           orderable: true,
@@ -9517,7 +9596,7 @@
         }
       )
     ), field2(
-      "manga-tools-shop-icon",
+      "",
       t(intl, "mangaTools.shops.icon"),
       /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-icon-row" }, /* @__PURE__ */ React12.createElement(ShopIcon, { shop: props.shop }), (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(Bootstrap.Button, { variant: "secondary", onClick: props.onOpenIcon }, t(intl, "mangaTools.shops.pickIcon")) : null, src && (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(
         Bootstrap.Button,
