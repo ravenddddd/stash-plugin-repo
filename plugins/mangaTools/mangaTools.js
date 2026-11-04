@@ -1646,7 +1646,7 @@
     "mangaTools.clearFields.total": "This would affect {n} gallery(ies)",
     "mangaTools.clearFields.job": "Remove the plugin's fields",
     "mangaTools.settings.shops.heading": "Recognised shops",
-    "mangaTools.settings.shops.count": "{n} shop(s)",
+    "mangaTools.settings.shops.titleWithCount": "Recognised shops ({n})",
     "mangaTools.shops.edit": "Edit\u2026",
     "mangaTools.shops.title": "Edit shops",
     "mangaTools.shops.add": "Add shop",
@@ -1843,7 +1843,7 @@
     "mangaTools.clearFields.total": "\u5C06\u4F1A\u5F71\u54CD {n} \u4E2A\u753B\u5ECA",
     "mangaTools.clearFields.job": "\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u5B57\u6BB5",
     "mangaTools.settings.shops.heading": "\u5DF2\u8BC6\u522B\u7684\u5546\u5E97",
-    "mangaTools.settings.shops.count": "{n} \u4E2A",
+    "mangaTools.settings.shops.titleWithCount": "\u5DF2\u8BC6\u522B\u7684\u5546\u5E97\uFF08{n} \u4E2A\uFF09",
     "mangaTools.shops.edit": "\u7F16\u8F91\u2026",
     "mangaTools.shops.title": "\u7F16\u8F91\u5546\u5E97",
     "mangaTools.shops.add": "+ \u6DFB\u52A0\u5546\u5E97",
@@ -2040,7 +2040,7 @@
     "mangaTools.clearFields.total": "\u5C07\u6703\u5F71\u97FF {n} \u500B\u756B\u5ECA",
     "mangaTools.clearFields.job": "\u79FB\u9664\u672C\u5916\u639B\u7684\u6B04\u4F4D",
     "mangaTools.settings.shops.heading": "\u5DF2\u8FA8\u8B58\u7684\u5546\u5E97",
-    "mangaTools.settings.shops.count": "{n} \u500B",
+    "mangaTools.settings.shops.titleWithCount": "\u5DF2\u8FA8\u8B58\u7684\u5546\u5E97\uFF08{n} \u500B\uFF09",
     "mangaTools.shops.edit": "\u7DE8\u8F2F\u2026",
     "mangaTools.shops.title": "\u7DE8\u8F2F\u5546\u5E97",
     "mangaTools.shops.add": "+ \u65B0\u589E\u5546\u5E97",
@@ -5920,7 +5920,7 @@
       regexes: ["[?&/]cid=([A-Za-z0-9_]+)", "/product/\\d+/([A-Za-z0-9]+)"]
     },
     {
-      name: "\u864E\u7A74",
+      name: "Toranoana",
       icon: "builtin:toranoana",
       domains: ["toranoana.jp"],
       // /tora_r/ec/item/040030474993/
@@ -9061,18 +9061,16 @@
     const Bootstrap = PluginApi14.libraries.Bootstrap;
     const Overlay = Bootstrap ? Bootstrap.OverlayTrigger : null;
     const Tooltip = Bootstrap ? Bootstrap.Tooltip : null;
-    if (Overlay && Tooltip && props.text) {
-      tipSeq += 1;
-      return /* @__PURE__ */ React12.createElement(
-        Overlay,
-        {
-          placement: "top",
-          overlay: /* @__PURE__ */ React12.createElement(Tooltip, { id: "manga-tools-tip-" + tipSeq }, props.text)
-        },
-        props.children
-      );
-    }
-    return /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-shop-tip", title: props.text || void 0 }, props.children);
+    if (!Overlay || !Tooltip || !props.text) return /* @__PURE__ */ React12.createElement(React12.Fragment, null, props.children);
+    tipSeq += 1;
+    return /* @__PURE__ */ React12.createElement(
+      Overlay,
+      {
+        placement: "top",
+        overlay: /* @__PURE__ */ React12.createElement(Tooltip, { id: "manga-tools-tip-" + tipSeq }, props.text)
+      },
+      props.children
+    );
   }
   function ListInput(props) {
     const Bootstrap = PluginApi14.libraries.Bootstrap;
@@ -9083,6 +9081,7 @@
     const dragIndex = dragged[0];
     const setDragIndex = dragged[1];
     const values = props.values.concat("");
+    const orderable = props.orderable && props.values.length > 1;
     const setAt = (index, value) => {
       const next = props.values.slice();
       if (index === props.values.length) {
@@ -9135,7 +9134,7 @@
             }
           }
         ) : null),
-        /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-list-actions" }, Button && props.orderable && !last ? /* @__PURE__ */ React12.createElement(
+        /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-list-actions" }, Button && orderable && !last ? /* @__PURE__ */ React12.createElement(
           Button,
           {
             variant: "secondary",
@@ -9177,9 +9176,6 @@
     const openState = React12.useState(-1);
     const open = openState[0];
     const setOpen = openState[1];
-    const menuState = React12.useState(false);
-    const menuOpen = menuState[0];
-    const setMenuOpen = menuState[1];
     const touchState = React12.useState({});
     const touch = touchState[0];
     const setTouch = touchState[1];
@@ -9189,6 +9185,7 @@
     const dragState = React12.useState(-1);
     const dragShop = dragState[0];
     const setDragShop = dragState[1];
+    const afterDrag = React12.useRef(false);
     const issues = shops.map(
       (_shop, index) => issuesOf(shops, index, intl.locale)
     );
@@ -9203,7 +9200,6 @@
       const next = shops.concat([draftOf([preset])[0]]);
       setShops(next);
       setOpen(next.length - 1);
-      setMenuOpen(false);
     };
     const removeShop = (index) => {
       const next = shops.slice();
@@ -9237,7 +9233,13 @@
           "div",
           {
             className: "manga-tools-shop-row" + (open === index ? " is-open" : ""),
-            onClick: () => setOpen(open === index ? -1 : index)
+            onMouseDown: () => {
+              afterDrag.current = false;
+            },
+            onClick: () => {
+              if (afterDrag.current) return;
+              setOpen(open === index ? -1 : index);
+            }
           },
           /* @__PURE__ */ React12.createElement(
             "span",
@@ -9245,7 +9247,10 @@
               className: "manga-tools-shop-grip",
               draggable: true,
               title: t(intl, "mangaTools.shops.reorder"),
-              onDragStart: () => setDragShop(index),
+              onDragStart: () => {
+                afterDrag.current = true;
+                setDragShop(index);
+              },
               onDragEnd: () => setDragShop(-1)
             },
             /* @__PURE__ */ React12.createElement(
@@ -9260,7 +9265,8 @@
             {
               className: "manga-tools-shop-icon",
               src: shopIconUrl(shop),
-              alt: ""
+              alt: "",
+              draggable: false
             }
           ) : null,
           /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-shop-name" }, shop.name.trim() || t(intl, "mangaTools.shops.unnamed")),
@@ -9290,32 +9296,7 @@
           }
         ) : null
       );
-    }), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-adder" }, (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(
-      Bootstrap.Button,
-      {
-        variant: "secondary",
-        onClick: () => setMenuOpen(!menuOpen)
-      },
-      t(intl, "mangaTools.shops.add")
-    ) : null, menuOpen ? /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-menu" }, /* @__PURE__ */ React12.createElement(
-      "div",
-      {
-        className: "manga-tools-shop-menu-entry",
-        onClick: () => addShop({ name: "", icon: "", domains: [], regexes: [] })
-      },
-      t(intl, "mangaTools.shops.new")
-    ), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-menu-title" }, t(intl, "mangaTools.shops.builtin")), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-menu-builtins" }, BUILTIN_SHOPS.map((preset) => {
-      const allowed = canAdd(preset);
-      return /* @__PURE__ */ React12.createElement(
-        "span",
-        {
-          key: preset.name,
-          className: "manga-tools-shop-preset" + (allowed ? "" : " is-added"),
-          onClick: allowed ? () => addShop(preset) : void 0
-        },
-        preset.name
-      );
-    }))) : null)), /* @__PURE__ */ React12.createElement("div", { className: "modal-footer" }, /* @__PURE__ */ React12.createElement("div", null), /* @__PURE__ */ React12.createElement("div", null, /* @__PURE__ */ React12.createElement(
+    })), /* @__PURE__ */ React12.createElement("div", { className: "modal-footer" }, /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-add" }, /* @__PURE__ */ React12.createElement(AddShopMenu, { onAdd: addShop, canAdd })), /* @__PURE__ */ React12.createElement("div", null, /* @__PURE__ */ React12.createElement(
       Bootstrap.Button,
       {
         className: "ml-2",
@@ -9379,48 +9360,134 @@
     };
     input.click();
   }
+  function AddShopMenu(props) {
+    var _a3;
+    const intl = PluginApi14.libraries.Intl.useIntl();
+    const Bootstrap = PluginApi14.libraries.Bootstrap;
+    const Overlay = Bootstrap ? Bootstrap.OverlayTrigger : null;
+    const Popover = Bootstrap ? Bootstrap.Popover : null;
+    const Content = Popover ? Popover.Content : null;
+    if (!(Bootstrap == null ? void 0 : Bootstrap.Button) || !Overlay || !Popover || !Content) return null;
+    const icon = (glyph) => glyph ? /* @__PURE__ */ React12.createElement(PluginApi14.components.Icon, { icon: glyph }) : null;
+    const content = /* @__PURE__ */ React12.createElement(Popover, { id: "manga-tools-shop-add" }, /* @__PURE__ */ React12.createElement(Content, null, /* @__PURE__ */ React12.createElement(
+      "button",
+      {
+        type: "button",
+        className: "manga-tools-shop-menu-row",
+        onClick: () => props.onAdd({ name: "", icon: "", domains: [], regexes: [] })
+      },
+      icon((_a3 = PluginApi14.libraries.FontAwesomeSolid) == null ? void 0 : _a3.faPlus),
+      /* @__PURE__ */ React12.createElement("span", null, t(intl, "mangaTools.shops.new"))
+    ), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-menu-divider" }), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-menu-title" }, t(intl, "mangaTools.shops.builtin")), BUILTIN_SHOPS.map((preset) => {
+      const allowed = props.canAdd(preset);
+      const src = shopIconUrl(preset);
+      return /* @__PURE__ */ React12.createElement(
+        "button",
+        {
+          type: "button",
+          key: preset.name,
+          className: "manga-tools-shop-menu-row",
+          disabled: !allowed,
+          onClick: allowed ? () => props.onAdd(preset) : void 0
+        },
+        src ? /* @__PURE__ */ React12.createElement(
+          "img",
+          {
+            className: "manga-tools-shop-icon",
+            src,
+            alt: "",
+            draggable: false
+          }
+        ) : null,
+        /* @__PURE__ */ React12.createElement("span", null, preset.name)
+      );
+    })));
+    return /* @__PURE__ */ React12.createElement(Overlay, { trigger: "click", rootClose: true, placement: "top", overlay: content }, /* @__PURE__ */ React12.createElement(Bootstrap.Button, { variant: "secondary" }, t(intl, "mangaTools.shops.add")));
+  }
   function ShopForm(props) {
+    var _a3;
     const intl = PluginApi14.libraries.Intl.useIntl();
     const Bootstrap = PluginApi14.libraries.Bootstrap;
     const Form = Bootstrap ? Bootstrap.Form : null;
     const Control = Form ? Form.Control : null;
+    const Group = Form ? Form.Group : null;
+    const Label = Form ? Form.Label : null;
+    const Col = Bootstrap ? Bootstrap.Col : null;
     const src = shopIconUrl(props.shop);
-    return /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-form" }, /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-field" }, /* @__PURE__ */ React12.createElement("label", null, t(intl, "mangaTools.shops.name")), /* @__PURE__ */ React12.createElement("div", null, Control ? /* @__PURE__ */ React12.createElement(
-      Control,
-      {
-        className: "text-input" + (props.issues.name ? " is-invalid" : ""),
-        value: props.shop.name,
-        onChange: (e) => props.onChange((shop) => ({
-          ...shop,
-          name: e.currentTarget.value
-        }))
-      }
-    ) : null, props.issues.name ? /* @__PURE__ */ React12.createElement("div", { className: "invalid-feedback d-block" }, props.issues.name) : null)), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-field" }, /* @__PURE__ */ React12.createElement("label", null, t(intl, "mangaTools.shops.domains")), /* @__PURE__ */ React12.createElement("div", null, /* @__PURE__ */ React12.createElement(
-      ListInput,
-      {
-        values: props.shop.domains,
-        placeholder: t(intl, "mangaTools.shops.domainPlaceholder"),
-        orderable: false,
-        errors: props.issues.domainAt,
-        onChange: (domains) => props.onChange((shop) => ({ ...shop, domains }))
-      }
-    ), props.issues.domains ? /* @__PURE__ */ React12.createElement("div", { className: "invalid-feedback d-block" }, props.issues.domains) : null)), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-field" }, /* @__PURE__ */ React12.createElement("label", null, t(intl, "mangaTools.shops.regexes"), " ", /* @__PURE__ */ React12.createElement(WithTip, { text: t(intl, "mangaTools.shops.regexHelp") }, /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-shop-help" }, "?"))), /* @__PURE__ */ React12.createElement("div", null, /* @__PURE__ */ React12.createElement(
-      ListInput,
-      {
-        values: props.shop.regexes,
-        placeholder: t(intl, "mangaTools.shops.regexPlaceholder"),
-        orderable: true,
-        errors: props.issues.regexAt,
-        onChange: (regexes) => props.onChange((shop) => ({ ...shop, regexes }))
-      }
-    ))), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-field" }, /* @__PURE__ */ React12.createElement("label", null, t(intl, "mangaTools.shops.icon")), /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-icon-row" }, src ? /* @__PURE__ */ React12.createElement("img", { className: "manga-tools-shop-icon", src, alt: "" }) : null, (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(Bootstrap.Button, { variant: "secondary", onClick: props.onOpenIcon }, t(intl, "mangaTools.shops.pickIcon")) : null, src && (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(
-      Bootstrap.Button,
-      {
-        variant: "secondary",
-        onClick: () => props.onChange((shop) => ({ ...shop, icon: "" }))
-      },
-      t(intl, "mangaTools.shops.clearIcon")
-    ) : null)));
+    const field2 = (id, label2, control2) => Group && Label && Col ? /* @__PURE__ */ React12.createElement(Group, { as: Bootstrap ? Bootstrap.Row : void 0, controlId: id }, /* @__PURE__ */ React12.createElement(Label, { column: true, sm: 3 }, label2), /* @__PURE__ */ React12.createElement(Col, { sm: 9 }, control2)) : control2;
+    return /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-form" }, field2(
+      "manga-tools-shop-name",
+      t(intl, "mangaTools.shops.name"),
+      /* @__PURE__ */ React12.createElement(React12.Fragment, null, Control ? /* @__PURE__ */ React12.createElement(
+        Control,
+        {
+          className: "text-input" + (props.issues.name ? " is-invalid" : ""),
+          value: props.shop.name,
+          onChange: (e) => props.onChange((shop) => ({
+            ...shop,
+            name: e.currentTarget.value
+          }))
+        }
+      ) : null, props.issues.name ? /* @__PURE__ */ React12.createElement("div", { className: "invalid-feedback d-block" }, props.issues.name) : null)
+    ), field2(
+      "manga-tools-shop-domains",
+      t(intl, "mangaTools.shops.domains"),
+      /* @__PURE__ */ React12.createElement(React12.Fragment, null, /* @__PURE__ */ React12.createElement(
+        ListInput,
+        {
+          values: props.shop.domains,
+          placeholder: t(intl, "mangaTools.shops.domainPlaceholder"),
+          orderable: true,
+          errors: props.issues.domainAt,
+          onChange: (domains) => props.onChange((shop) => ({ ...shop, domains }))
+        }
+      ), props.issues.domains ? /* @__PURE__ */ React12.createElement("div", { className: "invalid-feedback d-block" }, props.issues.domains) : null)
+    ), field2(
+      "manga-tools-shop-regexes",
+      /* @__PURE__ */ React12.createElement(React12.Fragment, null, t(intl, "mangaTools.shops.regexes"), /* @__PURE__ */ React12.createElement(WithTip, { text: t(intl, "mangaTools.shops.regexHelp") }, /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-help" }, /* @__PURE__ */ React12.createElement(
+        "button",
+        {
+          type: "button",
+          className: "manga-tools-help-button",
+          "aria-label": t(intl, "mangaTools.shops.regexHelp")
+        },
+        ((_a3 = PluginApi14.libraries.FontAwesomeSolid) == null ? void 0 : _a3.faQuestionCircle) ? /* @__PURE__ */ React12.createElement(
+          PluginApi14.components.Icon,
+          {
+            icon: PluginApi14.libraries.FontAwesomeSolid.faQuestionCircle
+          }
+        ) : "?"
+      )))),
+      /* @__PURE__ */ React12.createElement(
+        ListInput,
+        {
+          values: props.shop.regexes,
+          placeholder: t(intl, "mangaTools.shops.regexPlaceholder"),
+          orderable: true,
+          errors: props.issues.regexAt,
+          onChange: (regexes) => props.onChange((shop) => ({ ...shop, regexes }))
+        }
+      )
+    ), field2(
+      "manga-tools-shop-icon",
+      t(intl, "mangaTools.shops.icon"),
+      /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-shop-icon-row" }, src ? /* @__PURE__ */ React12.createElement(
+        "img",
+        {
+          className: "manga-tools-shop-icon",
+          src,
+          alt: "",
+          draggable: false
+        }
+      ) : null, (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(Bootstrap.Button, { variant: "secondary", onClick: props.onOpenIcon }, t(intl, "mangaTools.shops.pickIcon")) : null, src && (Bootstrap == null ? void 0 : Bootstrap.Button) ? /* @__PURE__ */ React12.createElement(
+        Bootstrap.Button,
+        {
+          variant: "secondary",
+          onClick: () => props.onChange((shop) => ({ ...shop, icon: "" }))
+        },
+        t(intl, "mangaTools.shops.clearIcon")
+      ) : null)
+    ));
   }
   function ShopsSetting(props) {
     const intl = PluginApi14.libraries.Intl.useIntl();
@@ -9428,9 +9495,9 @@
     const openState = React12.useState(false);
     const open = openState[0];
     const setOpen = openState[1];
-    return /* @__PURE__ */ React12.createElement(React12.Fragment, null, /* @__PURE__ */ React12.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React12.createElement("div", null, /* @__PURE__ */ React12.createElement("h3", null, t(intl, "mangaTools.settings.shops.heading")), /* @__PURE__ */ React12.createElement("div", { className: "sub-heading" }, numbered(
+    return /* @__PURE__ */ React12.createElement(React12.Fragment, null, /* @__PURE__ */ React12.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React12.createElement("div", null, /* @__PURE__ */ React12.createElement("h3", null, numbered(
       intl.locale,
-      "mangaTools.settings.shops.count",
+      "mangaTools.settings.shops.titleWithCount",
       NS.shops.length
     ))), /* @__PURE__ */ React12.createElement("div", null, Bootstrap ? /* @__PURE__ */ React12.createElement(Bootstrap.Button, { variant: "secondary", onClick: () => setOpen(true) }, t(intl, "mangaTools.shops.edit")) : null)), open ? /* @__PURE__ */ React12.createElement(
       ShopDialog,
