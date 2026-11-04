@@ -1420,9 +1420,9 @@
   }
   function LightboxBridge() {
     const api = requirePluginApi();
-    const React20 = api.React;
+    const React21 = api.React;
     const show = api.hooks.useLightbox();
-    React20.useEffect(() => {
+    React21.useEffect(() => {
       const mine = {
         takeOver(request) {
           show({
@@ -1461,19 +1461,19 @@
   }
   function installBridge() {
     const api = requirePluginApi();
-    const React20 = api.React;
+    const React21 = api.React;
     for (const target2 of ["ImageList", "HeaderImage"]) {
-      installAgainst(api, React20, target2);
+      installAgainst(api, React21, target2);
     }
   }
-  function installAgainst(api, React20, target2) {
+  function installAgainst(api, React21, target2) {
     api.patch.after(target2, (...args) => {
       const result = args[args.length - 1];
-      return React20.createElement(
-        React20.Fragment,
+      return React21.createElement(
+        React21.Fragment,
         null,
         result,
-        React20.createElement(LightboxBridge)
+        React21.createElement(LightboxBridge)
       );
     });
   }
@@ -1622,10 +1622,27 @@
     "mangaTools.settings.sidebarFilters.heading": "Sidebar filters",
     "mangaTools.settings.sidebarFilters.description": "Which of this plugin's filters the gallery list's sidebar offers. A filter whose field is switched off cannot be shown, and is not remembered while it is hidden \u2014 turning the field back on brings its filter back.",
     "mangaTools.settings.sidebarFilters.placeholder": "No filters",
-    "mangaTools.physicalButton.on": "Physical pages: path order, no filter",
+    "mangaTools.physicalButton.on": "Physical pages",
     "mangaTools.physicalButton.repeats": "{n} pages repeat an image",
-    "mangaTools.physicalButton.off": "Switch to physical pages: path order, ascending, no filter. This clears the search term and the filters.",
-    "mangaTools.physicalButton.repeatsOne": "1 page repeats an image"
+    "mangaTools.physicalButton.off": "Switch to physical pages. This clears the search term and the filters.",
+    "mangaTools.physicalButton.repeatsOne": "1 page repeats an image",
+    "mangaTools.settings.maintenance.heading": "Maintenance",
+    "mangaTools.settings.clearFields.heading": "Remove this plugin's fields",
+    "mangaTools.settings.clearFields.description": "Deletes the custom fields this plugin wrote to galleries \u2014 for when it is going away. Stash's own data is not touched. It runs as a Stash task, so it carries on if this page is closed.",
+    "mangaTools.clearFields.button": "Remove fields\u2026",
+    "mangaTools.clearFields.title": "Remove this plugin's fields",
+    "mangaTools.clearFields.intro": "Choose which fields to remove. Only galleries carrying one of them are touched.",
+    "mangaTools.clearFields.manga": "Manga mark",
+    "mangaTools.clearFields.language": "Language",
+    "mangaTools.clearFields.censorship": "Censorship",
+    "mangaTools.clearFields.original": "Original text",
+    "mangaTools.clearFields.translationGroup": "Translation group",
+    "mangaTools.clearFields.chapters": "Chapters",
+    "mangaTools.clearFields.dryRun": "Dry run \u2014 do not remove anything",
+    "mangaTools.clearFields.cancel": "Cancel",
+    "mangaTools.clearFields.confirm": "Remove fields",
+    "mangaTools.clearFields.queued": "Added to Stash's task queue \u2014 progress and the log are on the Tasks page.",
+    "mangaTools.clearFields.failed": "The task could not be queued. See the browser console."
   };
 
   // src/messages/zh-Hans.json
@@ -1772,10 +1789,27 @@
     "mangaTools.settings.sidebarFilters.heading": "\u4FA7\u680F\u7B5B\u9009",
     "mangaTools.settings.sidebarFilters.description": "\u753B\u5ECA\u5217\u8868\u7684\u4FA7\u680F\u91CC\u663E\u793A\u54EA\u4E9B\u7B5B\u9009\u3002\u5B57\u6BB5\u5173\u6389\u7684\u7B5B\u9009\u663E\u793A\u4E0D\u51FA\u6765\uFF0C\u9690\u85CF\u671F\u95F4\u4E5F\u4E0D\u8BB0\u72B6\u6001\u2014\u2014\u91CD\u65B0\u6253\u5F00\u5B57\u6BB5\uFF0C\u5B83\u7684\u7B5B\u9009\u5C31\u56DE\u6765\u3002",
     "mangaTools.settings.sidebarFilters.placeholder": "\u4E0D\u663E\u793A\u4EFB\u4F55\u7B5B\u9009",
-    "mangaTools.physicalButton.on": "\u7269\u7406\u9875\u89C6\u56FE\uFF1A\u8DEF\u5F84\u6392\u5E8F\u3001\u65E0\u7B5B\u9009",
+    "mangaTools.physicalButton.on": "\u7269\u7406\u9875\u89C6\u56FE",
     "mangaTools.physicalButton.repeats": "\u91CD\u590D {n} \u9875",
-    "mangaTools.physicalButton.off": "\u5207\u6362\u5230\u7269\u7406\u9875\u89C6\u56FE\uFF1A\u8DEF\u5F84\u5347\u5E8F\u3001\u65E0\u7B5B\u9009\u3002\u8FD9\u4F1A\u6E05\u9664\u641C\u7D22\u8BCD\u548C\u7B5B\u9009\u6761\u4EF6\u3002",
-    "mangaTools.physicalButton.repeatsOne": "\u91CD\u590D 1 \u9875"
+    "mangaTools.physicalButton.off": "\u5207\u6362\u5230\u7269\u7406\u9875\u89C6\u56FE\u3002\u8FD9\u4F1A\u6E05\u9664\u641C\u7D22\u8BCD\u548C\u7B5B\u9009\u6761\u4EF6\u3002",
+    "mangaTools.physicalButton.repeatsOne": "\u91CD\u590D 1 \u9875",
+    "mangaTools.settings.maintenance.heading": "\u7EF4\u62A4",
+    "mangaTools.settings.clearFields.heading": "\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u5B57\u6BB5",
+    "mangaTools.settings.clearFields.description": "\u5220\u9664\u672C\u63D2\u4EF6\u5199\u5728\u753B\u5ECA\u4E0A\u7684\u81EA\u5B9A\u4E49\u5B57\u6BB5\u2014\u2014\u7528\u4E8E\u5378\u8F7D\u524D\u6536\u5C3E\u3002\u4E0D\u4F1A\u52A8 Stash \u81EA\u5DF1\u7684\u6570\u636E\u3002\u4EFB\u52A1\u5728 Stash \u7684\u4EFB\u52A1\u961F\u5217\u91CC\u8FD0\u884C\uFF0C\u5173\u6389\u8FD9\u4E2A\u9875\u9762\u4E5F\u4F1A\u7EE7\u7EED\u3002",
+    "mangaTools.clearFields.button": "\u79FB\u9664\u5B57\u6BB5\u2026",
+    "mangaTools.clearFields.title": "\u79FB\u9664\u672C\u63D2\u4EF6\u7684\u5B57\u6BB5",
+    "mangaTools.clearFields.intro": "\u9009\u62E9\u8981\u79FB\u9664\u7684\u5B57\u6BB5\u3002\u53EA\u6709\u5E26\u6709\u5176\u4E2D\u4EFB\u610F\u4E00\u4E2A\u5B57\u6BB5\u7684\u753B\u5ECA\u4F1A\u88AB\u5904\u7406\u3002",
+    "mangaTools.clearFields.manga": "\u6F2B\u753B\u6807\u8BB0",
+    "mangaTools.clearFields.language": "\u8BED\u8A00",
+    "mangaTools.clearFields.censorship": "\u5BA1\u67E5",
+    "mangaTools.clearFields.original": "\u539F\u6587",
+    "mangaTools.clearFields.translationGroup": "\u7FFB\u8BD1\u7EC4",
+    "mangaTools.clearFields.chapters": "\u7AE0\u8282",
+    "mangaTools.clearFields.dryRun": "\u4EC5\u6A21\u62DF\u8FD0\u884C\uFF0C\u4E0D\u8981\u5220\u9664\u4EFB\u4F55\u4E1C\u897F",
+    "mangaTools.clearFields.cancel": "\u53D6\u6D88",
+    "mangaTools.clearFields.confirm": "\u79FB\u9664\u5B57\u6BB5",
+    "mangaTools.clearFields.queued": "\u5DF2\u52A0\u5165 Stash \u4EFB\u52A1\u961F\u5217\u2014\u2014\u8FDB\u5EA6\u548C\u65E5\u5FD7\u89C1\u300C\u8BBE\u7F6E \u2192 \u4EFB\u52A1\u300D\u3002",
+    "mangaTools.clearFields.failed": "\u65E0\u6CD5\u628A\u4EFB\u52A1\u52A0\u5165\u961F\u5217\uFF0C\u8BE6\u89C1\u6D4F\u89C8\u5668\u63A7\u5236\u53F0\u3002"
   };
 
   // src/messages/zh-Hant.json
@@ -1922,10 +1956,27 @@
     "mangaTools.settings.sidebarFilters.heading": "\u5074\u6B04\u7BE9\u9078",
     "mangaTools.settings.sidebarFilters.description": "\u756B\u5ECA\u5217\u8868\u7684\u5074\u6B04\u88E1\u986F\u793A\u54EA\u4E9B\u7BE9\u9078\u3002\u6B04\u4F4D\u95DC\u6389\u7684\u7BE9\u9078\u986F\u793A\u4E0D\u51FA\u4F86\uFF0C\u96B1\u85CF\u671F\u9593\u4E5F\u4E0D\u8A18\u72C0\u614B\u2014\u2014\u91CD\u65B0\u6253\u958B\u6B04\u4F4D\uFF0C\u5B83\u7684\u7BE9\u9078\u5C31\u56DE\u4F86\u3002",
     "mangaTools.settings.sidebarFilters.placeholder": "\u4E0D\u986F\u793A\u4EFB\u4F55\u7BE9\u9078",
-    "mangaTools.physicalButton.on": "\u7269\u7406\u9801\u8996\u5716\uFF1A\u8DEF\u5F91\u6392\u5E8F\u3001\u7121\u7BE9\u9078",
+    "mangaTools.physicalButton.on": "\u7269\u7406\u9801\u8996\u5716",
     "mangaTools.physicalButton.repeats": "\u91CD\u8907 {n} \u9801",
-    "mangaTools.physicalButton.off": "\u5207\u63DB\u5230\u7269\u7406\u9801\u8996\u5716\uFF1A\u8DEF\u5F91\u5347\u5E8F\u3001\u7121\u7BE9\u9078\u3002\u9019\u6703\u6E05\u9664\u641C\u5C0B\u5B57\u4E32\u548C\u7BE9\u9078\u689D\u4EF6\u3002",
-    "mangaTools.physicalButton.repeatsOne": "\u91CD\u8907 1 \u9801"
+    "mangaTools.physicalButton.off": "\u5207\u63DB\u5230\u7269\u7406\u9801\u8996\u5716\u3002\u9019\u6703\u6E05\u9664\u641C\u5C0B\u5B57\u4E32\u548C\u7BE9\u9078\u689D\u4EF6\u3002",
+    "mangaTools.physicalButton.repeatsOne": "\u91CD\u8907 1 \u9801",
+    "mangaTools.settings.maintenance.heading": "\u7DAD\u8B77",
+    "mangaTools.settings.clearFields.heading": "\u79FB\u9664\u672C\u5916\u639B\u7684\u6B04\u4F4D",
+    "mangaTools.settings.clearFields.description": "\u522A\u9664\u672C\u5916\u639B\u5BEB\u5728\u756B\u5ECA\u4E0A\u7684\u81EA\u8A02\u6B04\u4F4D\u2014\u2014\u7528\u65BC\u89E3\u9664\u5B89\u88DD\u524D\u6536\u5C3E\u3002\u4E0D\u6703\u52D5 Stash \u81EA\u5DF1\u7684\u8CC7\u6599\u3002\u4EFB\u52D9\u5728 Stash \u7684\u4EFB\u52D9\u4F47\u5217\u88E1\u57F7\u884C\uFF0C\u95DC\u6389\u9019\u500B\u9801\u9762\u4E5F\u6703\u7E7C\u7E8C\u3002",
+    "mangaTools.clearFields.button": "\u79FB\u9664\u6B04\u4F4D\u2026",
+    "mangaTools.clearFields.title": "\u79FB\u9664\u672C\u5916\u639B\u7684\u6B04\u4F4D",
+    "mangaTools.clearFields.intro": "\u9078\u64C7\u8981\u79FB\u9664\u7684\u6B04\u4F4D\u3002\u53EA\u6709\u5E36\u6709\u5176\u4E2D\u4EFB\u4E00\u500B\u6B04\u4F4D\u7684\u756B\u5ECA\u6703\u88AB\u8655\u7406\u3002",
+    "mangaTools.clearFields.manga": "\u6F2B\u756B\u6A19\u8A18",
+    "mangaTools.clearFields.language": "\u8A9E\u8A00",
+    "mangaTools.clearFields.censorship": "\u5BE9\u67E5",
+    "mangaTools.clearFields.original": "\u539F\u6587",
+    "mangaTools.clearFields.translationGroup": "\u7FFB\u8B6F\u7D44",
+    "mangaTools.clearFields.chapters": "\u7AE0\u7BC0",
+    "mangaTools.clearFields.dryRun": "\u50C5\u6A21\u64EC\u57F7\u884C\uFF0C\u4E0D\u8981\u522A\u9664\u4EFB\u4F55\u6771\u897F",
+    "mangaTools.clearFields.cancel": "\u53D6\u6D88",
+    "mangaTools.clearFields.confirm": "\u79FB\u9664\u6B04\u4F4D",
+    "mangaTools.clearFields.queued": "\u5DF2\u52A0\u5165 Stash \u4EFB\u52D9\u4F47\u5217\u2014\u2014\u9032\u5EA6\u548C\u65E5\u8A8C\u898B\u300C\u8A2D\u5B9A \u2192 \u4EFB\u52D9\u300D\u3002",
+    "mangaTools.clearFields.failed": "\u7121\u6CD5\u628A\u4EFB\u52D9\u52A0\u5165\u4F47\u5217\uFF0C\u8A73\u898B\u700F\u89BD\u5668\u4E3B\u63A7\u53F0\u3002"
   };
 
   // src/i18n.ts
@@ -8451,17 +8502,181 @@
   NS.relabelGroupTags = relabelGroupTags;
   NS.relabelOriginalTags = relabelOriginalTags;
 
-  // src/tools/settings-page.tsx
+  // src/tools/clear-fields.tsx
   var PluginApi12 = requirePluginApi();
   var React10 = PluginApi12.React;
+  var PLUGIN_ID2 = "mangaTools";
+  var CLEAR_FIELDS_TASK = "Remove the plugin's fields";
+  var CLEARABLE_FIELDS = [
+    "plugin.mangaTools.manga",
+    "plugin.mangaTools.language",
+    "plugin.mangaTools.censorship",
+    "plugin.mangaTools.original",
+    "plugin.mangaTools.translationGroup",
+    "plugin.mangaTools.chapters"
+  ];
+  function clearTaskArgs(fields, dryRun) {
+    return {
+      fields: fields.length === CLEARABLE_FIELDS.length ? "all" : fields.join(","),
+      dryRun: dryRun ? "true" : "false"
+    };
+  }
+  var LABEL_OF = {
+    "plugin.mangaTools.manga": "mangaTools.clearFields.manga",
+    "plugin.mangaTools.language": "mangaTools.clearFields.language",
+    "plugin.mangaTools.censorship": "mangaTools.clearFields.censorship",
+    "plugin.mangaTools.original": "mangaTools.clearFields.original",
+    "plugin.mangaTools.translationGroup": "mangaTools.clearFields.translationGroup",
+    "plugin.mangaTools.chapters": "mangaTools.clearFields.chapters"
+  };
+  var RUN_TASK_MUTATION = [
+    "mutation MangaToolsRunTask($plugin_id: ID!, $task_name: String!, $args_map: Map) {",
+    "  runPluginTask(plugin_id: $plugin_id, task_name: $task_name, args_map: $args_map)",
+    "}"
+  ].join("\n");
+  var runTaskDocument = null;
+  function queueClear(args) {
+    const client = PluginApi12.utils.StashService.getClient();
+    if (!client) return Promise.resolve(false);
+    if (!runTaskDocument) {
+      runTaskDocument = gqlDoc(RUN_TASK_MUTATION, "build the run-task mutation");
+    }
+    if (!runTaskDocument) return Promise.resolve(false);
+    return client.mutate({
+      mutation: runTaskDocument,
+      variables: {
+        plugin_id: PLUGIN_ID2,
+        task_name: CLEAR_FIELDS_TASK,
+        args_map: args
+      }
+    }).then(() => true);
+  }
+  function SwitchRow(props) {
+    const Bootstrap = PluginApi12.libraries.Bootstrap;
+    if (!Bootstrap) return null;
+    return /* @__PURE__ */ React10.createElement("div", { className: "setting" }, /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement("h3", null, props.label)), /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement(
+      Bootstrap.Form.Switch,
+      {
+        id: props.id,
+        checked: props.checked,
+        onChange: () => props.onChange(!props.checked)
+      }
+    )));
+  }
+  function ClearFieldsSetting() {
+    const intl = PluginApi12.libraries.Intl.useIntl();
+    const Bootstrap = PluginApi12.libraries.Bootstrap;
+    const openState = React10.useState(false);
+    const open = openState[0];
+    const setOpen = openState[1];
+    const chosenState = React10.useState(CLEARABLE_FIELDS.slice());
+    const chosen = chosenState[0];
+    const setChosen = chosenState[1];
+    const dryState = React10.useState(true);
+    const dryRun = dryState[0];
+    const setDryRun = dryState[1];
+    const busyState = React10.useState(false);
+    const busy2 = busyState[0];
+    const setBusy = busyState[1];
+    const noticeState = React10.useState("");
+    const notice = noticeState[0];
+    const setNotice = noticeState[1];
+    const toggle = (key, on) => {
+      setChosen((current2) => {
+        const has = current2.indexOf(key) !== -1;
+        if (has === on) return current2;
+        return on ? CLEARABLE_FIELDS.filter(
+          (field2) => field2 === key || current2.indexOf(field2) !== -1
+        ) : current2.filter((field2) => field2 !== key);
+      });
+    };
+    const confirm = () => {
+      setBusy(true);
+      setNotice("");
+      queueClear(clearTaskArgs(chosen, dryRun)).then(
+        (queued) => {
+          setBusy(false);
+          if (!queued) {
+            setNotice(t(intl, "mangaTools.clearFields.failed"));
+            return;
+          }
+          setOpen(false);
+          setNotice(t(intl, "mangaTools.clearFields.queued"));
+        },
+        (e) => {
+          setBusy(false);
+          setNotice(t(intl, "mangaTools.clearFields.failed"));
+          console.error("[mangaTools] could not queue the clear task:", e);
+        }
+      );
+    };
+    const row2 = /* @__PURE__ */ React10.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement("h3", null, t(intl, "mangaTools.settings.clearFields.heading")), /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.clearFields.description")), notice ? /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, notice) : null), /* @__PURE__ */ React10.createElement("div", null, Bootstrap ? /* @__PURE__ */ React10.createElement(Bootstrap.Button, { variant: "danger", onClick: () => setOpen(true) }, t(intl, "mangaTools.clearFields.button")) : null));
+    const Modal = Bootstrap ? Bootstrap.Modal : null;
+    if (!Bootstrap || !open || !(Modal == null ? void 0 : Modal.Body)) return row2;
+    return /* @__PURE__ */ React10.createElement(React10.Fragment, null, row2, /* @__PURE__ */ React10.createElement(
+      Modal,
+      {
+        show: true,
+        size: "lg",
+        onHide: () => {
+          if (!busy2) setOpen(false);
+        }
+      },
+      /* @__PURE__ */ React10.createElement("div", { className: "modal-header" }, /* @__PURE__ */ React10.createElement("span", null, t(intl, "mangaTools.clearFields.title"))),
+      /* @__PURE__ */ React10.createElement("div", { className: "modal-body" }, /* @__PURE__ */ React10.createElement("p", null, t(intl, "mangaTools.clearFields.intro")), /* @__PURE__ */ React10.createElement("div", { className: "setting-section" }, /* @__PURE__ */ React10.createElement("div", { className: "card" }, CLEARABLE_FIELDS.map((field2) => /* @__PURE__ */ React10.createElement(
+        SwitchRow,
+        {
+          key: field2,
+          id: "mangaTools-clear-" + field2.split(".").pop(),
+          label: t(intl, LABEL_OF[field2]),
+          checked: chosen.indexOf(field2) !== -1,
+          onChange: (next) => toggle(field2, next)
+        }
+      )), /* @__PURE__ */ React10.createElement(
+        SwitchRow,
+        {
+          id: "mangaTools-clear-dryRun",
+          label: t(intl, "mangaTools.clearFields.dryRun"),
+          checked: dryRun,
+          onChange: setDryRun
+        }
+      )))),
+      /* @__PURE__ */ React10.createElement("div", { className: "modal-footer" }, /* @__PURE__ */ React10.createElement("div", null), /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement(
+        Bootstrap.Button,
+        {
+          className: "ml-2",
+          variant: "secondary",
+          disabled: busy2,
+          onClick: () => setOpen(false)
+        },
+        t(intl, "mangaTools.clearFields.cancel")
+      ), /* @__PURE__ */ React10.createElement(
+        Bootstrap.Button,
+        {
+          className: "ml-2",
+          variant: "danger",
+          disabled: busy2 || chosen.length === 0,
+          onClick: confirm
+        },
+        t(intl, "mangaTools.clearFields.confirm")
+      )))
+    ));
+  }
+  NS.clearTaskArgs = clearTaskArgs;
+  NS.CLEAR_FIELDS_TASK = CLEAR_FIELDS_TASK;
+  NS.CLEARABLE_FIELDS = CLEARABLE_FIELDS;
+
+  // src/tools/settings-page.tsx
+  var PluginApi13 = requirePluginApi();
+  var React11 = PluginApi13.React;
   function SettingsNote(props) {
-    const Solid = PluginApi12.libraries.FontAwesomeSolid || {};
-    const Icon = PluginApi12.components.Icon;
+    const Solid = PluginApi13.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi13.components.Icon;
     const icon = Solid.faInfoCircle || null;
-    return /* @__PURE__ */ React10.createElement("span", { className: "manga-tools-settings-note" }, icon ? /* @__PURE__ */ React10.createElement(Icon, { icon }) : null, /* @__PURE__ */ React10.createElement("span", null, props.children));
+    return /* @__PURE__ */ React11.createElement("span", { className: "manga-tools-settings-note" }, icon ? /* @__PURE__ */ React11.createElement(Icon, { icon }) : null, /* @__PURE__ */ React11.createElement("span", null, props.children));
   }
   function SidebarFiltersSetting(props) {
-    const intl = PluginApi12.libraries.Intl.useIntl();
+    const intl = PluginApi13.libraries.Intl.useIntl();
     const Select = resolveSelect();
     const persist = props.persist;
     if (!Select) return null;
@@ -8484,7 +8699,7 @@
     const value = options.filter(
       (o) => NS.sidebarFilters === null || NS.sidebarFilters.has(o.value)
     );
-    return /* @__PURE__ */ React10.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React10.createElement("h3", null, t(intl, "mangaTools.settings.sidebarFilters.heading")), /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.sidebarFilters.description")), /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-settings-control" }, /* @__PURE__ */ React10.createElement(
+    return /* @__PURE__ */ React11.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React11.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React11.createElement("h3", null, t(intl, "mangaTools.settings.sidebarFilters.heading")), /* @__PURE__ */ React11.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.sidebarFilters.description")), /* @__PURE__ */ React11.createElement("div", { className: "manga-tools-settings-control" }, /* @__PURE__ */ React11.createElement(
       Select,
       {
         className: "manga-tools-settings-select",
@@ -8528,82 +8743,82 @@
     return "";
   }
   function HelpExampleCard(props) {
-    const intl = PluginApi12.libraries.Intl.useIntl();
-    const Solid = PluginApi12.libraries.FontAwesomeSolid || {};
-    const Icon = PluginApi12.components.Icon;
+    const intl = PluginApi13.libraries.Intl.useIntl();
+    const Solid = PluginApi13.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi13.components.Icon;
     const locale = intl.locale;
     const code = sampleLanguageCode(locale);
     const sample = (code ? NS.describe(code, locale) : null) || NS.describe("en", locale) || void 0;
     const lit = (which) => props.highlight === which ? " manga-tools-help-lit" : "";
-    const count = (cls, icon, n) => /* @__PURE__ */ React10.createElement("span", { className: cls }, /* @__PURE__ */ React10.createElement("button", { type: "button", tabIndex: -1, className: "minimal btn btn-primary" }, icon ? /* @__PURE__ */ React10.createElement(Icon, { icon }) : null, /* @__PURE__ */ React10.createElement("span", null, n)));
-    return /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-help-card", "aria-hidden": "true" }, /* @__PURE__ */ React10.createElement(
+    const count = (cls, icon, n) => /* @__PURE__ */ React11.createElement("span", { className: cls }, /* @__PURE__ */ React11.createElement("button", { type: "button", tabIndex: -1, className: "minimal btn btn-primary" }, icon ? /* @__PURE__ */ React11.createElement(Icon, { icon }) : null, /* @__PURE__ */ React11.createElement("span", null, n)));
+    return /* @__PURE__ */ React11.createElement("div", { className: "manga-tools-help-card", "aria-hidden": "true" }, /* @__PURE__ */ React11.createElement(
       "div",
       {
         className: "gallery-card card grid-card zoom-1",
         style: { width: 240 }
       },
-      /* @__PURE__ */ React10.createElement("div", { className: "thumbnail-section" }, /* @__PURE__ */ React10.createElement("span", { className: "gallery-card-header" }, /* @__PURE__ */ React10.createElement("div", { className: "gallery-card-cover" }, /* @__PURE__ */ React10.createElement("div", { className: "gallery-card-image manga-tools-help-cover" }, t(intl, "mangaTools.settings.help.cover")))), sample ? languageChip(sample, lit("badge").trim()) : null),
-      /* @__PURE__ */ React10.createElement("div", { className: "card-section" }, /* @__PURE__ */ React10.createElement("h5", { className: "card-section-title flex-aligned" }, /* @__PURE__ */ React10.createElement("div", { className: "TruncatedText", style: { WebkitLineClamp: 2 } }, t(intl, "mangaTools.settings.help.card.title"))), /* @__PURE__ */ React10.createElement("div", { className: "gallery-card__details" }, /* @__PURE__ */ React10.createElement("span", { className: "gallery-card__date" }, t(intl, "mangaTools.settings.help.card.date")))),
-      /* @__PURE__ */ React10.createElement("hr", null),
-      /* @__PURE__ */ React10.createElement("div", { role: "group", className: "card-popovers btn-group" }, count("image-count", Solid.faImage || null, 32), count("tag-count", Solid.faTag || null, 11), /* @__PURE__ */ React10.createElement("span", { className: "manga-tools-popover-slot" + lit("mark") }, /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React11.createElement("div", { className: "thumbnail-section" }, /* @__PURE__ */ React11.createElement("span", { className: "gallery-card-header" }, /* @__PURE__ */ React11.createElement("div", { className: "gallery-card-cover" }, /* @__PURE__ */ React11.createElement("div", { className: "gallery-card-image manga-tools-help-cover" }, t(intl, "mangaTools.settings.help.cover")))), sample ? languageChip(sample, lit("badge").trim()) : null),
+      /* @__PURE__ */ React11.createElement("div", { className: "card-section" }, /* @__PURE__ */ React11.createElement("h5", { className: "card-section-title flex-aligned" }, /* @__PURE__ */ React11.createElement("div", { className: "TruncatedText", style: { WebkitLineClamp: 2 } }, t(intl, "mangaTools.settings.help.card.title"))), /* @__PURE__ */ React11.createElement("div", { className: "gallery-card__details" }, /* @__PURE__ */ React11.createElement("span", { className: "gallery-card__date" }, t(intl, "mangaTools.settings.help.card.date")))),
+      /* @__PURE__ */ React11.createElement("hr", null),
+      /* @__PURE__ */ React11.createElement("div", { role: "group", className: "card-popovers btn-group" }, count("image-count", Solid.faImage || null, 32), count("tag-count", Solid.faTag || null, 11), /* @__PURE__ */ React11.createElement("span", { className: "manga-tools-popover-slot" + lit("mark") }, /* @__PURE__ */ React11.createElement(
         "button",
         {
           type: "button",
           tabIndex: -1,
           className: "minimal btn btn-primary manga-tools-mark"
         },
-        /* @__PURE__ */ React10.createElement(MangaIcon, null)
+        /* @__PURE__ */ React11.createElement(MangaIcon, null)
       )))
     ));
   }
   function HelpIcon(props) {
-    const Solid = PluginApi12.libraries.FontAwesomeSolid || {};
-    const Icon = PluginApi12.components.Icon;
+    const Solid = PluginApi13.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi13.components.Icon;
     const icon = Solid.faQuestionCircle || null;
-    return /* @__PURE__ */ React10.createElement("span", { className: "manga-tools-help" }, /* @__PURE__ */ React10.createElement(
+    return /* @__PURE__ */ React11.createElement("span", { className: "manga-tools-help" }, /* @__PURE__ */ React11.createElement(
       "button",
       {
         type: "button",
         className: "manga-tools-help-button",
         "aria-label": props.text
       },
-      icon ? /* @__PURE__ */ React10.createElement(Icon, { icon }) : "?"
-    ), /* @__PURE__ */ React10.createElement("span", { className: "manga-tools-help-panel" }, /* @__PURE__ */ React10.createElement(HelpExampleCard, { highlight: props.example })));
+      icon ? /* @__PURE__ */ React11.createElement(Icon, { icon }) : "?"
+    ), /* @__PURE__ */ React11.createElement("span", { className: "manga-tools-help-panel" }, /* @__PURE__ */ React11.createElement(HelpExampleCard, { highlight: props.example })));
   }
   function BooleanSetting(props) {
-    const Bootstrap = PluginApi12.libraries.Bootstrap;
+    const Bootstrap = PluginApi13.libraries.Bootstrap;
     if (!Bootstrap) {
       console.error(
         "[mangaTools] react-bootstrap not available, cannot render the settings switches"
       );
       return null;
     }
-    const heading = props.help ? /* @__PURE__ */ React10.createElement(React10.Fragment, null, props.heading, /* @__PURE__ */ React10.createElement(HelpIcon, { text: props.help.text, example: props.help.example })) : props.heading;
+    const heading = props.help ? /* @__PURE__ */ React11.createElement(React11.Fragment, null, props.heading, /* @__PURE__ */ React11.createElement(HelpIcon, { text: props.help.text, example: props.help.example })) : props.heading;
     return (
       // `manga-tools-setting` is what the stylesheet needs to undo Stash's
       // `flex-wrap: wrap` on a plugin's rows, which puts a switch with a long
       // sub-heading on a line of its own — see the rule in mangaTools.css.
-      /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React11.createElement(
         "div",
         {
           className: "setting manga-tools-setting" + (props.head ? " manga-tools-setting-head" : "")
         },
-        /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement(
           "div",
           {
             className: props.fold ? "manga-tools-foldable" : void 0,
             onClick: props.fold ? props.fold.onToggle : void 0
           },
-          props.fold ? /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-heading-line" }, /* @__PURE__ */ React10.createElement(
+          props.fold ? /* @__PURE__ */ React11.createElement("div", { className: "manga-tools-heading-line" }, /* @__PURE__ */ React11.createElement(
             FoldIcon,
             {
               folded: props.fold.folded,
               onToggle: props.fold.onToggle
             }
-          ), /* @__PURE__ */ React10.createElement("h3", null, heading)) : /* @__PURE__ */ React10.createElement("h3", null, heading),
-          props.subHeading ? /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, props.subHeading) : null
+          ), /* @__PURE__ */ React11.createElement("h3", null, heading)) : /* @__PURE__ */ React11.createElement("h3", null, heading),
+          props.subHeading ? /* @__PURE__ */ React11.createElement("div", { className: "sub-heading" }, props.subHeading) : null
         ),
-        /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement("div", null, /* @__PURE__ */ React11.createElement(
           Bootstrap.Form.Switch,
           {
             id: props.id,
@@ -8618,14 +8833,14 @@
   }
   function SelectSetting(props) {
     var _a3;
-    const Bootstrap = PluginApi12.libraries.Bootstrap;
+    const Bootstrap = PluginApi13.libraries.Bootstrap;
     if (!((_a3 = Bootstrap == null ? void 0 : Bootstrap.Form) == null ? void 0 : _a3.Control)) {
       console.error(
         "[mangaTools] react-bootstrap has no Form.Control, so the group order setting is not drawn"
       );
       return null;
     }
-    return /* @__PURE__ */ React10.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement("h3", null, props.heading), props.subHeading ? /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, props.subHeading) : null), /* @__PURE__ */ React10.createElement("div", null, /* @__PURE__ */ React10.createElement(
+    return /* @__PURE__ */ React11.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React11.createElement("div", null, /* @__PURE__ */ React11.createElement("h3", null, props.heading), props.subHeading ? /* @__PURE__ */ React11.createElement("div", { className: "sub-heading" }, props.subHeading) : null), /* @__PURE__ */ React11.createElement("div", null, /* @__PURE__ */ React11.createElement(
       Bootstrap.Form.Control,
       {
         id: props.id,
@@ -8636,7 +8851,7 @@
           props.onChange(e.currentTarget.value);
         }
       },
-      props.options.map((option) => /* @__PURE__ */ React10.createElement("option", { key: option.value, value: option.value }, option.label))
+      props.options.map((option) => /* @__PURE__ */ React11.createElement("option", { key: option.value, value: option.value }, option.label))
     )));
   }
   var foldedGroups = /* @__PURE__ */ new Set();
@@ -8646,7 +8861,7 @@
     emit();
   }
   function FoldIcon(props) {
-    return /* @__PURE__ */ React10.createElement(
+    return /* @__PURE__ */ React11.createElement(
       "button",
       {
         type: "button",
@@ -8657,14 +8872,14 @@
           props.onToggle();
         }
       },
-      /* @__PURE__ */ React10.createElement("span", { className: "fa-icon" })
+      /* @__PURE__ */ React11.createElement("span", { className: "fa-icon" })
     );
   }
   function SettingSwitch(props) {
     const rows = props.checked && props.children ? props.children : null;
     const folded = foldedGroups.has(props.id);
     const fold = rows ? { folded, onToggle: () => setGroupFolded(props.id, !folded) } : void 0;
-    return /* @__PURE__ */ React10.createElement(React10.Fragment, null, /* @__PURE__ */ React10.createElement(
+    return /* @__PURE__ */ React11.createElement(React11.Fragment, null, /* @__PURE__ */ React11.createElement(
       BooleanSetting,
       {
         id: props.id,
@@ -8676,11 +8891,11 @@
         head: true,
         fold
       }
-    ), rows && !folded ? /* @__PURE__ */ React10.createElement("div", { className: "setting-group manga-tools-settings-group" }, rows) : null);
+    ), rows && !folded ? /* @__PURE__ */ React11.createElement("div", { className: "setting-group manga-tools-settings-group" }, rows) : null);
   }
   function SettingsGroup(props) {
     const folded = foldedGroups.has(props.id);
-    return /* @__PURE__ */ React10.createElement(React10.Fragment, null, /* @__PURE__ */ React10.createElement(
+    return /* @__PURE__ */ React11.createElement(React11.Fragment, null, /* @__PURE__ */ React11.createElement(
       SettingsHeading,
       {
         heading: props.heading,
@@ -8690,24 +8905,25 @@
           onToggle: () => setGroupFolded(props.id, !folded)
         }
       }
-    ), folded ? null : /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-settings-body" }, props.children));
+    ), folded ? null : /* @__PURE__ */ React11.createElement("div", { className: "manga-tools-settings-body" }, props.children));
   }
   function SettingsHeading(props) {
-    return /* @__PURE__ */ React10.createElement(
+    return /* @__PURE__ */ React11.createElement(
       "div",
       {
         className: "manga-tools-settings-heading" + (props.fold ? " manga-tools-foldable" : ""),
         onClick: props.fold ? props.fold.onToggle : void 0
       },
-      props.fold ? /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-heading-line" }, /* @__PURE__ */ React10.createElement(FoldIcon, { folded: props.fold.folded, onToggle: props.fold.onToggle }), /* @__PURE__ */ React10.createElement("h3", null, props.heading)) : /* @__PURE__ */ React10.createElement("h3", null, props.heading),
-      props.subHeading ? /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, props.subHeading) : null
+      props.fold ? /* @__PURE__ */ React11.createElement("div", { className: "manga-tools-heading-line" }, /* @__PURE__ */ React11.createElement(FoldIcon, { folded: props.fold.folded, onToggle: props.fold.onToggle }), /* @__PURE__ */ React11.createElement("h3", null, props.heading)) : /* @__PURE__ */ React11.createElement("h3", null, props.heading),
+      props.subHeading ? /* @__PURE__ */ React11.createElement("div", { className: "sub-heading" }, props.subHeading) : null
     );
   }
   var MARK_GROUP_ID = "mangaTools-markGroup";
+  var MAINTENANCE_GROUP_ID = "mangaTools-maintenanceGroup";
   var DISPLAY_GROUP_ID = "mangaTools-displayGroup";
   function MangaToolsSettings() {
     useGlobalVersion();
-    const intl = PluginApi12.libraries.Intl.useIntl();
+    const intl = PluginApi13.libraries.Intl.useIntl();
     const Select = resolveSelect();
     function persist() {
       saveSettings();
@@ -8730,7 +8946,7 @@
     const enabled = NS.enabledLanguages;
     const value = enabled ? options.filter((o) => enabled == null ? void 0 : enabled.has(o.value)) : [];
     if (!Select) return null;
-    const field2 = (id, heading, showing, set) => /* @__PURE__ */ React10.createElement(
+    const field2 = (id, heading, showing, set) => /* @__PURE__ */ React11.createElement(
       BooleanSetting,
       {
         id,
@@ -8739,41 +8955,41 @@
         onChange: writeFlag(set)
       }
     );
-    return /* @__PURE__ */ React10.createElement(React10.Fragment, null, /* @__PURE__ */ React10.createElement(
+    return /* @__PURE__ */ React11.createElement(React11.Fragment, null, /* @__PURE__ */ React11.createElement(
       SettingSwitch,
       {
         id: "mangaTools-readerTakeover",
         heading: t(intl, "mangaTools.settings.readerTakeover.heading"),
-        subHeading: /* @__PURE__ */ React10.createElement(React10.Fragment, null, t(intl, "mangaTools.settings.readerTakeover.description"), /* @__PURE__ */ React10.createElement(SettingsNote, null, t(intl, "mangaTools.settings.readerTakeover.note"))),
+        subHeading: /* @__PURE__ */ React11.createElement(React11.Fragment, null, t(intl, "mangaTools.settings.readerTakeover.description"), /* @__PURE__ */ React11.createElement(SettingsNote, null, t(intl, "mangaTools.settings.readerTakeover.note"))),
         checked: NS.readerTakeover,
         onChange: writeFlag((next) => {
           NS.readerTakeover = next;
         })
       },
-      /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React11.createElement(
         SettingSwitch,
         {
           id: "mangaTools-physicalPages",
           heading: t(intl, "mangaTools.settings.physicalPages.heading"),
-          subHeading: /* @__PURE__ */ React10.createElement(React10.Fragment, null, t(intl, "mangaTools.settings.physicalPages.description"), /* @__PURE__ */ React10.createElement(SettingsNote, null, t(intl, "mangaTools.settings.physicalPages.note"))),
+          subHeading: /* @__PURE__ */ React11.createElement(React11.Fragment, null, t(intl, "mangaTools.settings.physicalPages.description"), /* @__PURE__ */ React11.createElement(SettingsNote, null, t(intl, "mangaTools.settings.physicalPages.note"))),
           checked: NS.physicalPages,
           onChange: writeFlag((next) => {
             NS.physicalPages = next;
           })
         }
       )
-    ), /* @__PURE__ */ React10.createElement(
+    ), /* @__PURE__ */ React11.createElement(
       SettingSwitch,
       {
         id: "mangaTools-manageChapters",
         heading: t(intl, "mangaTools.settings.manageChapters.heading"),
-        subHeading: /* @__PURE__ */ React10.createElement(React10.Fragment, null, t(intl, "mangaTools.settings.manageChapters.description"), /* @__PURE__ */ React10.createElement(SettingsNote, null, t(intl, "mangaTools.settings.manageChapters.note"))),
+        subHeading: /* @__PURE__ */ React11.createElement(React11.Fragment, null, t(intl, "mangaTools.settings.manageChapters.description"), /* @__PURE__ */ React11.createElement(SettingsNote, null, t(intl, "mangaTools.settings.manageChapters.note"))),
         checked: NS.manageChapters,
         onChange: writeFlag((next) => {
           NS.manageChapters = next;
         })
       }
-    ), /* @__PURE__ */ React10.createElement(
+    ), /* @__PURE__ */ React11.createElement(
       SettingSwitch,
       {
         id: "mangaTools-shopLinks",
@@ -8784,7 +9000,7 @@
           NS.shopLinks = next;
         })
       }
-    ), /* @__PURE__ */ React10.createElement(
+    ), /* @__PURE__ */ React11.createElement(
       SettingSwitch,
       {
         id: "mangaTools-fields",
@@ -8795,7 +9011,7 @@
           NS.fields = next;
         })
       },
-      /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React11.createElement(
         SettingSwitch,
         {
           id: "mangaTools-fieldLanguage",
@@ -8805,7 +9021,7 @@
             NS.fieldLanguage = next;
           })
         },
-        /* @__PURE__ */ React10.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React10.createElement("h3", null, t(intl, "mangaTools.settings.enabledLanguages.heading")), /* @__PURE__ */ React10.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.enabledLanguages.description")), /* @__PURE__ */ React10.createElement("div", { className: "manga-tools-settings-control" }, /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement("div", { className: "setting manga-tools-settings" }, /* @__PURE__ */ React11.createElement("div", { className: "manga-tools-settings-block" }, /* @__PURE__ */ React11.createElement("h3", null, t(intl, "mangaTools.settings.enabledLanguages.heading")), /* @__PURE__ */ React11.createElement("div", { className: "sub-heading" }, t(intl, "mangaTools.settings.enabledLanguages.description")), /* @__PURE__ */ React11.createElement("div", { className: "manga-tools-settings-control" }, /* @__PURE__ */ React11.createElement(
           Select,
           {
             className: "manga-tools-settings-select",
@@ -8831,7 +9047,7 @@
             }
           }
         )))),
-        /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement(
           BooleanSetting,
           {
             id: "mangaTools-showFlags",
@@ -8843,7 +9059,7 @@
             })
           }
         ),
-        /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement(
           BooleanSetting,
           {
             id: "mangaTools-showCoverBadge",
@@ -8871,7 +9087,7 @@
           NS.fieldCensorship = next;
         }
       ),
-      /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React11.createElement(
         SettingSwitch,
         {
           id: "mangaTools-fieldTranslationGroup",
@@ -8881,7 +9097,7 @@
             NS.fieldTranslationGroup = next;
           })
         },
-        /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement(
           SelectSetting,
           {
             id: "mangaTools-groupOrder",
@@ -8912,13 +9128,13 @@
           NS.fieldOriginal = next;
         }
       ),
-      /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React11.createElement(
         SettingsGroup,
         {
           id: DISPLAY_GROUP_ID,
           heading: t(intl, "mangaTools.settings.display.heading")
         },
-        /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement(
           BooleanSetting,
           {
             id: "mangaTools-openDetailsBlock",
@@ -8929,7 +9145,7 @@
             })
           }
         ),
-        /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement(
           BooleanSetting,
           {
             id: "mangaTools-openEditBlock",
@@ -8940,7 +9156,7 @@
             })
           }
         ),
-        /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement(
           BooleanSetting,
           {
             id: "mangaTools-hidePerformers",
@@ -8955,27 +9171,27 @@
             })
           }
         ),
-        /* @__PURE__ */ React10.createElement(
+        /* @__PURE__ */ React11.createElement(
           BooleanSetting,
           {
             id: "mangaTools-showDisabledFields",
             heading: t(intl, "mangaTools.settings.showDisabledFields.heading"),
-            subHeading: /* @__PURE__ */ React10.createElement(React10.Fragment, null, t(intl, "mangaTools.settings.showDisabledFields.description"), /* @__PURE__ */ React10.createElement(SettingsNote, null, t(intl, "mangaTools.settings.showDisabledFields.note"))),
+            subHeading: /* @__PURE__ */ React11.createElement(React11.Fragment, null, t(intl, "mangaTools.settings.showDisabledFields.description"), /* @__PURE__ */ React11.createElement(SettingsNote, null, t(intl, "mangaTools.settings.showDisabledFields.note"))),
             checked: NS.showDisabledFields,
             onChange: writeFlag((next) => {
               NS.showDisabledFields = next;
             })
           }
         ),
-        /* @__PURE__ */ React10.createElement(SidebarFiltersSetting, { persist })
+        /* @__PURE__ */ React11.createElement(SidebarFiltersSetting, { persist })
       )
-    ), /* @__PURE__ */ React10.createElement(
+    ), /* @__PURE__ */ React11.createElement(
       SettingsGroup,
       {
         id: MARK_GROUP_ID,
         heading: t(intl, "mangaTools.settings.mark.heading")
       },
-      /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React11.createElement(
         BooleanSetting,
         {
           id: "mangaTools-confirmUnmark",
@@ -8986,7 +9202,7 @@
           })
         }
       ),
-      /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React11.createElement(
         BooleanSetting,
         {
           id: "mangaTools-deleteOnUnmark",
@@ -8998,7 +9214,7 @@
           })
         }
       ),
-      /* @__PURE__ */ React10.createElement(
+      /* @__PURE__ */ React11.createElement(
         BooleanSetting,
         {
           id: "mangaTools-coverIcon",
@@ -9013,24 +9229,31 @@
           })
         }
       )
+    ), /* @__PURE__ */ React11.createElement(
+      SettingsGroup,
+      {
+        id: MAINTENANCE_GROUP_ID,
+        heading: t(intl, "mangaTools.settings.maintenance.heading")
+      },
+      /* @__PURE__ */ React11.createElement(ClearFieldsSetting, null)
     ));
   }
 
   // src/tools/edit-page.tsx
-  var PluginApi13 = requirePluginApi();
-  var React11 = PluginApi13.React;
+  var PluginApi14 = requirePluginApi();
+  var React12 = PluginApi14.React;
   var originalGroupTaken = null;
   function MangaFieldBlock(props) {
     var _a3;
     useGlobalVersion();
-    const intl = PluginApi13.libraries.Intl.useIntl();
+    const intl = PluginApi14.libraries.Intl.useIntl();
     const Select = resolveSelect();
-    const state = React11.useState(NS.openEditBlock);
+    const state = React12.useState(NS.openEditBlock);
     const open = state[0];
     const setOpen = state[1];
-    const Solid = PluginApi13.libraries.FontAwesomeSolid || {};
-    const Icon = PluginApi13.components.Icon;
-    const Button = (_a3 = PluginApi13.libraries.Bootstrap) == null ? void 0 : _a3.Button;
+    const Solid = PluginApi14.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi14.components.Icon;
+    const Button = (_a3 = PluginApi14.libraries.Bootstrap) == null ? void 0 : _a3.Button;
     const host = isGalleryContext() ? ensureFieldHost() : null;
     if (host) {
       host.classList.toggle(
@@ -9038,8 +9261,8 @@
         NS.hidePerformers && NS.anyFieldShowing()
       );
     }
-    const bump = React11.useState(0)[1];
-    React11.useLayoutEffect(() => {
+    const bump = React12.useState(0)[1];
+    React12.useLayoutEffect(() => {
       if (isGalleryContext() && ensureFieldHost() !== host) {
         bump((v) => v + 1);
       }
@@ -9106,7 +9329,7 @@
     const offeredInfo = offered ? NS.describe(offered.code, intl.locale) : null;
     const chipIcon = Solid.faWandMagicSparkles || Solid.faMagic || Solid.faLanguage || null;
     const chipTitle = offered && offeredInfo ? t(intl, "mangaTools.translationGroup.fill") + " " + offeredInfo.name + " \u2014 " + t(intl, "mangaTools.translationGroup.suggestedLanguage") + " (" + offered.count + ")" : "";
-    const languageChip2 = offered && offeredInfo ? /* @__PURE__ */ React11.createElement(
+    const languageChip2 = offered && offeredInfo ? /* @__PURE__ */ React12.createElement(
       "button",
       {
         type: "button",
@@ -9115,7 +9338,7 @@
         title: chipTitle,
         onClick: () => write2(FIELD_NAME, offered.code)
       },
-      NS.showFlags && offeredInfo.flag ? /* @__PURE__ */ React11.createElement(Flag, { flag: offeredInfo.flag, className: "manga-tools-flag" }) : chipIcon ? /* @__PURE__ */ React11.createElement(Icon, { icon: chipIcon }) : /* @__PURE__ */ React11.createElement("span", null, offeredInfo.name)
+      NS.showFlags && offeredInfo.flag ? /* @__PURE__ */ React12.createElement(Flag, { flag: offeredInfo.flag, className: "manga-tools-flag" }) : chipIcon ? /* @__PURE__ */ React12.createElement(Icon, { icon: chipIcon }) : /* @__PURE__ */ React12.createElement("span", null, offeredInfo.name)
     ) : null;
     const cls = readNativeFieldClasses(document.querySelector(EDIT_ANCHOR)) || {
       group: "form-group row",
@@ -9126,12 +9349,12 @@
       // Plain div/label carrying the copied class names, rather than
       // Form.Group/Form.Label/Col: those components regenerate the width classes
       // from their own defaults, which is what broke the alignment before.
-      /* @__PURE__ */ React11.createElement("div", { className: cls.group, "data-field": "manga_tools_language" }, /* @__PURE__ */ React11.createElement("label", { className: cls.label, htmlFor: "manga_tools_language" }, fieldLabel(intl)), /* @__PURE__ */ React11.createElement(
+      /* @__PURE__ */ React12.createElement("div", { className: cls.group, "data-field": "manga_tools_language" }, /* @__PURE__ */ React12.createElement("label", { className: cls.label, htmlFor: "manga_tools_language" }, fieldLabel(intl)), /* @__PURE__ */ React12.createElement(
         "div",
         {
           className: cls.control + (languageChip2 ? " manga-tools-chip-row" : "")
         },
-        /* @__PURE__ */ React11.createElement(
+        /* @__PURE__ */ React12.createElement(
           Select,
           {
             className: "manga-tools-select",
@@ -9161,7 +9384,7 @@
       }
     ];
     const markSelected = markOptions.find((o) => o.value === mark) || null;
-    const markField = /* @__PURE__ */ React11.createElement("div", { className: cls.group, "data-field": "manga_tools_censorship" }, /* @__PURE__ */ React11.createElement("label", { className: cls.label, htmlFor: "manga_tools_censorship" }, t(intl, "mangaTools.censorship.heading")), /* @__PURE__ */ React11.createElement("div", { className: cls.control }, /* @__PURE__ */ React11.createElement(
+    const markField = /* @__PURE__ */ React12.createElement("div", { className: cls.group, "data-field": "manga_tools_censorship" }, /* @__PURE__ */ React12.createElement("label", { className: cls.label, htmlFor: "manga_tools_censorship" }, t(intl, "mangaTools.censorship.heading")), /* @__PURE__ */ React12.createElement("div", { className: cls.control }, /* @__PURE__ */ React12.createElement(
       Select,
       {
         className: "manga-tools-select",
@@ -9212,7 +9435,7 @@
     const showOriginal = NS.fieldShowing("original");
     const rawShown = showOriginal && isOriginal;
     const originalLabel = t(intl, "mangaTools.translationGroup.original");
-    const originalChip = /* @__PURE__ */ React11.createElement(
+    const originalChip = /* @__PURE__ */ React12.createElement(
       "button",
       {
         type: "button",
@@ -9226,9 +9449,9 @@
         disabled: noLanguage,
         onClick: toggleOriginal
       },
-      /* @__PURE__ */ React11.createElement(SteakIcon, { raw: isOriginal })
+      /* @__PURE__ */ React12.createElement(SteakIcon, { raw: isOriginal })
     );
-    const originalRow = /* @__PURE__ */ React11.createElement("div", { className: cls.group, "data-field": "manga_tools_original" }, /* @__PURE__ */ React11.createElement("label", { className: cls.label, htmlFor: "manga_tools_original" }, originalLabel), /* @__PURE__ */ React11.createElement("div", { className: cls.control }, /* @__PURE__ */ React11.createElement("div", { className: "form-check form-switch" }, /* @__PURE__ */ React11.createElement(
+    const originalRow = /* @__PURE__ */ React12.createElement("div", { className: cls.group, "data-field": "manga_tools_original" }, /* @__PURE__ */ React12.createElement("label", { className: cls.label, htmlFor: "manga_tools_original" }, originalLabel), /* @__PURE__ */ React12.createElement("div", { className: cls.control }, /* @__PURE__ */ React12.createElement("div", { className: "form-check form-switch" }, /* @__PURE__ */ React12.createElement(
       "input",
       {
         className: "form-check-input",
@@ -9241,12 +9464,12 @@
         onChange: toggleOriginal
       }
     ))));
-    const groupField = /* @__PURE__ */ React11.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React11.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React11.createElement(
+    const groupField = /* @__PURE__ */ React12.createElement("div", { className: cls.group, "data-field": "manga_tools_translation_group" }, /* @__PURE__ */ React12.createElement("label", { className: cls.label, htmlFor: "manga_tools_translation_group" }, t(intl, "mangaTools.translationGroup.heading")), /* @__PURE__ */ React12.createElement(
       "div",
       {
         className: cls.control + (showOriginal ? " manga-tools-chip-row" : "")
       },
-      /* @__PURE__ */ React11.createElement(
+      /* @__PURE__ */ React12.createElement(
         Select,
         {
           className: "manga-tools-select manga-tools-group-select",
@@ -9274,30 +9497,30 @@
       ),
       showOriginal ? originalChip : null
     ));
-    return PluginApi13.ReactDOM.createPortal(
-      /* @__PURE__ */ React11.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React11.createElement("div", { className: cls.group }, /* @__PURE__ */ React11.createElement("div", { className: "col-12" }, /* @__PURE__ */ React11.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React11.createElement(
+    return PluginApi14.ReactDOM.createPortal(
+      /* @__PURE__ */ React12.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React12.createElement("div", { className: cls.group }, /* @__PURE__ */ React12.createElement("div", { className: "col-12" }, /* @__PURE__ */ React12.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React12.createElement(
         Button,
         {
           className: "minimal collapse-button",
           "aria-expanded": open,
           onClick: () => setOpen(!open)
         },
-        /* @__PURE__ */ React11.createElement(
+        /* @__PURE__ */ React12.createElement(
           Icon,
           {
             icon: open ? Solid.faChevronDown : Solid.faChevronRight,
             fixedWidth: true
           }
         ),
-        /* @__PURE__ */ React11.createElement("span", null, t(intl, "mangaTools.panel.heading"))
+        /* @__PURE__ */ React12.createElement("span", null, t(intl, "mangaTools.panel.heading"))
       ) : null))), open && NS.fieldShowing("censorship") ? markField : null, open && NS.fieldShowing("language") ? languageField : null, open && showGroup ? groupField : null, open && showOriginal && !showGroup ? originalRow : null),
       host
     );
   }
 
   // src/tools/shops.tsx
-  var PluginApi14 = requirePluginApi();
-  var React12 = PluginApi14.React;
+  var PluginApi15 = requirePluginApi();
+  var React13 = PluginApi15.React;
   var codeIn = (...patterns) => (raw) => {
     var _a3;
     for (const pattern of patterns) {
@@ -9369,10 +9592,10 @@
     return assetBase + "assets/shops/favicon-" + shop.key + ".ico";
   }
   function ShopBadges(props) {
-    return /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-shop-badges" }, props.links.map((link) => {
+    return /* @__PURE__ */ React13.createElement("span", { className: "manga-tools-shop-badges" }, props.links.map((link) => {
       const src = shopIconUrl(link.shop);
       const title = link.shop.name + (link.code ? " \xB7 " + link.code : "");
-      return /* @__PURE__ */ React12.createElement(
+      return /* @__PURE__ */ React13.createElement(
         "a",
         {
           key: link.url,
@@ -9382,8 +9605,8 @@
           target: "_blank",
           rel: "noreferrer"
         },
-        src ? /* @__PURE__ */ React12.createElement("img", { className: "is-favicon", src, alt: link.shop.name }) : null,
-        link.code ? /* @__PURE__ */ React12.createElement("span", { className: "manga-tools-shop-code" }, link.code) : null
+        src ? /* @__PURE__ */ React13.createElement("img", { className: "is-favicon", src, alt: link.shop.name }) : null,
+        link.code ? /* @__PURE__ */ React13.createElement("span", { className: "manga-tools-shop-code" }, link.code) : null
       );
     }));
   }
@@ -9392,12 +9615,12 @@
   NS.shopsIn = shopsIn;
 
   // src/tools/details.tsx
-  var PluginApi15 = requirePluginApi();
-  var React13 = PluginApi15.React;
+  var PluginApi16 = requirePluginApi();
+  var React14 = PluginApi16.React;
   var guardedBlockClass = null;
   function guardedBlock() {
     if (guardedBlockClass) return guardedBlockClass;
-    guardedBlockClass = class extends React13.Component {
+    guardedBlockClass = class extends React14.Component {
       constructor() {
         super(...arguments);
         __publicField(this, "state", { failed: false });
@@ -9420,8 +9643,8 @@
   function MangaDetailsPanel(props) {
     var _a3, _b3;
     useGlobalVersion();
-    const intl = PluginApi15.libraries.Intl.useIntl();
-    const state = React13.useState(NS.openDetailsBlock);
+    const intl = PluginApi16.libraries.Intl.useIntl();
+    const state = React14.useState(NS.openDetailsBlock);
     const open = state[0];
     const setOpen = state[1];
     const language2 = NS.fieldShowing("language") ? NS.describe(pickLanguage(props.values), intl.locale) : null;
@@ -9429,27 +9652,27 @@
     const group = NS.fieldShowing("translationGroup") ? NS.translationGroupOf(props.values) : "";
     const original = NS.fieldShowing("original") && NS.isRaw(props.values);
     const shops = NS.shopLinks ? shopsIn(storedUrls(props.galleryId)) : [];
-    const Solid = PluginApi15.libraries.FontAwesomeSolid || {};
-    const Icon = PluginApi15.components.Icon;
-    const Button = (_a3 = PluginApi15.libraries.Bootstrap) == null ? void 0 : _a3.Button;
-    const Collapse = (_b3 = PluginApi15.libraries.Bootstrap) == null ? void 0 : _b3.Collapse;
+    const Solid = PluginApi16.libraries.FontAwesomeSolid || {};
+    const Icon = PluginApi16.components.Icon;
+    const Button = (_a3 = PluginApi16.libraries.Bootstrap) == null ? void 0 : _a3.Button;
+    const Collapse = (_b3 = PluginApi16.libraries.Bootstrap) == null ? void 0 : _b3.Collapse;
     if (!language2 && !mark && !group && !original && shops.length === 0) {
       return null;
     }
     const host = ensureDetailHost();
     if (!host) return null;
     const showFlag = NS.showFlags && !!language2 && (!!language2.flag || NS.isNoLanguage(language2.code));
-    const body = /* @__PURE__ */ React13.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React13.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React13.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language2 ? /* @__PURE__ */ React13.createElement("h6", { className: "manga-tools-detail" }, fieldLabel(intl) + ": ", showFlag && language2.flag ? /* @__PURE__ */ React13.createElement(Flag, { flag: language2.flag, className: "manga-tools-flag" }) : showFlag ? noLanguageMark(language2.code, "manga-tools-flag") : null, showFlag ? " " : null, language2.name, original ? t(intl, "mangaTools.translationGroup.originalInline") : null) : null, group ? (
+    const body = /* @__PURE__ */ React14.createElement("div", { className: "manga-tools-panel-body" }, mark ? /* @__PURE__ */ React14.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.censorship.heading") + ": ", /* @__PURE__ */ React14.createElement(CensorshipIcon, { value: mark }), mark ? " " : null, NS.censorshipLabel(intl, mark)) : null, language2 ? /* @__PURE__ */ React14.createElement("h6", { className: "manga-tools-detail" }, fieldLabel(intl) + ": ", showFlag && language2.flag ? /* @__PURE__ */ React14.createElement(Flag, { flag: language2.flag, className: "manga-tools-flag" }) : showFlag ? noLanguageMark(language2.code, "manga-tools-flag") : null, showFlag ? " " : null, language2.name, original ? t(intl, "mangaTools.translationGroup.originalInline") : null) : null, group ? (
       // No icon and no flag: a group's name is its own, and there is nothing
       // here to draw beside it. Drawn last, because it is the one row that is
       // the same shape on every gallery rather than picked from a list.
-      /* @__PURE__ */ React13.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.heading") + ": ", group)
+      /* @__PURE__ */ React14.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.heading") + ": ", group)
     ) : null, shops.length > 0 ? (
       // Last, because it is about where the work can be found rather than about
       // the text itself. A badge is a link and its code; the shop's name is the
       // title, and there is no separate "no link" state — a shop with no link is
       // simply not drawn.
-      /* @__PURE__ */ React13.createElement("h6", { className: "manga-tools-detail manga-tools-shops" }, /* @__PURE__ */ React13.createElement("span", { className: "manga-tools-shops-label" }, t(intl, "mangaTools.shops.heading") + ":"), /* @__PURE__ */ React13.createElement(ShopBadges, { links: shops }))
+      /* @__PURE__ */ React14.createElement("h6", { className: "manga-tools-detail manga-tools-shops" }, /* @__PURE__ */ React14.createElement("span", { className: "manga-tools-shops-label" }, t(intl, "mangaTools.shops.heading") + ":"), /* @__PURE__ */ React14.createElement(ShopBadges, { links: shops }))
     ) : null, original && !language2 ? (
       // Raw with no language row to carry the mark, so it stands on its own —
       // and without the group's label, for the reason above. The wording carries
@@ -9459,34 +9682,34 @@
       // "No language row" rather than "no language set": with the language field
       // turned off there is no row to ride on whatever the gallery holds, and a
       // raw mark with no way of being shown is worse than one shown plainly.
-      /* @__PURE__ */ React13.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.originalDetail"))
+      /* @__PURE__ */ React14.createElement("h6", { className: "manga-tools-detail" }, t(intl, "mangaTools.translationGroup.originalDetail"))
     ) : null);
-    return PluginApi15.ReactDOM.createPortal(
-      /* @__PURE__ */ React13.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React13.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React13.createElement(
+    return PluginApi16.ReactDOM.createPortal(
+      /* @__PURE__ */ React14.createElement("div", { className: "manga-tools-panel" }, /* @__PURE__ */ React14.createElement("div", { className: "collapse-header" }, Button ? /* @__PURE__ */ React14.createElement(
         Button,
         {
           className: "minimal collapse-button",
           "aria-expanded": open,
           onClick: () => setOpen(!open)
         },
-        /* @__PURE__ */ React13.createElement(
+        /* @__PURE__ */ React14.createElement(
           Icon,
           {
             icon: open ? Solid.faChevronDown : Solid.faChevronRight,
             fixedWidth: true
           }
         ),
-        /* @__PURE__ */ React13.createElement("span", null, t(intl, "mangaTools.panel.heading"))
-      ) : null), Collapse ? /* @__PURE__ */ React13.createElement(Collapse, { in: open }, body) : body),
+        /* @__PURE__ */ React14.createElement("span", null, t(intl, "mangaTools.panel.heading"))
+      ) : null), Collapse ? /* @__PURE__ */ React14.createElement(Collapse, { in: open }, body) : body),
       host
     );
   }
 
   // src/tools/cards.tsx
-  var PluginApi16 = requirePluginApi();
-  var React14 = PluginApi16.React;
+  var PluginApi17 = requirePluginApi();
+  var React15 = PluginApi17.React;
   function useLocale() {
-    return PluginApi16.libraries.Intl.useIntl().locale;
+    return PluginApi17.libraries.Intl.useIntl().locale;
   }
   function LanguageBadge(props) {
     var _a3;
@@ -9538,19 +9761,19 @@
   function MangaPopoverMark(props) {
     useGlobalVersion();
     useAfterMount();
-    const intl = PluginApi16.libraries.Intl.useIntl();
+    const intl = PluginApi17.libraries.Intl.useIntl();
     const manga = storedIsManga(props.galleryId);
     const slot = manga ? ensurePopoverSlot(props.galleryId) : null;
     if (!manga || !NS.coverIcon) return null;
-    return /* @__PURE__ */ React14.createElement(React14.Fragment, null, /* @__PURE__ */ React14.createElement("span", { className: POPOVER_ANCHOR_CLASS, "data-gallery": props.galleryId }), slot ? PluginApi16.ReactDOM.createPortal(
-      /* @__PURE__ */ React14.createElement(
+    return /* @__PURE__ */ React15.createElement(React15.Fragment, null, /* @__PURE__ */ React15.createElement("span", { className: POPOVER_ANCHOR_CLASS, "data-gallery": props.galleryId }), slot ? PluginApi17.ReactDOM.createPortal(
+      /* @__PURE__ */ React15.createElement(
         "button",
         {
           type: "button",
           className: "minimal btn btn-primary manga-tools-mark",
           title: t(intl, "mangaTools.manga.marked")
         },
-        /* @__PURE__ */ React14.createElement(MangaIcon, null)
+        /* @__PURE__ */ React15.createElement(MangaIcon, null)
       ),
       slot
     ) : null);
@@ -9686,25 +9909,25 @@
   }
 
   // src/tools/toolbar.tsx
-  var PluginApi17 = requirePluginApi();
-  var React15 = PluginApi17.React;
+  var PluginApi18 = requirePluginApi();
+  var React16 = PluginApi18.React;
   var _a2, _b2;
-  var CAN_WRITE2 = typeof ((_b2 = (_a2 = PluginApi17.utils) == null ? void 0 : _a2.StashService) == null ? void 0 : _b2.getClient) === "function";
+  var CAN_WRITE2 = typeof ((_b2 = (_a2 = PluginApi18.utils) == null ? void 0 : _a2.StashService) == null ? void 0 : _b2.getClient) === "function";
   if (!CAN_WRITE2) {
     console.error(
       "[mangaTools] this Stash has no Apollo client, so the toolbar switch cannot be shown. The rest of the plugin is unaffected."
     );
   }
   function ConfirmDialog(props) {
-    const Bootstrap = PluginApi17.libraries.Bootstrap;
+    const Bootstrap = PluginApi18.libraries.Bootstrap;
     const Modal = Bootstrap == null ? void 0 : Bootstrap.Modal;
     const Button = Bootstrap == null ? void 0 : Bootstrap.Button;
     if (!Modal || !Button || !Modal.Body || !Modal.Footer) return null;
-    return /* @__PURE__ */ React15.createElement(Modal, { show: true, size: "sm", onHide: props.onCancel }, /* @__PURE__ */ React15.createElement(Modal.Body, null, props.children), /* @__PURE__ */ React15.createElement(Modal.Footer, null, /* @__PURE__ */ React15.createElement(Button, { variant: "secondary", onClick: props.onCancel }, props.cancelLabel), /* @__PURE__ */ React15.createElement(Button, { variant: props.variant, onClick: props.onConfirm }, props.confirmLabel)));
+    return /* @__PURE__ */ React16.createElement(Modal, { show: true, size: "sm", onHide: props.onCancel }, /* @__PURE__ */ React16.createElement(Modal.Body, null, props.children), /* @__PURE__ */ React16.createElement(Modal.Footer, null, /* @__PURE__ */ React16.createElement(Button, { variant: "secondary", onClick: props.onCancel }, props.cancelLabel), /* @__PURE__ */ React16.createElement(Button, { variant: props.variant, onClick: props.onConfirm }, props.confirmLabel)));
   }
   function ConfirmUnmark(props) {
-    const intl = PluginApi17.libraries.Intl.useIntl();
-    return /* @__PURE__ */ React15.createElement(
+    const intl = PluginApi18.libraries.Intl.useIntl();
+    return /* @__PURE__ */ React16.createElement(
       ConfirmDialog,
       {
         variant: "danger",
@@ -9713,18 +9936,18 @@
         onCancel: props.onCancel,
         onConfirm: props.onConfirm
       },
-      /* @__PURE__ */ React15.createElement("div", null, t(intl, "mangaTools.manga.confirm")),
-      props.resetsForm ? /* @__PURE__ */ React15.createElement("div", null, t(intl, "mangaTools.manga.confirmResetsForm")) : null
+      /* @__PURE__ */ React16.createElement("div", null, t(intl, "mangaTools.manga.confirm")),
+      props.resetsForm ? /* @__PURE__ */ React16.createElement("div", null, t(intl, "mangaTools.manga.confirmResetsForm")) : null
     );
   }
   function GalleryToolbar(props) {
     useGlobalVersion();
     useAfterMount();
-    const intl = PluginApi17.libraries.Intl.useIntl();
-    const busyState = React15.useState(false);
+    const intl = PluginApi18.libraries.Intl.useIntl();
+    const busyState = React16.useState(false);
     const busy2 = busyState[0];
     const setBusy = busyState[1];
-    const confirmState = React15.useState(false);
+    const confirmState = React16.useState(false);
     const confirming2 = confirmState[0];
     const setConfirming = confirmState[1];
     const host = ensureToolbarHost();
@@ -9800,8 +10023,8 @@
         remove: NS.fieldsToClear((_b3 = (_a3 = store) == null ? void 0 : _a3.get(props.galleryId)) != null ? _b3 : props.values)
       });
     };
-    return PluginApi17.ReactDOM.createPortal(
-      /* @__PURE__ */ React15.createElement(React15.Fragment, null, /* @__PURE__ */ React15.createElement(
+    return PluginApi18.ReactDOM.createPortal(
+      /* @__PURE__ */ React16.createElement(React16.Fragment, null, /* @__PURE__ */ React16.createElement(
         "button",
         {
           type: "button",
@@ -9814,8 +10037,8 @@
           disabled: busy2,
           onClick: onToggle
         },
-        /* @__PURE__ */ React15.createElement(MangaIcon, null)
-      ), confirming2 ? /* @__PURE__ */ React15.createElement(
+        /* @__PURE__ */ React16.createElement(MangaIcon, null)
+      ), confirming2 ? /* @__PURE__ */ React16.createElement(
         ConfirmUnmark,
         {
           onCancel: () => setConfirming(false),
@@ -9828,8 +10051,8 @@
   }
 
   // src/tools/physical-button.tsx
-  var PluginApi18 = requirePluginApi();
-  var React16 = PluginApi18.React;
+  var PluginApi19 = requirePluginApi();
+  var React17 = PluginApi19.React;
   var SLIDER_SELECTOR = ".zoom-slider-container";
   var HOST_CLASS = "manga-tools-physical-host";
   function isPhysicalView(filter) {
@@ -9883,24 +10106,24 @@
   }
   function PhysicalPagesButton(props) {
     var _a3;
-    const intl = PluginApi18.libraries.Intl.useIntl();
-    const history = PluginApi18.libraries.ReactRouterDOM.useHistory();
-    const bumped = React16.useState(0);
+    const intl = PluginApi19.libraries.Intl.useIntl();
+    const history = PluginApi19.libraries.ReactRouterDOM.useHistory();
+    const bumped = React17.useState(0);
     const bump = bumped[1];
     const shown = NS.physicalPageMode() && currentGalleryId() !== "";
     const host = shown ? ensureHost() : null;
-    React16.useLayoutEffect(() => {
+    React17.useLayoutEffect(() => {
       if (!shown || host) return;
       if (!ensureHost()) return;
       bump((n) => n + 1);
     });
     if (!shown || !host) return null;
-    const Bootstrap = PluginApi18.libraries.Bootstrap;
+    const Bootstrap = PluginApi19.libraries.Bootstrap;
     if (!Bootstrap) return null;
     const pressed3 = isPhysicalView(props.filter);
     const repeats = pressed3 ? repeatingPages(props.files) : 0;
-    return PluginApi18.ReactDOM.createPortal(
-      /* @__PURE__ */ React16.createElement(
+    return PluginApi19.ReactDOM.createPortal(
+      /* @__PURE__ */ React17.createElement(
         Bootstrap.Button,
         {
           variant: "secondary",
@@ -9913,10 +10136,10 @@
             history.replace(Object.assign({}, history.location, { search }));
           }
         },
-        /* @__PURE__ */ React16.createElement(
-          PluginApi18.components.Icon,
+        /* @__PURE__ */ React17.createElement(
+          PluginApi19.components.Icon,
           {
-            icon: (_a3 = PluginApi18.libraries.FontAwesomeSolid) == null ? void 0 : _a3.faLayerGroup
+            icon: (_a3 = PluginApi19.libraries.FontAwesomeSolid) == null ? void 0 : _a3.faLayerGroup
           }
         )
       ),
@@ -9928,8 +10151,8 @@
   NS.repeatingPages = repeatingPages;
 
   // src/tools/physical-grid.ts
-  var PluginApi19 = requirePluginApi();
-  var React17 = PluginApi19.React;
+  var PluginApi20 = requirePluginApi();
+  var React18 = PluginApi20.React;
   var cache = /* @__PURE__ */ new Map();
   var inFlight2 = /* @__PURE__ */ new Map();
   var cacheGeneration = 0;
@@ -10128,13 +10351,13 @@
       const next = args[args.length - 1];
       const routeGalleryId = currentGalleryId();
       const galleryId2 = NS.physicalPageMode() ? routeGalleryId : "";
-      const [, bump] = React17.useState(0);
-      const [invalidated, setInvalidated] = React17.useState(0);
-      React17.useEffect(
+      const [, bump] = React18.useState(0);
+      const [invalidated, setInvalidated] = React18.useState(0);
+      React18.useEffect(
         () => watchPhysicalGrids(() => setInvalidated((n) => n + 1)),
         []
       );
-      React17.useEffect(() => {
+      React18.useEffect(() => {
         if (!galleryId2) return;
         let live = true;
         load(galleryId2).then(() => {
@@ -10155,16 +10378,16 @@
       const pageCount = props.pageCount;
       const totalCount = props.totalCount;
       const selectedIds = props.selectedIds;
-      const selectRef = React17.useRef(void 0);
+      const selectRef = React18.useRef(void 0);
       selectRef.current = props.onSelectChange;
-      const change = React17.useCallback(
+      const change = React18.useCallback(
         (synthetic, chosen, shiftKey) => {
           var _a4;
           (_a4 = selectRef.current) == null ? void 0 : _a4.call(selectRef, synthetic.split("::")[0], chosen, shiftKey);
         },
         []
       );
-      const expanded = React17.useMemo(
+      const expanded = React18.useMemo(
         () => NS.physicalPageMode() && grid ? expandPhysicalPage({ ...props, onSelectChange: change }, grid) : null,
         [
           grid,
@@ -10180,8 +10403,8 @@
           change
         ]
       );
-      const intl = PluginApi19.libraries.Intl.useIntl();
-      React17.useLayoutEffect(() => {
+      const intl = PluginApi20.libraries.Intl.useIntl();
+      React18.useLayoutEffect(() => {
         if (!routeGalleryId) return;
         if (expanded) {
           rewritePhysicalIndex(
@@ -10209,11 +10432,11 @@
           itemsPerPage: expanded.perPage
         }
       }) : next(props);
-      return React17.createElement(
-        React17.Fragment,
+      return React18.createElement(
+        React18.Fragment,
         null,
         rendered,
-        React17.createElement(PhysicalPagesButton, {
+        React18.createElement(PhysicalPagesButton, {
           filter: props.filter,
           files: grid == null ? void 0 : grid.files
         })
@@ -10247,8 +10470,8 @@
   NS.expandPhysicalPage = expandPhysicalPage;
 
   // src/tools/shop-urls.tsx
-  var PluginApi20 = requirePluginApi();
-  var React18 = PluginApi20.React;
+  var PluginApi21 = requirePluginApi();
+  var React19 = PluginApi21.React;
   var PREFIX = "manga-tools-shop-prefix";
   function ownPrefix(group) {
     var _a3;
@@ -10329,8 +10552,8 @@
     };
   }
   function ShopUrlHeads() {
-    const ref = React18.useRef(null);
-    React18.useEffect(() => {
+    const ref = React19.useRef(null);
+    React19.useEffect(() => {
       if (!NS.shopLinks || !ref.current) return;
       const form2 = ref.current.closest("form");
       if (!form2) return;
@@ -10343,15 +10566,15 @@
         for (let i = 0; i < heads.length; i++) heads[i].remove();
       };
     }, []);
-    return /* @__PURE__ */ React18.createElement("span", { ref, hidden: true });
+    return /* @__PURE__ */ React19.createElement("span", { ref, hidden: true });
   }
   NS.decorateShopUrls = decorateShopUrls;
   NS.watchShopUrls = watchShopUrls;
   NS.shopUrlHeads = ShopUrlHeads;
 
   // src/tools/index.tsx
-  var PluginApi21 = requirePluginApi();
-  var React19 = PluginApi21.React;
+  var PluginApi22 = requirePluginApi();
+  var React20 = PluginApi22.React;
   function originalFrom(args) {
     return args[args.length - 1];
   }
@@ -10375,7 +10598,7 @@
     return findFilter(props.children);
   }
   function hasSidebarSectionsContainer() {
-    const components = PluginApi21.components;
+    const components = PluginApi22.components;
     return !!components && !!components["FilteredGalleryList.SidebarSections"];
   }
   var warnedMissingSidebarContainer = false;
@@ -10389,7 +10612,7 @@
     const value = id ? pickLanguage((_b3 = store) == null ? void 0 : _b3.get(String(id))) : "";
     if (!value || !NS.showCoverBadge || !NS.fieldShowing("language"))
       return result;
-    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, result, /* @__PURE__ */ React19.createElement(LanguageBadge, { galleryId: id }));
+    return /* @__PURE__ */ React20.createElement(React20.Fragment, null, result, /* @__PURE__ */ React20.createElement(LanguageBadge, { galleryId: id }));
   });
   registerPatch("after", "GalleryCard.Popovers", (...args) => {
     var _a3;
@@ -10399,7 +10622,7 @@
     useGlobalVersion();
     const id = (_a3 = props.gallery) == null ? void 0 : _a3.id;
     if (!id || !storedIsManga(String(id))) return result;
-    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, result, /* @__PURE__ */ React19.createElement(MangaPopoverMark, { galleryId: String(id) }));
+    return /* @__PURE__ */ React20.createElement(React20.Fragment, null, result, /* @__PURE__ */ React20.createElement(MangaPopoverMark, { galleryId: String(id) }));
   });
   registerPatch("instead", "CustomFieldsInput", (...args) => {
     const props = args[0];
@@ -10408,7 +10631,7 @@
     useGlobalVersion();
     const galleryId2 = currentGalleryId();
     const markedGallery = galleryId2 !== "" && isMarkedNow(galleryId2, props.values);
-    React19.useEffect(() => {
+    React20.useEffect(() => {
       var _a3, _b3;
       if (props.onChange && galleryId2) {
         setEditForm({
@@ -10429,7 +10652,7 @@
         setEditForm(null);
       };
     });
-    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, isMarkedNow(galleryId2, props.values) ? /* @__PURE__ */ React19.createElement(MangaFieldBlock, { values: props.values, onChange: props.onChange }) : null, markedGallery ? /* @__PURE__ */ React19.createElement(ShopUrlHeads, null) : null, /* @__PURE__ */ React19.createElement(Original, { ...props }));
+    return /* @__PURE__ */ React20.createElement(React20.Fragment, null, isMarkedNow(galleryId2, props.values) ? /* @__PURE__ */ React20.createElement(MangaFieldBlock, { values: props.values, onChange: props.onChange }) : null, markedGallery ? /* @__PURE__ */ React20.createElement(ShopUrlHeads, null) : null, /* @__PURE__ */ React20.createElement(Original, { ...props }));
   });
   function takesOverFieldRow(key) {
     if (!NS.ownField(key)) return false;
@@ -10444,7 +10667,7 @@
     if (!props.isNew && takesOverFieldRow(props.field)) {
       return null;
     }
-    return /* @__PURE__ */ React19.createElement(Original, { ...props });
+    return /* @__PURE__ */ React20.createElement(Original, { ...props });
   });
   registerPatch("instead", "CustomFields", (...args) => {
     const props = args[0];
@@ -10452,7 +10675,7 @@
     noteFired("CustomFields");
     useGlobalVersion();
     const values = props.values;
-    if (!values || typeof values !== "object") return /* @__PURE__ */ React19.createElement(Original, { ...props });
+    if (!values || typeof values !== "object") return /* @__PURE__ */ React20.createElement(Original, { ...props });
     const rest = Object.assign({}, values);
     let lifted = false;
     Object.keys(values).forEach((k) => {
@@ -10462,22 +10685,22 @@
     });
     const galleryId2 = currentGalleryId();
     const Guard = guardedBlock();
-    if (!lifted && !galleryId2) return /* @__PURE__ */ React19.createElement(Original, { ...props });
-    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, /* @__PURE__ */ React19.createElement(
+    if (!lifted && !galleryId2) return /* @__PURE__ */ React20.createElement(Original, { ...props });
+    return /* @__PURE__ */ React20.createElement(React20.Fragment, null, /* @__PURE__ */ React20.createElement(
       Original,
       {
         ...lifted ? Object.assign({}, props, { values: rest }) : props
       }
-    ), galleryId2 && isMarkedNow(galleryId2, values) ? /* @__PURE__ */ React19.createElement(Guard, { name: "manga panel" }, /* @__PURE__ */ React19.createElement(MangaDetailsPanel, { values, galleryId: galleryId2 })) : null, galleryId2 && CAN_WRITE2 ? /* @__PURE__ */ React19.createElement(GalleryToolbar, { galleryId: galleryId2, values }) : null);
+    ), galleryId2 && isMarkedNow(galleryId2, values) ? /* @__PURE__ */ React20.createElement(Guard, { name: "manga panel" }, /* @__PURE__ */ React20.createElement(MangaDetailsPanel, { values, galleryId: galleryId2 })) : null, galleryId2 && CAN_WRITE2 ? /* @__PURE__ */ React20.createElement(GalleryToolbar, { galleryId: galleryId2, values }) : null);
   });
   registerPatch("instead", "PluginSettings", (...args) => {
     const props = args[0];
     const Original = originalFrom(args);
     noteFired("PluginSettings");
     if (props.pluginID === PLUGIN_ID) {
-      return /* @__PURE__ */ React19.createElement(MangaToolsSettings, null);
+      return /* @__PURE__ */ React20.createElement(MangaToolsSettings, null);
     }
-    return /* @__PURE__ */ React19.createElement(Original, { ...props });
+    return /* @__PURE__ */ React20.createElement(Original, { ...props });
   });
   registerPatch("before", "GalleryList", (...args) => {
     const props = args[0];
@@ -10490,7 +10713,7 @@
     noteFired("FilteredGalleryList.SidebarSections");
     const filter = currentSidebarFilter();
     if (!filter) return result;
-    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, /* @__PURE__ */ React19.createElement(SidebarMangaFilter, { filter }), NS.filterShowing("language") ? /* @__PURE__ */ React19.createElement(SidebarLanguageFilter, { filter }) : null, NS.filterShowing("censorship") ? /* @__PURE__ */ React19.createElement(SidebarCensorshipFilter, { filter }) : null, NS.filterShowing("translationGroup") ? /* @__PURE__ */ React19.createElement(SidebarTranslationGroupFilter, { filter }) : null, NS.filterShowing("original") ? /* @__PURE__ */ React19.createElement(SidebarOriginalFilter, { filter }) : null, result);
+    return /* @__PURE__ */ React20.createElement(React20.Fragment, null, /* @__PURE__ */ React20.createElement(SidebarMangaFilter, { filter }), NS.filterShowing("language") ? /* @__PURE__ */ React20.createElement(SidebarLanguageFilter, { filter }) : null, NS.filterShowing("censorship") ? /* @__PURE__ */ React20.createElement(SidebarCensorshipFilter, { filter }) : null, NS.filterShowing("translationGroup") ? /* @__PURE__ */ React20.createElement(SidebarTranslationGroupFilter, { filter }) : null, NS.filterShowing("original") ? /* @__PURE__ */ React20.createElement(SidebarOriginalFilter, { filter }) : null, result);
   });
   registerPatch("after", "FilteredGalleryList", (...args) => {
     const result = resultFrom(args);
@@ -10511,13 +10734,13 @@
     if (props.filter && NS.fieldShowing("language")) {
       registerLanguageCriterionOption(props.filter);
     }
-    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, NS.fieldShowing("language") ? /* @__PURE__ */ React19.createElement(DialogLanguageFilter, { filter: props.filter }) : null, /* @__PURE__ */ React19.createElement(Original, { ...props }));
+    return /* @__PURE__ */ React20.createElement(React20.Fragment, null, NS.fieldShowing("language") ? /* @__PURE__ */ React20.createElement(DialogLanguageFilter, { filter: props.filter }) : null, /* @__PURE__ */ React20.createElement(Original, { ...props }));
   });
   registerPatch("after", "RatingSystem", (...args) => {
     noteFired("RatingSystem");
     const props = args[0];
     if (props.clickToRate || props.withoutContext) return resultFrom(args);
-    return /* @__PURE__ */ React19.createElement(React19.Fragment, null, resultFrom(args), /* @__PURE__ */ React19.createElement(BulkFieldsRow, null));
+    return /* @__PURE__ */ React20.createElement(React20.Fragment, null, resultFrom(args), /* @__PURE__ */ React20.createElement(BulkFieldsRow, null));
   });
   registerPhysicalPagePatches();
   function install2() {
