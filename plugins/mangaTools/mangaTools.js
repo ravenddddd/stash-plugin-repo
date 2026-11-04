@@ -1675,10 +1675,8 @@
     "mangaTools.shops.regexHelp": "Patterns are matched in order; the first match wins, and its first capture group becomes the product code. Leave empty to show the icon without a code.",
     "mangaTools.original.heading": "Original text",
     "mangaTools.icons.heading": "Icons",
-    "mangaTools.icons.count": "{n} icons",
     "mangaTools.icons.edit": "Edit\u2026",
     "mangaTools.icons.title": "Icons",
-    "mangaTools.icons.note": "Names come from Stash's own Font Awesome: solid, or `regular:` for the outlined set.",
     "mangaTools.icons.mark": "Manga mark",
     "mangaTools.icons.rawHeading": "Original text",
     "mangaTools.icons.censorshipHeading": "Censorship",
@@ -1686,7 +1684,7 @@
     "mangaTools.icons.cooked": "Translated",
     "mangaTools.icons.censored": "Censored",
     "mangaTools.icons.uncensored": "Uncensored",
-    "mangaTools.icons.upload": "Upload SVG",
+    "mangaTools.icons.upload": "Upload",
     "mangaTools.icons.suggestions": "Suggestions",
     "mangaTools.icons.svg": "SVG",
     "mangaTools.icons.badName": "Stash has no icon with this name",
@@ -1695,7 +1693,11 @@
     "mangaTools.icons.tooLarge": "That SVG is too large (64 KB at most)",
     "mangaTools.icons.clear": "Remove the icon",
     "mangaTools.icons.cancel": "Cancel",
-    "mangaTools.icons.save": "Save"
+    "mangaTools.icons.save": "Save",
+    "mangaTools.icons.emptyHint": "Empty shows nothing",
+    "mangaTools.icons.markHint": "Required",
+    "mangaTools.icons.noteBefore": "Icons come from the ",
+    "mangaTools.icons.noteAfter": " that Stash ships. The outlined set takes a prefix, as in regular:faSquare."
   };
 
   // src/messages/zh-Hans.json
@@ -1895,10 +1897,8 @@
     "mangaTools.shops.regexHelp": "\u6309\u987A\u5E8F\u5339\u914D\u94FE\u63A5\uFF0C\u7B2C\u4E00\u6761\u547D\u4E2D\u7684\u89C4\u5219\u751F\u6548\uFF0C\u53D6\u6355\u83B7\u7EC4 1 \u4F5C\u4E3A\u5546\u54C1\u7F16\u53F7\uFF1B\u7559\u7A7A\u5219\u53EA\u663E\u793A\u56FE\u6807\u3002",
     "mangaTools.original.heading": "\u539F\u6587",
     "mangaTools.icons.heading": "\u56FE\u6807",
-    "mangaTools.icons.count": "{n} \u4E2A\u56FE\u6807",
     "mangaTools.icons.edit": "\u7F16\u8F91\u2026",
     "mangaTools.icons.title": "\u56FE\u6807",
-    "mangaTools.icons.note": "\u540D\u79F0\u6765\u81EA Stash \u81EA\u5E26\u7684 Font Awesome\uFF1A\u9ED8\u8BA4 solid\uFF0C\u63CF\u8FB9\u4F53\u52A0 `regular:` \u524D\u7F00\u3002",
     "mangaTools.icons.mark": "\u6F2B\u753B\u6807\u8BB0",
     "mangaTools.icons.rawHeading": "\u539F\u6587",
     "mangaTools.icons.censorshipHeading": "\u5BA1\u67E5",
@@ -1906,7 +1906,7 @@
     "mangaTools.icons.cooked": "\u719F\u8089",
     "mangaTools.icons.censored": "\u4FEE\u6B63",
     "mangaTools.icons.uncensored": "\u65E0\u4FEE\u6B63",
-    "mangaTools.icons.upload": "\u4E0A\u4F20 SVG",
+    "mangaTools.icons.upload": "\u4E0A\u4F20",
     "mangaTools.icons.suggestions": "\u63A8\u8350",
     "mangaTools.icons.svg": "SVG",
     "mangaTools.icons.badName": "Stash \u91CC\u6CA1\u6709\u8FD9\u4E2A\u56FE\u6807",
@@ -1915,7 +1915,11 @@
     "mangaTools.icons.tooLarge": "SVG \u592A\u5927\u4E86\uFF08\u6700\u591A 64 KB\uFF09",
     "mangaTools.icons.clear": "\u5220\u9664\u56FE\u6807",
     "mangaTools.icons.cancel": "\u53D6\u6D88",
-    "mangaTools.icons.save": "\u4FDD\u5B58"
+    "mangaTools.icons.save": "\u4FDD\u5B58",
+    "mangaTools.icons.emptyHint": "\u7559\u7A7A\u5219\u4E0D\u663E\u793A\u56FE\u6807",
+    "mangaTools.icons.markHint": "\u4E0D\u80FD\u7559\u7A7A",
+    "mangaTools.icons.noteBefore": "\u56FE\u6807\u6765\u81EA Stash \u81EA\u5E26\u7684 ",
+    "mangaTools.icons.noteAfter": "\u3002\u63CF\u8FB9\u4F53\u9700\u52A0\u5BF9\u5E94\u524D\u7F00\uFF0C\u4F8B\u5982 regular:faSquare\u3002"
   };
 
   // src/messages/zh-Hant.json
@@ -2115,10 +2119,8 @@
     "mangaTools.shops.regexHelp": "\u4F9D\u5E8F\u6BD4\u5C0D\u9023\u7D50\uFF0C\u7B2C\u4E00\u689D\u547D\u4E2D\u7684\u898F\u5247\u751F\u6548\uFF0C\u53D6\u64F7\u53D6\u7D44 1 \u4F5C\u70BA\u5546\u54C1\u7DE8\u865F\uFF1B\u7559\u7A7A\u5247\u53EA\u986F\u793A\u5716\u793A\u3002",
     "mangaTools.original.heading": "\u539F\u6587",
     "mangaTools.icons.heading": "\u5716\u793A",
-    "mangaTools.icons.count": "{n} \u500B\u5716\u793A",
     "mangaTools.icons.edit": "\u7DE8\u8F2F\u2026",
     "mangaTools.icons.title": "\u5716\u793A",
-    "mangaTools.icons.note": "\u540D\u7A31\u4F86\u81EA Stash \u81EA\u5E36\u7684 Font Awesome\uFF1A\u9810\u8A2D solid\uFF0C\u63CF\u908A\u9AD4\u52A0 `regular:` \u524D\u7DB4\u3002",
     "mangaTools.icons.mark": "\u6F2B\u756B\u6A19\u8A18",
     "mangaTools.icons.rawHeading": "\u539F\u6587",
     "mangaTools.icons.censorshipHeading": "\u5BE9\u67E5",
@@ -2126,7 +2128,7 @@
     "mangaTools.icons.cooked": "\u719F\u8089",
     "mangaTools.icons.censored": "\u4FEE\u6B63",
     "mangaTools.icons.uncensored": "\u7121\u4FEE\u6B63",
-    "mangaTools.icons.upload": "\u4E0A\u50B3 SVG",
+    "mangaTools.icons.upload": "\u4E0A\u50B3",
     "mangaTools.icons.suggestions": "\u63A8\u85A6",
     "mangaTools.icons.svg": "SVG",
     "mangaTools.icons.badName": "Stash \u88E1\u6C92\u6709\u9019\u500B\u5716\u793A",
@@ -2135,7 +2137,11 @@
     "mangaTools.icons.tooLarge": "SVG \u592A\u5927\u4E86\uFF08\u6700\u591A 64 KB\uFF09",
     "mangaTools.icons.clear": "\u522A\u9664\u5716\u793A",
     "mangaTools.icons.cancel": "\u53D6\u6D88",
-    "mangaTools.icons.save": "\u5132\u5B58"
+    "mangaTools.icons.save": "\u5132\u5B58",
+    "mangaTools.icons.emptyHint": "\u7559\u7A7A\u5247\u4E0D\u986F\u793A\u5716\u793A",
+    "mangaTools.icons.markHint": "\u4E0D\u80FD\u7559\u7A7A",
+    "mangaTools.icons.noteBefore": "\u5716\u793A\u4F86\u81EA Stash \u81EA\u5E36\u7684 ",
+    "mangaTools.icons.noteAfter": "\u3002\u63CF\u908A\u9AD4\u9700\u52A0\u5C0D\u61C9\u524D\u7DB4\uFF0C\u4F8B\u5982 regular:faSquare\u3002"
   };
 
   // src/i18n.ts
@@ -6143,33 +6149,46 @@
     "uncensored"
   ];
   var DEFAULT_ICONS = {
-    mark: "faM",
-    raw: "faFont",
-    cooked: "faLanguage",
-    censored: "faChessBoard",
-    uncensored: "regular:faSquare"
+    mark: "m",
+    raw: "font",
+    cooked: "language",
+    censored: "chess-board",
+    uncensored: "regular:square"
   };
   var ICON_SUGGESTIONS = {
-    mark: ["faM", "faToriiGate", "faBookOpen"],
-    raw: ["faFont", "faHouse", "faCrow"],
-    cooked: ["faLanguage", "faEarthAsia", "faDrumstickBite"],
-    censored: ["faChessBoard", "faMask", "faChessKnight"],
-    uncensored: ["regular:faSquare", "faFaceSmile", "faChessPawn"]
+    mark: ["m", "torii-gate", "book-open"],
+    raw: ["font", "house", "crow"],
+    cooked: ["language", "earth-asia", "drumstick-bite"],
+    censored: ["chess-board", "mask", "chess-knight"],
+    uncensored: ["regular:square", "face-smile", "chess-pawn"]
   };
   function isUpload(value) {
     return value.startsWith("data:image/");
   }
+  function exportName(raw) {
+    let text2 = String(raw || "").trim();
+    if (!text2) return "";
+    text2 = text2.replace(
+      /-([a-z0-9])/gi,
+      (_whole, letter) => letter.toUpperCase()
+    );
+    text2 = text2.replace(/^fa(?=[A-Z])/, "");
+    text2 = text2.replace(/^fa$/i, "");
+    if (!text2) return "";
+    return "fa" + text2.charAt(0).toUpperCase() + text2.slice(1);
+  }
   function parseChoice(value) {
     if (!value || isUpload(value)) return null;
     if (value.startsWith("regular:")) {
-      const name = value.slice("regular:".length).trim();
-      return name ? { style: "regular", name } : null;
+      const name2 = exportName(value.slice("regular:".length));
+      return name2 ? { style: "regular", name: name2 } : null;
     }
     if (value.startsWith("solid:")) {
-      const name = value.slice("solid:".length).trim();
-      return name ? { style: "solid", name } : null;
+      const name2 = exportName(value.slice("solid:".length));
+      return name2 ? { style: "solid", name: name2 } : null;
     }
-    return { style: "solid", name: value.trim() };
+    const name = exportName(value);
+    return name ? { style: "solid", name } : null;
   }
   function iconsFromJson(raw) {
     const icons = { ...DEFAULT_ICONS };
@@ -6805,13 +6824,13 @@
       "[mangaTools] this Stash's FontAwesome has no " + name + ", so that icon is drawn as nothing. Check the name on the settings page's icons dialog."
     );
   }
-  function iconDefinition(value) {
+  function iconDefinition(value, quiet = false) {
     const choice = parseChoice(value);
     if (!choice) return null;
     const library = choice.style === "regular" ? PluginApi3.libraries.FontAwesomeRegular : PluginApi3.libraries.FontAwesomeSolid;
     const icon = library ? library[choice.name] : void 0;
     if (!icon) {
-      noteMissingName(value);
+      if (!quiet) noteMissingName(value);
       return null;
     }
     return icon;
@@ -6836,7 +6855,15 @@
     return /* @__PURE__ */ React3.createElement("span", { className, "aria-hidden": "true" }, /* @__PURE__ */ React3.createElement(Icon, { icon }));
   }
   function SlotIcon(props) {
-    return /* @__PURE__ */ React3.createElement(IconView, { value: NS.icons[props.slot], className: props.className });
+    const value = NS.icons[props.slot];
+    const broken = !!value && !isUpload(value) && !iconDefinition(value);
+    return /* @__PURE__ */ React3.createElement(
+      IconView,
+      {
+        value: broken ? DEFAULT_ICONS[props.slot] : value,
+        className: props.className
+      }
+    );
   }
   function MangaIcon() {
     return /* @__PURE__ */ React3.createElement(SlotIcon, { slot: "mark", className: "manga-tools-manga-icon" });
@@ -8539,10 +8566,10 @@
       ),
       /* @__PURE__ */ React9.createElement("span", null, props.heading),
       /* @__PURE__ */ React9.createElement(
-        "span",
+        SlotIcon,
         {
-          className: "manga-tools-manga-icon manga-tools-sidebar-mark",
-          "aria-hidden": "true"
+          slot: "mark",
+          className: "manga-tools-manga-icon manga-tools-sidebar-mark"
         }
       )
     )), props.chosenItems.length ? /* @__PURE__ */ React9.createElement("ul", { className: "selected-list" }, props.chosenItems) : null, props.excludedItems.length ? /* @__PURE__ */ React9.createElement("ul", { className: "selected-list excluded-list" }, props.excludedItems) : null, /* @__PURE__ */ React9.createElement(Bootstrap.Collapse, { in: props.open, mountOnEnter: true, unmountOnExit: true }, /* @__PURE__ */ React9.createElement("div", null, /* @__PURE__ */ React9.createElement("div", { className: "queryable-candidate-list" }, props.children))));
@@ -9927,7 +9954,10 @@
       {
         className: "text-input" + (props.problem ? " is-invalid" : ""),
         value: upload ? "" : props.value,
-        placeholder: upload ? t(intl, "mangaTools.icons.svg") : "faM",
+        placeholder: upload ? t(intl, "mangaTools.icons.svg") : t(
+          intl,
+          props.slot === "mark" ? "mangaTools.icons.markHint" : "mangaTools.icons.emptyHint"
+        ),
         "aria-label": t(intl, LABEL_OF2[props.slot]),
         onChange: (e) => props.onChange(e.currentTarget.value)
       }
@@ -9993,12 +10023,20 @@
         return slot === "mark" ? t(intl, "mangaTools.icons.markRequired") : "";
       }
       if (isUpload(value)) return "";
-      return iconDefinition(value) ? "" : t(intl, "mangaTools.icons.badName");
+      return iconDefinition(value, true) ? "" : t(intl, "mangaTools.icons.badName");
     };
     const broken = ICON_SLOTS.some((slot) => problemOf(slot) !== "");
     const Modal = Bootstrap ? Bootstrap.Modal : null;
     if (!Bootstrap || !Modal) return null;
-    return /* @__PURE__ */ React13.createElement(Modal, { show: true, onHide: props.onClose }, /* @__PURE__ */ React13.createElement("div", { className: "modal-header" }, /* @__PURE__ */ React13.createElement("span", null, t(intl, "mangaTools.icons.title"))), /* @__PURE__ */ React13.createElement("div", { className: "modal-body" }, /* @__PURE__ */ React13.createElement("p", null, t(intl, "mangaTools.icons.note")), BLOCKS.map((block) => /* @__PURE__ */ React13.createElement("div", { className: "manga-tools-icon-block", key: block.heading }, /* @__PURE__ */ React13.createElement("h3", null, t(intl, block.heading)), /* @__PURE__ */ React13.createElement("div", { className: "manga-tools-icon-lines" }, block.slots.map((line) => /* @__PURE__ */ React13.createElement(
+    return /* @__PURE__ */ React13.createElement(Modal, { show: true, size: "lg", onHide: props.onClose }, /* @__PURE__ */ React13.createElement("div", { className: "modal-header" }, /* @__PURE__ */ React13.createElement("span", null, t(intl, "mangaTools.icons.title"))), /* @__PURE__ */ React13.createElement("div", { className: "modal-body" }, /* @__PURE__ */ React13.createElement("p", null, t(intl, "mangaTools.icons.noteBefore"), /* @__PURE__ */ React13.createElement(
+      "a",
+      {
+        href: "https://fontawesome.com/free",
+        target: "_blank",
+        rel: "noreferrer"
+      },
+      "Font Awesome Free"
+    ), t(intl, "mangaTools.icons.noteAfter")), BLOCKS.map((block) => /* @__PURE__ */ React13.createElement("div", { className: "manga-tools-icon-block", key: block.heading }, /* @__PURE__ */ React13.createElement("h3", null, t(intl, block.heading)), /* @__PURE__ */ React13.createElement("div", { className: "manga-tools-icon-lines" }, block.slots.map((line) => /* @__PURE__ */ React13.createElement(
       IconLine,
       {
         key: line.slot,
@@ -10041,7 +10079,7 @@
     const openState = React13.useState(false);
     const open = openState[0];
     const setOpen = openState[1];
-    return /* @__PURE__ */ React13.createElement(React13.Fragment, null, /* @__PURE__ */ React13.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React13.createElement("div", null, /* @__PURE__ */ React13.createElement("h3", null, t(intl, "mangaTools.icons.heading")), /* @__PURE__ */ React13.createElement("div", { className: "sub-heading" }, numbered(intl.locale, "mangaTools.icons.count", ICON_SLOTS.length))), /* @__PURE__ */ React13.createElement("div", null, Bootstrap ? /* @__PURE__ */ React13.createElement(Bootstrap.Button, { variant: "secondary", onClick: () => setOpen(true) }, t(intl, "mangaTools.icons.edit")) : null)), open ? /* @__PURE__ */ React13.createElement(
+    return /* @__PURE__ */ React13.createElement(React13.Fragment, null, /* @__PURE__ */ React13.createElement("div", { className: "setting manga-tools-setting" }, /* @__PURE__ */ React13.createElement("div", null, /* @__PURE__ */ React13.createElement("h3", null, t(intl, "mangaTools.icons.heading"))), /* @__PURE__ */ React13.createElement("div", null, Bootstrap ? /* @__PURE__ */ React13.createElement(Bootstrap.Button, { variant: "secondary", onClick: () => setOpen(true) }, t(intl, "mangaTools.icons.edit")) : null)), open ? /* @__PURE__ */ React13.createElement(
       IconsDialog,
       {
         onClose: () => setOpen(false),
@@ -10316,7 +10354,6 @@
   }
   var MARK_GROUP_ID = "mangaTools-markGroup";
   var MAINTENANCE_GROUP_ID = "mangaTools-maintenanceGroup";
-  var ICONS_GROUP_ID = "mangaTools-iconsGroup";
   var DISPLAY_GROUP_ID = "mangaTools-displayGroup";
   function MangaToolsSettings() {
     useGlobalVersion();
@@ -10631,14 +10668,7 @@
           })
         }
       )
-    ), /* @__PURE__ */ React14.createElement(
-      SettingsGroup,
-      {
-        id: ICONS_GROUP_ID,
-        heading: t(intl, "mangaTools.icons.heading")
-      },
-      /* @__PURE__ */ React14.createElement(IconsSetting, { persist })
-    ), /* @__PURE__ */ React14.createElement(
+    ), /* @__PURE__ */ React14.createElement(IconsSetting, { persist }), /* @__PURE__ */ React14.createElement(
       SettingsGroup,
       {
         id: MAINTENANCE_GROUP_ID,
