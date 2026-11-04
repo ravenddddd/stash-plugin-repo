@@ -9316,9 +9316,11 @@
             if (!dragRow || dragRow === row2.id) return;
             e.preventDefault();
             const box = e.currentTarget.getBoundingClientRect();
-            const after = e.clientY > box.top + box.height / 2;
-            if (!drop || drop.id !== row2.id || drop.after !== after) {
-              setDrop({ id: row2.id, after });
+            const below = e.clientY > box.top + box.height / 2;
+            const next = rows[index + 1];
+            const landing = below && next ? { id: next.id, after: false } : { id: row2.id, after: below && !next };
+            if (!drop || drop.id !== landing.id || drop.after !== landing.after) {
+              setDrop(landing);
             }
           },
           onDrop: (e) => {
