@@ -1855,7 +1855,7 @@
     "mangaTools.shops.name": "\u540D\u79F0",
     "mangaTools.shops.domains": "\u57DF\u540D",
     "mangaTools.shops.domainPlaceholder": "\u57DF\u540D",
-    "mangaTools.shops.regexes": "\u5546\u54C1\u7F16\u53F7\u6B63\u5219",
+    "mangaTools.shops.regexes": "\u7F16\u53F7\u6B63\u5219",
     "mangaTools.shops.regexPlaceholder": "\u6B63\u5219",
     "mangaTools.shops.icon": "\u56FE\u6807",
     "mangaTools.shops.pickIcon": "\u9009\u62E9\u6587\u4EF6\u2026",
@@ -2052,7 +2052,7 @@
     "mangaTools.shops.name": "\u540D\u7A31",
     "mangaTools.shops.domains": "\u7DB2\u57DF",
     "mangaTools.shops.domainPlaceholder": "\u7DB2\u57DF",
-    "mangaTools.shops.regexes": "\u5546\u54C1\u7DE8\u865F\u6B63\u898F\u8868\u793A\u5F0F",
+    "mangaTools.shops.regexes": "\u7DE8\u865F\u6B63\u898F\u5F0F",
     "mangaTools.shops.regexPlaceholder": "\u6B63\u898F\u8868\u793A\u5F0F",
     "mangaTools.shops.icon": "\u5716\u793A",
     "mangaTools.shops.pickIcon": "\u9078\u64C7\u6A94\u6848\u2026",
@@ -9249,6 +9249,7 @@
               title: t(intl, "mangaTools.shops.reorder"),
               onDragStart: () => {
                 afterDrag.current = true;
+                setOpen(-1);
                 setDragShop(index);
               },
               onDragEnd: () => setDragShop(-1)
@@ -9369,11 +9370,10 @@
     const Content = Popover ? Popover.Content : null;
     if (!(Bootstrap == null ? void 0 : Bootstrap.Button) || !Overlay || !Popover || !Content) return null;
     const icon = (glyph) => glyph ? /* @__PURE__ */ React12.createElement(PluginApi14.components.Icon, { icon: glyph }) : null;
-    const content = /* @__PURE__ */ React12.createElement(Popover, { id: "manga-tools-shop-add" }, /* @__PURE__ */ React12.createElement(Content, null, /* @__PURE__ */ React12.createElement(
-      "button",
+    const content = /* @__PURE__ */ React12.createElement(Popover, { id: "manga-tools-shop-add", className: "manga-tools-shop-popover" }, /* @__PURE__ */ React12.createElement(Content, null, /* @__PURE__ */ React12.createElement(
+      Bootstrap.Button,
       {
-        type: "button",
-        className: "manga-tools-shop-menu-row",
+        className: "minimal",
         onClick: () => props.onAdd({ name: "", icon: "", domains: [], regexes: [] })
       },
       icon((_a3 = PluginApi14.libraries.FontAwesomeSolid) == null ? void 0 : _a3.faPlus),
@@ -9382,11 +9382,10 @@
       const allowed = props.canAdd(preset);
       const src = shopIconUrl(preset);
       return /* @__PURE__ */ React12.createElement(
-        "button",
+        Bootstrap.Button,
         {
-          type: "button",
           key: preset.name,
-          className: "manga-tools-shop-menu-row",
+          className: "minimal",
           disabled: !allowed,
           onClick: allowed ? () => props.onAdd(preset) : void 0
         },
