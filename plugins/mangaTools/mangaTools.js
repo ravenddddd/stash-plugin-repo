@@ -6034,6 +6034,16 @@
       }))
     );
   }
+  function moveItem(items, from, target2, after) {
+    if (from < 0 || from >= items.length || target2 < 0 || target2 >= items.length) {
+      return items.slice();
+    }
+    let at = target2 + (after ? 1 : 0);
+    if (from < at) at -= 1;
+    const next = items.slice();
+    next.splice(at, 0, next.splice(from, 1)[0]);
+    return next;
+  }
   function nameTaken(shops, name, except) {
     const wanted2 = name.trim().toLowerCase();
     if (!wanted2) return false;
@@ -9064,6 +9074,7 @@
   NS.builtinShops = builtinShops;
   NS.normalizeDomain = normalizeDomain;
   NS.isValidDomain = isValidDomain;
+  NS.moveItem = moveItem;
   NS.compilePattern = compilePattern;
   NS.nameTaken = nameTaken;
   NS.domainOwner = domainOwner;
@@ -9324,13 +9335,7 @@
               (candidate) => candidate.id === drop.id
             );
             if (from >= 0 && target2 >= 0) {
-              const next = rows.slice();
-              next.splice(
-                target2 + (drop.after ? 1 : 0),
-                0,
-                next.splice(from, 1)[0]
-              );
-              setRows(next);
+              setRows(moveItem(rows, from, target2, drop.after));
             }
             setDragRow("");
             setDrop(null);
