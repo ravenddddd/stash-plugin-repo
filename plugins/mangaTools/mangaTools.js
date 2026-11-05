@@ -1697,7 +1697,7 @@
     "mangaTools.icons.emptyHint": "Empty shows nothing",
     "mangaTools.icons.markHint": "Required",
     "mangaTools.icons.noteBefore": "Icons come from the ",
-    "mangaTools.icons.noteAfter": " that Stash ships. The outlined set takes a prefix, as in regular:faSquare."
+    "mangaTools.icons.noteAfter": " that Stash ships. The outlined set takes a prefix, as in regular:square."
   };
 
   // src/messages/zh-Hans.json
@@ -1919,7 +1919,7 @@
     "mangaTools.icons.emptyHint": "\u7559\u7A7A\u5219\u4E0D\u663E\u793A\u56FE\u6807",
     "mangaTools.icons.markHint": "\u4E0D\u80FD\u7559\u7A7A",
     "mangaTools.icons.noteBefore": "\u56FE\u6807\u6765\u81EA Stash \u81EA\u5E26\u7684 ",
-    "mangaTools.icons.noteAfter": "\u3002\u63CF\u8FB9\u4F53\u9700\u52A0\u5BF9\u5E94\u524D\u7F00\uFF0C\u4F8B\u5982 regular:faSquare\u3002"
+    "mangaTools.icons.noteAfter": "\u3002\u63CF\u8FB9\u4F53\u9700\u52A0\u5BF9\u5E94\u524D\u7F00\uFF0C\u4F8B\u5982 regular:square\u3002"
   };
 
   // src/messages/zh-Hant.json
@@ -2141,7 +2141,7 @@
     "mangaTools.icons.emptyHint": "\u7559\u7A7A\u5247\u4E0D\u986F\u793A\u5716\u793A",
     "mangaTools.icons.markHint": "\u4E0D\u80FD\u7559\u7A7A",
     "mangaTools.icons.noteBefore": "\u5716\u793A\u4F86\u81EA Stash \u81EA\u5E36\u7684 ",
-    "mangaTools.icons.noteAfter": "\u3002\u63CF\u908A\u9AD4\u9700\u52A0\u5C0D\u61C9\u524D\u7DB4\uFF0C\u4F8B\u5982 regular:faSquare\u3002"
+    "mangaTools.icons.noteAfter": "\u3002\u63CF\u908A\u9AD4\u9700\u52A0\u5C0D\u61C9\u524D\u7DB4\uFF0C\u4F8B\u5982 regular:square\u3002"
   };
 
   // src/i18n.ts
@@ -4743,6 +4743,7 @@
   var galleryId = null;
   var pageGalleryId = null;
   var clickedGalleryId = null;
+  var gallerySource = null;
   var askedAboutImage = {};
   var galleriesOfImage = {};
   var shownAt = -1;
@@ -4759,23 +4760,29 @@
   var place2 = -1;
   function galleryOf(lightbox) {
     const fromPath = galleryIdFromPath(window.location.pathname);
-    if (fromPath) return fromPath;
+    if (fromPath) {
+      gallerySource = "path";
+      return fromPath;
+    }
     if (pageGalleryId) return pageGalleryId;
     if (clickedGalleryId) {
       const clicked = clickedGalleryId;
       clickedGalleryId = null;
       pageGalleryId = clicked;
+      gallerySource = "card";
       return pageGalleryId;
     }
     const image = carouselImage(lightbox);
     if (!image) return null;
     if (image.id in galleriesOfImage) {
       pageGalleryId = galleriesOfImage[image.id];
+      gallerySource = "image";
       return pageGalleryId;
     }
     askAboutImage(image.id, () => {
       if (root !== lightbox) return;
       pageGalleryId = galleriesOfImage[image.id];
+      gallerySource = "image";
       if (root) step();
     });
     return pageGalleryId;
@@ -4792,6 +4799,7 @@
       root = lightbox;
       galleryId = null;
       pageGalleryId = null;
+      gallerySource = null;
       shownAt = -1;
       place2 = -1;
       reinsers = 0;
@@ -4810,6 +4818,7 @@
       return;
     }
     claim(lightbox);
+    if (lightboxIsLoading(lightbox)) return;
     if (galleryId !== wantedId || !loaded.has(wantedId)) {
       loadGallery(wantedId);
       return;
@@ -4865,13 +4874,14 @@
     if (!forLightbox) return;
     if ((pending2 == null ? void 0 : pending2.id) === id && pending2.lightbox === forLightbox) return;
     pending2 = { id, lightbox: forLightbox };
-    loadPages(id, lightboxOrder(window.location.search), forLightbox).then(({ answer, order }) => {
+    const order = gallerySource === "card" ? { sort: "path", direction: "ASC" } : lightboxOrder(window.location.search);
+    loadPages(id, order, forLightbox).then(({ answer, order: order2 }) => {
       if (!pending2 || pending2.id !== id || pending2.lightbox !== forLightbox) {
         return;
       }
       pending2 = null;
       if (root !== forLightbox) return;
-      const gallery = galleryFrom(id, answer, order);
+      const gallery = galleryFrom(id, answer, order2);
       remember(id, gallery);
       language = answer.language;
       galleryId = id;
@@ -4976,15 +4986,10 @@
     if (orderAgrees(answer, lightbox)) return { answer, order };
     const byPath2 = { sort: "path", direction: "ASC" };
     if (order.sort === byPath2.sort && order.direction === byPath2.direction) {
-      throw new Error(
-        "[mangaReader] the lightbox is showing this gallery's images in an order that is not path order, so they cannot be paired \u2014 the list behind it is filtered or sorted some other way"
-      );
+      return { answer, order };
     }
     const again = await fetchGallery(id, byPath2);
-    if (orderAgrees(again, lightbox)) return { answer: again, order: byPath2 };
-    throw new Error(
-      "[mangaReader] the lightbox is showing this gallery's images in an order that neither the address bar's sort nor path order reproduces, so they cannot be paired"
-    );
+    return { answer: again, order: byPath2 };
   }
   function orderAgrees(list, lightbox) {
     if (list.fileScope) return true;
